@@ -197,10 +197,14 @@ export async function uploadToR2(rawFile, options = {}) {
       err.remainingMinutes = completeData.remainingMinutes;
       throw err;
     }
-    throw new Error(
+    const err = new Error(
       completeData.message ||
         'รูปภาพไม่ผ่านการตรวจสอบความปลอดภัย กรุณาเลือกรูปภาพอื่น'
     );
+    err.logId = completeData.logId || null;
+    err.imageUrl = publicUrl;
+    err.reasons = completeData.reasons || [];
+    throw err;
   }
 
   return {
@@ -210,5 +214,33 @@ export async function uploadToR2(rawFile, options = {}) {
     originalName: rawFile.name,
     size: processedFile.size,
   };
+}
+
+/**
+ * ส่งคำร้องอุทธรณ์สำหรับรูปภาพที่ติดฟิลเตอร์ (Tier 4 Appeal System)
+ * @param {Object} payload - { logId, imageUrl, appealReason, token }
+ * @returns {Promise<Object>}
+ */
+export async function submitModerationAppeal({ logId, imageUrl, appealReason, token }) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE_URL}/api/upload/appeal`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      logId,
+      imageUrl,
+      appealReason,
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'ไม่สามารถส่งคำร้องอุทธรณ์ได้');
+  }
+  return data;
 }
 
