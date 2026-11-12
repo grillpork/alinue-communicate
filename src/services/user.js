@@ -36,6 +36,11 @@ export const userService = {
   getUserPosts: async (userId) => {
     return fetchApi(`/api/users/${userId}/posts`);
   },
+
+  // ค้นหาดีไซเนอร์ / ผู้ใช้งานตามชื่อหรือ username
+  searchUsers: async (q) => {
+    return fetchApi(`/api/users/search?q=${encodeURIComponent(q)}`);
+  },
 };
 
 // -------------------------------------------------------------
@@ -46,6 +51,7 @@ export const userKeys = {
   suggested: () => [...userKeys.all, 'suggested'],
   profile: (username) => [...userKeys.all, 'profile', username],
   posts: (userId) => [...userKeys.all, 'posts', userId],
+  search: (q) => [...userKeys.all, 'search', q],
 };
 
 // -------------------------------------------------------------
@@ -123,6 +129,20 @@ export function useToggleFollowMutation(options = {}) {
         options.onSuccess(data, variables, context);
       }
     },
+    ...options,
+  });
+}
+
+/**
+ * Hook สำหรับค้นหาดีไซเนอร์ / ผู้ใช้
+ */
+export function useSearchUsersQuery(query, options = {}) {
+  const cleanQ = (query || '').trim();
+  return useQuery({
+    queryKey: userKeys.search(cleanQ),
+    queryFn: () => userService.searchUsers(cleanQ),
+    enabled: Boolean(cleanQ),
+    staleTime: 1000 * 30, // 30 วินาที
     ...options,
   });
 }
