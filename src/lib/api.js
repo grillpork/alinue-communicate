@@ -71,8 +71,12 @@ export async function fetchApi(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${API_BASE_URL}${cleanEndpoint}`;
+  // รับประกันว่า URL จะเป็น Single Slash เสมอ ไม่มี double slash //
+  const cleanBase = (
+    process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+  ).replace(/\/+$/, '');
+  const cleanEndpoint = String(endpoint).replace(/^\/+/, '');
+  const url = `${cleanBase}/${cleanEndpoint}`;
   const res = await fetch(url, {
     credentials: 'include',
     ...options,

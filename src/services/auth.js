@@ -52,8 +52,13 @@ export const authService = {
     });
   },
 
-  // URL สำหรับ Google OAuth Redirect
-  getGoogleAuthUrl: () => `${API_BASE_URL}/api/auth/google`,
+  // URL สำหรับ Google OAuth Redirect (single slash guaranteed)
+  getGoogleAuthUrl: () => {
+    const cleanBase = (
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+    ).replace(/\/+$/, '');
+    return `${cleanBase}/api/auth/google`;
+  },
 };
 
 // -------------------------------------------------------------
