@@ -40,6 +40,14 @@ export const postService = {
     });
   },
 
+  // แชร์โพสต์ (บันทึกสถิติจำนวนแชร์ + ส่งจำนวนแชร์ล่าสุดกลับมา)
+  sharePost: async (id, payload = {}) => {
+    return fetchApi(`/api/posts/${id}/share`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // ดึงความคิดเห็นของโพสต์
   getComments: async (postId) => {
     return fetchApi(`/api/posts/${postId}/comments`);
@@ -201,6 +209,25 @@ export function useDeleteCommentMutation(options = {}) {
       queryClient.invalidateQueries({
         queryKey: postKeys.comments(variables.postId),
       });
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      if (options.onSuccess) {
+        options.onSuccess(data, variables, context);
+      }
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook สำหรับแชร์โพสต์ (เพิ่มจำนวน sharesCount)
+ */
+export function useSharePostMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, platform }) => postService.sharePost(id, { platform }),
+    onSuccess: (data, variables, context) => {
+      // อัปเดต cache รายการโพสต์และหน้ารายละเอียด
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       if (options.onSuccess) {
         options.onSuccess(data, variables, context);

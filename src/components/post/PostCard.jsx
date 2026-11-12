@@ -27,6 +27,7 @@ import {
 import { useMeQuery } from '@/services/auth';
 import { formatRelativeTime, formatFullDateTime } from '@/lib/date';
 import PostDetailModal from './PostDetailModal';
+import SharePostModal from './SharePostModal';
 import CommentPortfolioCard from './CommentPortfolioCard';
 import CommentActionsMenu from './CommentActionsMenu';
 
@@ -196,6 +197,8 @@ export default function PostCard({
 }) {
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likesCount, setLikesCount] = useState(post.likesCount ?? 0);
+  const [sharesCount, setSharesCount] = useState(post.sharesCount ?? 0);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -210,6 +213,12 @@ export default function PostCard({
       setCommentsCount(post.commentsCount);
     }
   }, [post.commentsCount]);
+
+  useEffect(() => {
+    if (typeof post.sharesCount === 'number') {
+      setSharesCount(post.sharesCount);
+    }
+  }, [post.sharesCount]);
 
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
@@ -416,13 +425,15 @@ export default function PostCard({
           <span>{commentsCount}</span>
         </button>
 
-        {/* Share / Direct message (Paper plane) */}
+        {/* Share Button (Paper plane) */}
         <button
           type="button"
-          className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
+          onClick={() => setIsShareModalOpen(true)}
+          className="flex items-center gap-1.5 text-gray-500 hover:text-black transition-colors cursor-pointer group"
+          title="แชร์โพสต์นี้"
         >
-          <Send className="h-4 w-4" />
-          <span>{post.sharesCount ?? 0}</span>
+          <Send className="h-4 w-4 transition-transform group-hover:scale-110" />
+          <span className="font-medium">{sharesCount}</span>
         </button>
       </div>
 
@@ -629,9 +640,18 @@ export default function PostCard({
 
       {/* Post Detail & All Comments Modal (สไตล์ Threads ตาม UI ตัวอย่าง) */}
       <PostDetailModal
-        post={post}
+        post={{ ...post, sharesCount }}
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
+        onShareSuccess={(newCount) => setSharesCount(newCount)}
+      />
+
+      {/* Share Post Modal */}
+      <SharePostModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        post={{ ...post, sharesCount }}
+        onShareSuccess={(newCount) => setSharesCount(newCount)}
       />
     </article>
   );

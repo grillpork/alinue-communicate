@@ -29,6 +29,7 @@ import { useMeQuery } from '@/services/auth';
 import { formatRelativeTime, formatFullDateTime } from '@/lib/date';
 import CommentPortfolioCard from './CommentPortfolioCard';
 import CommentActionsMenu from './CommentActionsMenu';
+import SharePostModal from './SharePostModal';
 
 /**
  * ฟังก์ชันแปลง Hashtag และ Mention เป็นตัวหนังสือสีฟ้า
@@ -61,6 +62,7 @@ export default function PostDetailModal({
   isOpen,
   onClose,
   initialImageIndex = 0,
+  onShareSuccess,
 }) {
   const [activeImageIndex, setActiveImageIndex] = useState(initialImageIndex);
   const [commentText, setCommentText] = useState('');
@@ -68,11 +70,19 @@ export default function PostDetailModal({
   const [isLiked, setIsLiked] = useState(post?.isLiked || false);
   const [likesCount, setLikesCount] = useState(post?.likesCount ?? 0);
   const [commentsCount, setCommentsCount] = useState(post?.commentsCount ?? 0);
+  const [sharesCount, setSharesCount] = useState(post?.sharesCount ?? 0);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'popular'
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [likedComments, setLikedComments] = useState({});
   const sortMenuRef = useRef(null);
   const commentsEndRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof post?.sharesCount === 'number') {
+      setSharesCount(post.sharesCount);
+    }
+  }, [post?.sharesCount]);
 
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
@@ -359,9 +369,12 @@ export default function PostDetailModal({
                 {/* Share */}
                 <button
                   type="button"
-                  className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="flex items-center gap-1.5 hover:text-gray-900 transition-colors cursor-pointer group"
+                  title="แชร์โพสต์นี้"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-4 w-4 transition-transform group-hover:scale-110" />
+                  <span>{sharesCount}</span>
                 </button>
               </div>
             </div>
@@ -658,6 +671,17 @@ export default function PostDetailModal({
           </div>
         </div>
       </div>
+
+      {/* Share Post Modal */}
+      <SharePostModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        post={{ ...post, sharesCount }}
+        onShareSuccess={(newCount) => {
+          setSharesCount(newCount);
+          if (onShareSuccess) onShareSuccess(newCount);
+        }}
+      />
     </div>
   );
 }

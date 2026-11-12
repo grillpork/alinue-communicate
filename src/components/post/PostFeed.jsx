@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Search,
   X,
@@ -16,18 +16,34 @@ import {
 } from 'lucide-react';
 import PostCard from './PostCard';
 import PostFormModal from './PostFormModal';
+import PostDetailModal from './PostDetailModal';
 import EmptyState from '@/components/shared/EmptyState';
 import { useMeQuery } from '@/services/auth';
 import {
   usePostsQuery,
+  usePostQuery,
   useCreatePostMutation,
   useDeletePostMutation,
 } from '@/services/post';
 
 export default function PostFeed() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sharedPostId = searchParams?.get('post');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeSharedPost, setActiveSharedPost] = useState(null);
+
+  // ตรวจสอบและดึงข้อมูลโพสต์ที่ถูกแชร์ผ่าน URL query (?post=ID)
+  const { data: sharedPostData } = usePostQuery(sharedPostId, {
+    enabled: Boolean(sharedPostId),
+  });
+
+  useEffect(() => {
+    if (sharedPostData?.post) {
+      setActiveSharedPost(sharedPostData.post);
+    }
+  }, [sharedPostData?.post]);
 
   // 1. ดึงข้อมูล User จริงจาก Neon DB
   const { data: meData } = useMeQuery();
@@ -261,6 +277,22 @@ export default function PostFeed() {
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreatePost}
       />
+
+      {/* Modal แสดงโพสต์ที่ถูกแชร์มาโดยตรงผ่าน URL (?post=ID) */}
+      {activeSharedPost && (
+        <PostDetailModal
+          post={activeSharedPost}
+          isOpen={Boolean(activeSharedPost)}
+          onClose={() => {
+            setActiveSharedPost(null);
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('post');
+              window.history.replaceState({}, '', url.pathname + (url.search || ''));
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
