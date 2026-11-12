@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { X, Upload, Film, Image as ImageIcon, Loader2, Palette } from 'lucide-react';
+import { X, Upload, Film, Image as ImageIcon, Loader2, Briefcase } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useCreateShowcaseMutation } from '@/services/showcase';
 
@@ -100,7 +100,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-black text-white">
-              <Palette className="h-4 w-4" />
+              <Briefcase className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-gray-900">โพสต์ผลงาน Showcase</h2>

@@ -9,7 +9,7 @@ import {
   Loader2,
   UserX,
   ArrowLeft,
-  Palette,
+  Briefcase,
   Plus,
 } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
@@ -144,7 +144,7 @@ function UserProfileContent() {
       {/* 2. Navigation Tabs */}
       <div className="mt-6 flex border-b border-gray-100 px-2 sm:px-0">
         {[
-          { id: 'showcases', label: 'Showcase', icon: Palette, count: showcases.length },
+          { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
           { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
           { id: 'likes', label: 'Likes', icon: Heart },
         ].map((tab) => {
@@ -180,7 +180,7 @@ function UserProfileContent() {
             {isSelf && (
               <div className="mb-4 flex items-center justify-between rounded-2xl bg-gray-50/70 p-3 border border-gray-100">
                 <div className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-gray-700" />
+                  <Briefcase className="h-4 w-4 text-gray-700" />
                   <span className="text-xs font-semibold text-gray-800">
                     พื้นที่โชว์รูปและคลิปผลงานของคุณโดยเฉพาะ
                   </span>
@@ -215,7 +215,7 @@ function UserProfileContent() {
             ) : (
               <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-2 p-6">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                  <Palette className="h-6 w-6" />
+                  <Briefcase className="h-6 w-6" />
                 </div>
                 <p className="text-xs font-semibold text-gray-700">
                   ยังไม่มีผลงาน Showcase
