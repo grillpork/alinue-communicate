@@ -129,6 +129,16 @@ export async function uploadToR2(rawFile, options = {}) {
 
   const presignedData = await presignedRes.json();
   if (!presignedData.success || !presignedData.uploadUrl) {
+    // Tier 3: จัดการ HTTP 429 Timeout จาก presigned-url
+    if (presignedRes.status === 429 && presignedData.isTimedOut) {
+      const err = new Error(
+        presignedData.message ||
+          `บัญชีถูกระงับการอัปโหลดชั่วคราว กรุณารอ ${presignedData.remainingMinutes} นาที`
+      );
+      err.isTimedOut = true;
+      err.remainingMinutes = presignedData.remainingMinutes;
+      throw err;
+    }
     throw new Error(presignedData.message || 'Failed to get upload authorization');
   }
 
@@ -177,6 +187,16 @@ export async function uploadToR2(rawFile, options = {}) {
 
   const completeData = await completeRes.json().catch(() => ({}));
   if (!completeRes.ok) {
+    // Tier 3: จัดการ HTTP 429 Timeout จาก complete
+    if (completeRes.status === 429 && completeData.isTimedOut) {
+      const err = new Error(
+        completeData.message ||
+          `บัญชีถูกระงับการอัปโหลดชั่วคราว กรุณารอ ${completeData.remainingMinutes} นาที`
+      );
+      err.isTimedOut = true;
+      err.remainingMinutes = completeData.remainingMinutes;
+      throw err;
+    }
     throw new Error(
       completeData.message ||
         'รูปภาพไม่ผ่านการตรวจสอบความปลอดภัย กรุณาเลือกรูปภาพอื่น'
