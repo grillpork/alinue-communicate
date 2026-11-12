@@ -8,8 +8,9 @@ import {
   clearAuthToken,
 } from '@/lib/api';
 
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+).replace(/\/+$/, '');
 
 // -------------------------------------------------------------
 // 1. Raw API Services

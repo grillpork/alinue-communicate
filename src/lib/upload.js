@@ -1,5 +1,6 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
+).replace(/\/+$/, '');
 
 /**
  * แปลงไฟล์รูปภาพทั่วไป (JPG, PNG, WebP) เป็น WebP คุณภาพสูงและบีบอัดให้ขนาดเล็ก เพื่อการอัปโหลดที่เร็วที่สุด
