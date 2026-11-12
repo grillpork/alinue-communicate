@@ -139,22 +139,26 @@ export async function uploadToR2(rawFile, options = {}) {
     xhr.send(processedFile);
   });
 
-  // 4. แจ้ง Backend บันทึกข้อมูลลงฐานข้อมูล media table
-  try {
-    await fetch(`${API_BASE_URL}/api/upload/complete`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        fileKey,
-        url: publicUrl,
-        mimeType: contentType,
-        originalName: rawFile.name,
-        size: processedFile.size,
-        entityType: folder,
-      }),
-    });
-  } catch (err) {
-    console.warn('Failed to record media completion:', err);
+  // 4. แจ้ง Backend บันทึกข้อมูลลงฐานข้อมูล media table และตรวจสอบความปลอดภัยของภาพ (อนาจาร, อาวุธ, ความรุนแรง)
+  const completeRes = await fetch(`${API_BASE_URL}/api/upload/complete`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      fileKey,
+      url: publicUrl,
+      mimeType: contentType,
+      originalName: rawFile.name,
+      size: processedFile.size,
+      entityType: folder,
+    }),
+  });
+
+  const completeData = await completeRes.json().catch(() => ({}));
+  if (!completeRes.ok) {
+    throw new Error(
+      completeData.message ||
+        'รูปภาพไม่ผ่านการตรวจสอบความปลอดภัย กรุณาเลือกรูปภาพอื่น'
+    );
   }
 
   return {
