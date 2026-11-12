@@ -1,6 +1,5 @@
-const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
-).replace(/\/+$/, '');
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
 
 export function getAuthToken() {
   if (typeof window === 'undefined') return null;
@@ -71,8 +70,7 @@ export async function fetchApi(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `${API_BASE_URL}${cleanEndpoint}`;
+  const url = `${API_BASE_URL}${endpoint}`;
   const res = await fetch(url, {
     credentials: 'include',
     ...options,
