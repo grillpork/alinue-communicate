@@ -3,16 +3,22 @@ const API_BASE_URL = (
 ).replace(/\/+$/, '');
 
 /**
- * แปลงไฟล์รูปภาพทั่วไป (JPG, PNG, WebP) เป็น WebP คุณภาพสูงและบีบอัดให้ขนาดเล็ก เพื่อการอัปโหลดที่เร็วที่สุด
- * (หากเป็น GIF จะคงไฟล์เดิมไว้เพื่อรักษาภาพเคลื่อนไหว)
+ * แปลงไฟล์รูปภาพทั่วไป (JPG, PNG, WebP, AVIF) เป็น WebP คุณภาพสูงและบีบอัดให้ขนาดเล็ก เพื่อการอัปโหลดที่เร็วที่สุด
+ * (ไม่อนุญาต GIF หรือวิดีโอ)
  */
 export async function convertImageToWebP(file, quality = 0.85, maxDimension = 2048) {
-  // หากไม่ใช่รูปภาพ หรือเป็น GIF ให้คืนไฟล์เดิม
-  if (!file.type.startsWith('image/') || file.type === 'image/gif' || file.type === 'image/svg+xml') {
-    return file;
+  const mime = file.type?.toLowerCase() || '';
+
+  // ไม่อนุญาต GIF หรือ วิดีโอ
+  if (mime === 'image/gif' || mime.startsWith('video/')) {
+    throw new Error('ไม่อนุญาตให้อัปโหลดไฟล์ GIF หรือวิดีโอ (ระบบรองรับเฉพาะรูปภาพนิ่ง JPG, PNG, WebP เท่านั้น)');
   }
 
-  return new Promise((resolve) => {
+  if (!mime.startsWith('image/')) {
+    throw new Error('รองรับเฉพาะไฟล์รูปภาพ (JPG, PNG, WebP) เท่านั้น');
+  }
+
+  return new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
 
@@ -66,7 +72,7 @@ export async function convertImageToWebP(file, quality = 0.85, maxDimension = 20
 
     img.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      resolve(file);
+      reject(new Error('ไม่สามารถโหลดไฟล์รูปภาพนี้ได้'));
     };
 
     img.src = objectUrl;
@@ -75,7 +81,7 @@ export async function convertImageToWebP(file, quality = 0.85, maxDimension = 20
 
 /**
  * อัปโหลดไฟล์ตรงเข้า Cloudflare R2 ผ่านใบผ่านทางชั่วคราว (Presigned URL)
- * รองรับรูปภาพ (บีบอัดเป็น WebP อัตโนมัติ), GIF, วิดีโอ (WebM, MP4)
+ * รองรับเฉพาะรูปภาพนิ่งเท่านั้น (บีบอัดเป็น WebP อัตโนมัติ)
  *
  * @param {File} rawFile - ไฟล์ที่เลือกจาก input
  * @param {Object} options - { folder, onProgress, token }
@@ -84,9 +90,25 @@ export async function convertImageToWebP(file, quality = 0.85, maxDimension = 20
 export async function uploadToR2(rawFile, options = {}) {
   const { folder = 'posts', onProgress, token } = options;
 
+  // ตรวจสอบประเภทไฟล์ทันที
+  const mime = rawFile.type?.toLowerCase() || '';
+  if (mime === 'image/gif' || mime.startsWith('video/')) {
+    throw new Error('ไม่อนุญาตให้อัปโหลดไฟล์ GIF หรือวิดีโอ (ระบบรองรับเฉพาะรูปภาพนิ่ง JPG, PNG, WebP เท่านั้น)');
+  }
+
+  const ALLOWED_IMAGE_TYPES = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/avif',
+  ];
+  if (!ALLOWED_IMAGE_TYPES.includes(mime)) {
+    throw new Error('ไม่อนุญาตให้อัปโหลดไฟล์ประเภทนี้ (รองรับเฉพาะรูปภาพ JPG, PNG, WebP เท่านั้น)');
+  }
+
   // 1. แปลงรูปเป็น .webp ล่วงหน้าใน Browser เพื่อให้ขนาดไฟล์เล็กลง 70-80% และอัปโหลดได้ไวที่สุด
   const processedFile = await convertImageToWebP(rawFile);
-  const isVideo = processedFile.type.startsWith('video/');
 
   // 2. ขอใบผ่านทางชั่วคราว (Presigned PUT URL) จาก Backend
   const headers = { 'Content-Type': 'application/json' };
@@ -99,9 +121,9 @@ export async function uploadToR2(rawFile, options = {}) {
     headers,
     body: JSON.stringify({
       filename: processedFile.name,
-      contentType: processedFile.type,
+      contentType: 'image/webp',
       folder,
-      convertToWebp: !isVideo && processedFile.type !== 'image/gif',
+      convertToWebp: true,
     }),
   });
 

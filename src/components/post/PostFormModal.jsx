@@ -441,17 +441,17 @@ export default function PostFormModal({
           </div>
         )}
 
-        {/* Hidden File Input for Image Upload */}
+        {/* Hidden File Input for Image Upload (เฉพาะรูปภาพ JPG, PNG, WebP) */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,image/avif"
           multiple
           className="hidden"
           onChange={handleFileInputChange}
         />
 
-        {/* Footer: Media Action Bar (Image, GIF, Video, Smile, etc.) & Post / Update Button */}
+        {/* Footer: Media Action Bar (Image, Smile, Poll, etc.) & Post / Update Button */}
         <div className="mt-5 flex items-center justify-between pt-3 border-t border-gray-100">
           <div className="flex items-center gap-1 sm:gap-2 text-gray-400">
             {/* Image Upload */}
@@ -460,11 +460,11 @@ export default function PostFormModal({
               disabled={isUploading}
               onClick={() => {
                 if (fileInputRef.current) {
-                  fileInputRef.current.accept = "image/*";
+                  fileInputRef.current.accept = "image/png,image/jpeg,image/webp,image/avif";
                   fileInputRef.current.click();
                 }
               }}
-              title="เพิ่มรูปภาพ"
+              title="เพิ่มรูปภาพ (JPG, PNG, WebP)"
               className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50 cursor-pointer"
             >
               {isUploading ? (
@@ -472,40 +472,6 @@ export default function PostFormModal({
               ) : (
                 <ImageIcon className="h-4 w-4" />
               )}
-            </button>
-
-            {/* GIF */}
-            <button
-              type="button"
-              disabled={isUploading}
-              onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.accept = "image/gif";
-                  fileInputRef.current.click();
-                }
-              }}
-              title="เพิ่ม GIF"
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <span className="flex h-4 w-5 items-center justify-center rounded border border-current text-[9px] font-bold tracking-tighter leading-none">
-                GIF
-              </span>
-            </button>
-
-            {/* Video */}
-            <button
-              type="button"
-              disabled={isUploading}
-              onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.accept = "video/*";
-                  fileInputRef.current.click();
-                }
-              }}
-              title="เพิ่มวิดีโอ"
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <Video className="h-4 w-4" />
             </button>
 
             {/* Smile / Emoji */}

@@ -206,7 +206,7 @@ export default function PostFeed() {
           </button>
         </div>
 
-        {/* Media Icons Bar: Image, GIF, Video, Smile, Poll, Location, Music (สไตล์ Threads) */}
+        {/* Media Icons Bar: Image, Smile, Poll, Location, Music (สไตล์ Threads) */}
         <div className="mt-3 pt-2.5 border-t border-gray-100/70 flex items-center gap-1 sm:gap-2 text-gray-400">
           <button
             type="button"
@@ -215,35 +215,9 @@ export default function PostFeed() {
               handleOpenPostModal();
             }}
             className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="เพิ่มรูปภาพ"
+            title="เพิ่มรูปภาพ (JPG, PNG, WebP)"
           >
             <ImageIcon className="h-4 w-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="เพิ่ม GIF"
-          >
-            <span className="flex h-4 w-5 items-center justify-center rounded border border-current text-[9px] font-bold tracking-tighter leading-none">
-              GIF
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="เพิ่มวิดีโอ"
-          >
-            <Video className="h-4 w-4" />
           </button>
 
           <button

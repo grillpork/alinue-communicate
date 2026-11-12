@@ -137,18 +137,18 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden max-h-[92vh] flex flex-col">
-        {/* Hidden File Inputs */}
+        {/* Hidden File Inputs (เฉพาะไฟล์รูปภาพนิ่ง JPG, PNG, WebP) */}
         <input
           ref={avatarInputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,image/avif"
           className="hidden"
           onChange={handleAvatarChange}
         />
         <input
           ref={bannerInputRef}
           type="file"
-          accept="image/*"
+          accept="image/png,image/jpeg,image/webp,image/avif"
           className="hidden"
           onChange={handleBannerChange}
         />

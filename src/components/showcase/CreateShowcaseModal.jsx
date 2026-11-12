@@ -24,12 +24,24 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const mime = file.type?.toLowerCase() || '';
+    if (mime === 'image/gif' || mime.startsWith('video/')) {
+      setError('ไม่อนุญาตให้อัปโหลดไฟล์ GIF หรือวิดีโอ (ระบบรองรับเฉพาะรูปภาพ JPG, PNG, WebP เท่านั้น)');
+      return;
+    }
+
+    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
+    if (!ALLOWED.includes(mime)) {
+      setError('ระบบรองรับเฉพาะรูปภาพ JPG, PNG, WebP เท่านั้น');
+      return;
+    }
+
     setError('');
     setSelectedFile(file);
     const objectUrl = URL.createObjectURL(file);
     setFilePreview({
       url: objectUrl,
-      type: file.type.startsWith('video/') ? 'video' : 'image',
+      type: 'image',
     });
   };
 
@@ -41,7 +53,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
     }
 
     if (!selectedFile) {
-      setError('กรุณาเลือกรูปภาพหรือคลิปวิดีโอผลงาน');
+      setError('กรุณาเลือกรูปภาพผลงาน');
       return;
     }
 
@@ -50,7 +62,6 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
       setError('');
 
       // 1. Upload ไฟล์ขึ้น Cloudflare R2
-      const isVideo = selectedFile.type.startsWith('video/');
       const uploadResult = await uploadToR2(selectedFile, {
         folder: 'showcases',
         onProgress: (percent) => setUploadProgress(percent),
@@ -70,10 +81,10 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
         description: description.trim() || null,
         mediaUrls: [mediaUrl],
         media_urls: [mediaUrl],
-        mediaType: isVideo ? 'video' : 'image',
-        media_type: isVideo ? 'video' : 'image',
-        coverUrl: isVideo ? null : mediaUrl,
-        cover_url: isVideo ? null : mediaUrl,
+        mediaType: 'image',
+        media_type: 'image',
+        coverUrl: mediaUrl,
+        cover_url: mediaUrl,
         tags,
       });
 
@@ -128,31 +139,23 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
           {/* Media Upload Area */}
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              ไฟล์ผลงาน (รูปภาพ หรือ วิดีโอ) *
+              ไฟล์รูปภาพผลงาน (เฉพาะ JPG, PNG, WebP) *
             </label>
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,video/*"
+              accept="image/png,image/jpeg,image/webp,image/avif"
               className="hidden"
               onChange={handleFileSelect}
             />
 
             {filePreview ? (
-              <div className="relative aspect-16/9 w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-900">
-                {filePreview.type === 'video' ? (
-                  <video
-                    src={filePreview.url}
-                    className="h-full w-full object-cover"
-                    controls
-                  />
-                ) : (
-                  <img
-                    src={filePreview.url}
-                    alt="Preview"
-                    className="h-full w-full object-cover"
-                  />
-                )}
+              <div className="relative aspect-16/9 w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+                <img
+                  src={filePreview.url}
+                  alt="Preview"
+                  className="h-full w-full object-cover"
+                />
                 <button
                   type="button"
                   onClick={() => {
