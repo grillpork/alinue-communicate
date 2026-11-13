@@ -4,16 +4,13 @@ import React, { useState, useRef } from 'react';
 import {
   X,
   Upload,
-  Image as ImageIcon,
   Loader2,
-  Sparkles,
   Send,
 } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useCreateStoryMutation } from '@/services/story';
 
 export default function CreateStoryModal({ isOpen, onClose }) {
-  const [caption, setCaption] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -52,7 +49,6 @@ export default function CreateStoryModal({ isOpen, onClose }) {
     setError('');
     setSelectedFile(null);
     setFilePreview(null);
-    setCaption('');
     onClose();
   };
 
@@ -79,7 +75,6 @@ export default function CreateStoryModal({ isOpen, onClose }) {
       await createMutation.mutateAsync({
         mediaUrl,
         mediaType: 'image',
-        caption: caption.trim() || null,
       });
 
       // ปิด modal และรีเซ็ต
@@ -96,36 +91,29 @@ export default function CreateStoryModal({ isOpen, onClose }) {
   return (
     <div
       onClick={handleClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-md rounded-3xl bg-white p-5 sm:p-6 shadow-2xl border border-gray-100 animate-in zoom-in-95 duration-150 overflow-hidden"
       >
-        {/* Header */}
+        {/* Header (ขาว ดำ สไตล์มินิมอล ไม่มี icon spark และไม่มีคำอธิบาย) */}
         <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-400 text-white shadow-xs">
-              <Sparkles className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-gray-900">เพิ่มเรื่องราวของคุณ (Story)</h3>
-              <p className="text-[11px] text-gray-400">เรื่องราวของคุณจะแสดงอยู่เป็นเวลา 24 ชั่วโมง</p>
-            </div>
-          </div>
+          <h3 className="text-sm font-bold text-gray-900">เพิ่มเรื่องราวของคุณ (Story)</h3>
 
           <button
             type="button"
             onClick={handleClose}
             disabled={isUploading}
-            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
+            aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {error && (
-          <div className="mt-3 rounded-xl bg-rose-50 p-2.5 text-xs text-rose-600 font-medium">
+          <div className="mt-3 rounded-xl bg-gray-100 border border-gray-200 p-2.5 text-xs text-gray-900 font-medium">
             {error}
           </div>
         )}
@@ -142,19 +130,12 @@ export default function CreateStoryModal({ isOpen, onClose }) {
 
           {/* Media Preview / Upload Area */}
           {filePreview ? (
-            <div className="relative aspect-9/14 max-h-[360px] w-full overflow-hidden rounded-2xl bg-black flex items-center justify-center shadow-inner group">
+            <div className="relative aspect-9/14 max-h-[380px] w-full overflow-hidden rounded-2xl bg-black flex items-center justify-center shadow-inner group">
               <img
                 src={filePreview}
                 alt="Story preview"
                 className="h-full w-full object-contain"
               />
-
-              {/* Caption Preview Overlay */}
-              {caption.trim() && (
-                <div className="absolute bottom-3 inset-x-3 rounded-xl bg-black/60 px-3 py-1.5 backdrop-blur-md text-center text-xs text-white">
-                  {caption}
-                </div>
-              )}
 
               <button
                 type="button"
@@ -163,7 +144,8 @@ export default function CreateStoryModal({ isOpen, onClose }) {
                   setFilePreview(null);
                 }}
                 disabled={isUploading}
-                className="absolute top-2.5 right-2.5 rounded-full bg-black/60 p-1.5 text-white hover:bg-black transition-all cursor-pointer"
+                className="absolute top-2.5 right-2.5 rounded-full bg-black/70 p-1.5 text-white hover:bg-black transition-all cursor-pointer"
+                aria-label="Remove image"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -171,12 +153,12 @@ export default function CreateStoryModal({ isOpen, onClose }) {
           ) : (
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="flex aspect-9/14 max-h-[320px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-gray-50/50 hover:bg-gray-50 transition-all cursor-pointer p-6 text-center"
+              className="flex aspect-9/14 max-h-[340px] w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-900 bg-gray-50/60 hover:bg-gray-50 transition-colors cursor-pointer p-6 text-center group"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-xs text-gray-500 mb-2">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-xs text-gray-700 group-hover:scale-105 transition-transform mb-2 border border-gray-100">
                 <Upload className="h-5 w-5" />
               </div>
-              <p className="text-xs font-semibold text-gray-800">
+              <p className="text-xs font-semibold text-gray-900">
                 คลิกเพื่อเลือกรูปภาพสำหรับ Story
               </p>
               <p className="text-[11px] text-gray-400 mt-0.5">
@@ -185,28 +167,13 @@ export default function CreateStoryModal({ isOpen, onClose }) {
             </div>
           )}
 
-          {/* Caption Input */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              คำบรรยาย (ไม่บังคับ)
-            </label>
-            <input
-              type="text"
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="เขียนข้อความประกอบ Story ของคุณ..."
-              maxLength={200}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none"
-            />
-          </div>
-
-          {/* Actions */}
+          {/* Actions (Theme ขาว ดำ) */}
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
               onClick={handleClose}
               disabled={isUploading}
-              className="rounded-xl px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="rounded-xl px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
             >
               ยกเลิก
             </button>
@@ -214,7 +181,7 @@ export default function CreateStoryModal({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={!selectedFile || isUploading}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 px-5 py-2 text-xs font-bold text-white shadow-md hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="flex items-center gap-1.5 rounded-xl bg-black px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 transition-all cursor-pointer"
             >
               {isUploading ? (
                 <>
@@ -234,4 +201,3 @@ export default function CreateStoryModal({ isOpen, onClose }) {
     </div>
   );
 }
-

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useStoriesQuery } from '@/services/story';
 import { useMeQuery } from '@/services/auth';
 import CreateStoryModal from './CreateStoryModal';
@@ -90,7 +90,7 @@ export default function StoriesBar() {
           <div className="relative mt-1 z-10">
             <div className={`relative h-11 w-11 rounded-full overflow-hidden ring-2 ${
               myStoryGroup
-                ? 'ring-gradient ring-pink-500'
+                ? 'ring-black'
                 : 'ring-white shadow-xs'
             } bg-gray-100 flex items-center justify-center`}>
               {currentUser?.avatarUrl ? (
@@ -106,14 +106,14 @@ export default function StoriesBar() {
               )}
             </div>
 
-            {/* Blue Plus Icon Button (คลิกเปิด Modal เพิ่ม Story โดยตรง) */}
+            {/* Black Plus Icon Button (Theme ขาว ดำ) */}
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsCreateOpen(true);
               }}
-              className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white ring-2 ring-white shadow-xs hover:bg-blue-600 hover:scale-110 active:scale-90 transition-all cursor-pointer"
+              className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white ring-2 ring-white shadow-xs hover:bg-gray-800 hover:scale-110 active:scale-90 transition-all cursor-pointer"
               title="เพิ่ม Story"
             >
               <Plus className="h-3 w-3 stroke-[3]" />
@@ -169,16 +169,16 @@ export default function StoriesBar() {
               {/* Gradient Dark Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/35" />
 
-              {/* Floating User Avatar at Top with Instagram-style Ring */}
+              {/* Floating User Avatar at Top with Clean Ring */}
               <div className="relative z-10 self-start mt-0.5">
                 <div
                   className={`p-0.5 rounded-full ${
                     hasUnviewed
-                      ? 'bg-gradient-to-tr from-amber-400 via-rose-500 to-pink-500'
-                      : 'bg-white/40'
+                      ? 'bg-white ring-1 ring-white/90 shadow-xs'
+                      : 'bg-white/30'
                   }`}
                 >
-                  <div className="h-7 w-7 rounded-full overflow-hidden bg-white ring-1 ring-white/80">
+                  <div className="h-7 w-7 rounded-full overflow-hidden bg-black ring-1 ring-black/40">
                     {group.user.avatar ? (
                       <img
                         src={group.user.avatar}

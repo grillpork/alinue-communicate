@@ -250,8 +250,8 @@ export default function StoryViewerModal({
               onClick={onClose}
               className="flex items-center gap-2.5 min-w-0 group"
             >
-              {/* Avatar with Gradient Ring */}
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-pink-500/80 bg-gray-900">
+              {/* Avatar with Ring */}
+              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-white/80 bg-gray-900">
                 {author.avatar ? (
                   <img
                     src={author.avatar}
