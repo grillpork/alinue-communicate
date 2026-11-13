@@ -114,20 +114,20 @@ function PostImagesCarousel({ images, onImageClick }) {
 
   if (normalizedImages.length === 0) return null;
 
-  // กรณี 1 รูป: แสดงรูปเดี่ยวขนาดใหญ่ขอบมน
+  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ สไตล์ Threads (ล็อคความสูงสูงสุดเท่ากัน ไม่ crop ภาพทิ้ง)
   if (normalizedImages.length === 1) {
     const singleImage = normalizedImages[0];
     return (
-      <div className="mt-3 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+      <div className="mt-3 flex">
         <div
           onClick={() => onImageClick && onImageClick(singleImage.url)}
-          className="relative max-h-[460px] w-full overflow-hidden cursor-pointer"
+          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-gray-150/90 bg-gray-50/50 shadow-2xs cursor-pointer group"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={singleImage.url}
             alt={singleImage.name || 'Post image'}
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-[1.01]"
+            className="block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
           />
         </div>
       </div>
@@ -146,7 +146,7 @@ function PostImagesCarousel({ images, onImageClick }) {
           {normalizedImages.map((img, idx) => (
             <div
               key={img.id || idx}
-              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_68%] aspect-[3/4] sm:aspect-[4/5] overflow-hidden rounded-2xl border border-gray-100/90 bg-gray-50 shadow-2xs"
+              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-gray-100/90 bg-gray-50 shadow-2xs"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
