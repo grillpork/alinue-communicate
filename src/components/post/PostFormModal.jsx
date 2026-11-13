@@ -34,6 +34,9 @@ export default function PostFormModal({
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Files currently in upload queue (for Skeleton loading cards)
+  const [uploadingFiles, setUploadingFiles] = useState([]);
+
   // Moderation Alert & Appeal States
   const [moderationAlert, setModerationAlert] = useState(null);
   const [showAppealForm, setShowAppealForm] = useState(false);
@@ -117,13 +120,17 @@ export default function PostFormModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [suggestionType, onClose]);
 
-  // ล้างการแจ้งเตือนเมื่อเปิด/ปิด Modal
+  // ล้างการแจ้งเตือนและคิวอัปโหลดเมื่อเปิด/ปิด Modal
   useEffect(() => {
     if (!isOpen) {
       setModerationAlert(null);
       setShowAppealForm(false);
       setAppealSuccess(false);
       setAppealReason("");
+      uploadingFiles.forEach((u) => {
+        if (u.previewUrl) URL.revokeObjectURL(u.previewUrl);
+      });
+      setUploadingFiles([]);
     }
   }, [isOpen]);
 
@@ -185,18 +192,45 @@ export default function PostFormModal({
     }
   };
 
-  // จัดการอัปโหลดไฟล์รูปภาพตรงเข้า Cloudflare R2 พร้อมแปลงเป็น WebP
+  // จัดการอัปโหลดไฟล์รูปภาพตรงเข้า Cloudflare R2 พร้อมแปลงเป็น WebP และแสดง Skeleton Card
   const handleFiles = async (fileList) => {
+    const rawFiles = Array.from(fileList || []);
+    if (rawFiles.length === 0) return;
+
     setIsUploading(true);
     setModerationAlert(null);
     setShowAppealForm(false);
     setAppealSuccess(false);
     setAppealReason("");
 
-    try {
-      const files = Array.from(fileList);
-      for (const file of files) {
-        const result = await uploadToR2(file, { folder: "posts" });
+    // สร้างคิว Skeleton Cards ทันที เพื่อให้ User เห็นกล่อง Preview แบบ Realtime โดยไม่ต้องรอโหลด
+    const queueItems = rawFiles.map((file) => ({
+      tempId: `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      file,
+      name: file.name,
+      previewUrl: URL.createObjectURL(file),
+      progress: 5,
+    }));
+
+    setUploadingFiles((prev) => [...prev, ...queueItems]);
+
+    // ทยอยอัปโหลดทีละไฟล์ พร้อมอัปเดตเกจความคืบหน้า (Progress)
+    for (const item of queueItems) {
+      try {
+        const result = await uploadToR2(item.file, {
+          folder: "posts",
+          onProgress: (percent) => {
+            setUploadingFiles((prev) =>
+              prev.map((u) =>
+                u.tempId === item.tempId
+                  ? { ...u, progress: Math.max(5, percent) }
+                  : u
+              )
+            );
+          },
+        });
+
+        // อัปโหลดสำเร็จ: นำข้อมูลรูปจริงเข้า images
         setImages((prev) => [
           ...prev,
           {
@@ -205,44 +239,50 @@ export default function PostFormModal({
             name: result.originalName,
           },
         ]);
-      }
-    } catch (err) {
-      console.error("Failed to upload image to R2:", err);
+      } catch (err) {
+        console.error("Failed to upload image to R2:", err);
 
-      if (err.isTimedOut) {
-        setModerationAlert({
-          type: "timeout",
-          title: "พักการใช้งานชั่วคราว",
-          message:
-            err.message ||
-            `ระบบระงับการอัปโหลดชั่วคราวเป็นเวลา ${err.remainingMinutes || 15} นาที เนื่องจากตรวจพบภาพที่ไม่สอดคล้องกับมาตรฐานชุมชนซ้ำหลายครั้ง เพื่อความปลอดภัยของทุกคนครับ`,
-          reasons: err.reasons || [],
-        });
-      } else if (err.isModerationViolation || (err.reasons && err.reasons.length > 0)) {
-        setModerationAlert({
-          type: "moderation",
-          title: "ขออภัย ไม่สามารถใช้รูปภาพนี้ได้",
-          message:
-            "ระบบตรวจพบเนื้อหาที่อาจขัดต่อมาตรฐานความปลอดภัยของชุมชน เพื่อรักษาบรรยากาศที่ดีและปลอดภัยสำหรับผู้ใช้งานทุกคน รบกวนเลือกรูปภาพอื่นนะครับ",
-          reasons:
-            err.reasons && err.reasons.length > 0
-              ? err.reasons
-              : [err.message || "ตรวจพบเนื้อหาที่อาจไม่เหมาะสม"],
-          logId: err.logId,
-          imageUrl: err.imageUrl,
-        });
-      } else {
-        setModerationAlert({
-          type: "error",
-          title: "ไม่สามารถอัปโหลดรูปภาพได้",
-          message:
-            err.message || "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ กรุณาลองใหม่อีกครั้งครับ",
-          reasons: [],
-        });
+        if (err.isTimedOut) {
+          setModerationAlert({
+            type: "timeout",
+            title: "พักการใช้งานชั่วคราว",
+            message:
+              err.message ||
+              `ระบบระงับการอัปโหลดชั่วคราวเป็นเวลา ${err.remainingMinutes || 15} นาที เนื่องจากตรวจพบภาพที่ไม่สอดคล้องกับมาตรฐานชุมชนซ้ำหลายครั้ง เพื่อความปลอดภัยของทุกคนครับ`,
+            reasons: err.reasons || [],
+          });
+        } else if (err.isModerationViolation || (err.reasons && err.reasons.length > 0)) {
+          setModerationAlert({
+            type: "moderation",
+            title: "ขออภัย ไม่สามารถใช้รูปภาพนี้ได้",
+            message:
+              "ระบบตรวจพบเนื้อหาที่อาจขัดต่อมาตรฐานความปลอดภัยของชุมชน เพื่อรักษาบรรยากาศที่ดีและปลอดภัยสำหรับผู้ใช้งานทุกคน รบกวนเลือกรูปภาพอื่นนะครับ",
+            reasons:
+              err.reasons && err.reasons.length > 0
+                ? err.reasons
+                : [err.message || "ตรวจพบเนื้อหาที่อาจไม่เหมาะสม"],
+            logId: err.logId,
+            imageUrl: err.imageUrl,
+          });
+        } else {
+          setModerationAlert({
+            type: "error",
+            title: "ไม่สามารถอัปโหลดรูปภาพได้",
+            message:
+              err.message || "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ กรุณาลองใหม่อีกครั้งครับ",
+            reasons: [],
+          });
+        }
+      } finally {
+        // ลบ Skeleton Card ของไฟล์นี้ออก และคืน Memory ของ Object URL
+        setUploadingFiles((prev) =>
+          prev.filter((u) => u.tempId !== item.tempId)
+        );
+        URL.revokeObjectURL(item.previewUrl);
       }
-    } finally {
-      setIsUploading(false);
     }
+
+    setIsUploading(false);
   };
 
   // ส่งคำร้องอุทธรณ์ไปยัง Admin Backoffice
@@ -505,13 +545,14 @@ export default function PostFormModal({
           </div>
         )}
 
-        {/* Image Previews Grid */}
-        {!isDragging && images.length > 0 && (
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+        {/* Image Previews & Skeleton Loading Grid */}
+        {!isDragging && (images.length > 0 || uploadingFiles.length > 0) && (
+          <div className="mt-3 flex gap-3 overflow-x-auto pb-1 select-none">
+            {/* 1. รูปภาพที่อัปโหลดเสร็จแล้ว */}
             {images.map((img) => (
               <div
                 key={img.id}
-                className="group relative h-28 w-44 shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-xs"
+                className="group relative h-28 w-44 shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-xs animate-in fade-in duration-200"
               >
                 {/* Image */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -525,10 +566,53 @@ export default function PostFormModal({
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(img.id)}
-                  className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-sm backdrop-blur-xs hover:bg-white hover:text-black transition-all"
+                  className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-sm backdrop-blur-xs hover:bg-white hover:text-black transition-all cursor-pointer"
                 >
                   <X className="h-3 w-3 stroke-[2.5]" />
                 </button>
+              </div>
+            ))}
+
+            {/* 2. Skeleton Loading Cards สำหรับภาพที่กำลังอัปโหลด */}
+            {uploadingFiles.map((upload) => (
+              <div
+                key={upload.tempId}
+                className="relative h-28 w-44 shrink-0 overflow-hidden rounded-2xl border border-gray-200/90 bg-gray-100 shadow-xs animate-in fade-in duration-200"
+              >
+                {/* Local Preview แบบ Blur บางๆ เพื่อให้ User เห็นรูปทันที */}
+                {upload.previewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={upload.previewUrl}
+                    alt={upload.name}
+                    className="h-full w-full object-cover blur-[2px] opacity-60 scale-105"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-gray-200 animate-pulse" />
+                )}
+
+                {/* Shimmer Pulse */}
+                <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />
+
+                {/* Center Loading Status */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/30 backdrop-blur-[1px] p-2 text-center">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-sm">
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-800" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-white drop-shadow-sm">
+                    {upload.progress > 0 && upload.progress < 100
+                      ? `กำลังอัปโหลด ${upload.progress}%`
+                      : "กำลังตรวจสอบ..."}
+                  </span>
+                </div>
+
+                {/* Bottom Progress Bar */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-150"
+                    style={{ width: `${Math.min(100, Math.max(8, upload.progress))}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>

@@ -273,10 +273,41 @@ export default function PostFeed() {
 
       {/* 3. Feed List (ดึงจาก Neon DB จริง) */}
       <div className="divide-y divide-gray-100">
+        {/* Pending Post Skeleton (แสดงทันทีกำลังสร้างโพสต์) */}
+        {createPostMutation.isPending && (
+          <div className="p-4 sm:p-5 border-b border-gray-100 bg-gray-50/60 animate-pulse transition-all">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200" />
+              <div className="flex-1 space-y-2 py-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-3.5 w-28 rounded-full bg-gray-200" />
+                  <span className="text-[11px] font-medium text-gray-400">กำลังเผยแพร่...</span>
+                </div>
+                <div className="h-3 w-3/4 rounded-full bg-gray-200/80" />
+                <div className="h-44 w-full rounded-2xl bg-gray-200/60 mt-3" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-500 mb-2" />
-            <p className="text-xs">Loading posts from database...</p>
+          <div className="divide-y divide-gray-100">
+            {[1, 2, 3].map((n) => (
+              <div key={n} className="p-4 sm:p-5 animate-pulse">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200" />
+                  <div className="flex-1 space-y-2.5 py-1">
+                    <div className="flex items-center gap-2">
+                      <div className="h-3.5 w-32 rounded-full bg-gray-200" />
+                      <div className="h-3 w-16 rounded-full bg-gray-100" />
+                    </div>
+                    <div className="h-3.5 w-5/6 rounded-full bg-gray-200/80" />
+                    <div className="h-3 w-1/2 rounded-full bg-gray-150" />
+                    <div className="h-44 w-full rounded-2xl bg-gray-150/80 mt-3" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : posts.length === 0 ? (
           searchQuery.trim() ? (
