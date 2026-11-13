@@ -118,9 +118,9 @@ export default function PostFeed() {
   };
 
   return (
-    <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-3 sm:px-0 pt-4 sm:pt-6 pb-12">
+    <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-0 pt-3 sm:pt-6 pb-12">
       {/* 1. Search Bar with Live Popup */}
-      <div ref={searchContainerRef} className="relative mb-5">
+      <div ref={searchContainerRef} className="relative mb-4 px-3 sm:px-4">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
           <Search className="h-4 w-4" />
         </div>
@@ -169,105 +169,107 @@ export default function PostFeed() {
       </div>
 
       {/* 2. Top Post Input Trigger (แสดง User จริง หรือปุ่มชวนเข้าสู่ระบบ พร้อม Icon บาร์ Image, GIF, Video สไตล์ Threads) */}
-      <div
-        onClick={handleOpenPostModal}
-        className="rounded-2xl border border-gray-100 bg-white py-3 px-3 sm:px-4 cursor-pointer hover:bg-gray-50/50 transition-colors shadow-2xs mb-4"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-full ring-2 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-              {currentUser?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={currentUser.avatarUrl}
-                  alt={currentUser.displayName || currentUser.username}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <User className="h-5 w-5 text-gray-400" />
-              )}
+      <div className="px-3 sm:px-4 mb-4">
+        <div
+          onClick={handleOpenPostModal}
+          className="rounded-2xl border border-gray-100 bg-white py-3 px-3 sm:px-4 cursor-pointer hover:bg-gray-50/50 transition-colors shadow-2xs"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-9 w-9 rounded-full ring-2 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
+                {currentUser?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.displayName || currentUser.username}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+              <span className="text-xs sm:text-sm text-gray-400 font-normal truncate">
+                {currentUser
+                  ? `${currentUser.displayName || currentUser.username}, มีอะไรใหม่...`
+                  : 'Sign in to share your design...'}
+              </span>
             </div>
-            <span className="text-xs sm:text-sm text-gray-400 font-normal truncate">
-              {currentUser
-                ? `${currentUser.displayName || currentUser.username}, มีอะไรใหม่...`
-                : 'Sign in to share your design...'}
-            </span>
+
+            {/* Posts Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPostModal();
+              }}
+              className="rounded-full bg-black hover:bg-gray-800 text-white text-xs sm:text-sm font-medium px-4 py-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer shrink-0"
+            >
+              {currentUser ? 'Posts' : 'Sign in'}
+            </button>
           </div>
 
-          {/* Posts Button */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="rounded-full bg-black hover:bg-gray-800 text-white text-xs sm:text-sm font-medium px-4 py-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer shrink-0"
-          >
-            {currentUser ? 'Posts' : 'Sign in'}
-          </button>
-        </div>
+          {/* Media Icons Bar: Image, Smile, Poll, Location, Music (สไตล์ Threads) */}
+          <div className="mt-3 pt-2.5 border-t border-gray-100/70 flex items-center gap-1 sm:gap-2 text-gray-400">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPostModal();
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="เพิ่มรูปภาพ (JPG, PNG, WebP)"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </button>
 
-        {/* Media Icons Bar: Image, Smile, Poll, Location, Music (สไตล์ Threads) */}
-        <div className="mt-3 pt-2.5 border-t border-gray-100/70 flex items-center gap-1 sm:gap-2 text-gray-400">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="เพิ่มรูปภาพ (JPG, PNG, WebP)"
-          >
-            <ImageIcon className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPostModal();
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="อิโมจิ"
+            >
+              <Smile className="h-4 w-4" />
+            </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="อิโมจิ"
-          >
-            <Smile className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPostModal();
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="รายการ / โพลล์"
+            >
+              <AlignLeft className="h-4 w-4" />
+            </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="รายการ / โพลล์"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPostModal();
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="สถานที่"
+            >
+              <MapPin className="h-4 w-4" />
+            </button>
 
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="สถานที่"
-          >
-            <MapPin className="h-4 w-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleOpenPostModal();
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-            title="เพลง / เสียง"
-          >
-            <Music className="h-4 w-4" />
-          </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenPostModal();
+              }}
+              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
+              title="เพลง / เสียง"
+            >
+              <Music className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -275,7 +277,7 @@ export default function PostFeed() {
       <div className="divide-y divide-gray-100">
         {/* Pending Post Skeleton (แสดงทันทีกำลังสร้างโพสต์) */}
         {createPostMutation.isPending && (
-          <div className="p-4 sm:p-5 border-b border-gray-100 bg-gray-50/60 animate-pulse transition-all">
+          <div className="py-4 px-3.5 sm:px-4 border-b border-gray-100 bg-gray-50/60 animate-pulse transition-all">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200" />
               <div className="flex-1 space-y-2 py-1">
@@ -293,7 +295,7 @@ export default function PostFeed() {
         {isLoading ? (
           <div className="divide-y divide-gray-100">
             {[1, 2, 3].map((n) => (
-              <div key={n} className="p-4 sm:p-5 animate-pulse">
+              <div key={n} className="py-4 px-3.5 sm:px-4 animate-pulse">
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 shrink-0 rounded-full bg-gray-200" />
                   <div className="flex-1 space-y-2.5 py-1">

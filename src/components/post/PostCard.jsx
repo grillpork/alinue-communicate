@@ -118,7 +118,7 @@ function PostImagesCarousel({ images, onImageClick }) {
   if (normalizedImages.length === 1) {
     const singleImage = normalizedImages[0];
     return (
-      <div className="mt-3 flex">
+      <div className="mt-3 px-3.5 sm:px-4 flex">
         <div
           onClick={() => onImageClick && onImageClick(singleImage.url)}
           className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group"
@@ -142,7 +142,7 @@ function PostImagesCarousel({ images, onImageClick }) {
         ref={emblaRef}
         className="overflow-hidden cursor-grab active:cursor-grabbing"
       >
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 px-3.5 sm:px-4">
           {normalizedImages.map((img, idx) => (
             <div
               key={img.id || idx}
@@ -292,9 +292,9 @@ export default function PostCard({
   };
 
   return (
-    <article className="border-b border-gray-100 bg-white py-4 px-1 sm:px-2 transition-colors">
+    <article className="border-b border-gray-100 bg-white py-4 px-0 transition-colors">
       {/* Header: Author Avatar, Name, Dot, Time, More Options */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between px-3.5 sm:px-4">
         <div className="flex items-center gap-2.5">
           {/* Avatar & Name Linked to /[username] */}
           <Link
@@ -382,7 +382,7 @@ export default function PostCard({
 
       {/* Post Text Content */}
       {post.content && (
-        <div className="mt-2.5 text-xs sm:text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
+        <div className="mt-2.5 text-xs sm:text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words px-3.5 sm:px-4">
           {renderPostText(post.content)}
         </div>
       )}
@@ -394,7 +394,7 @@ export default function PostCard({
       />
 
       {/* Footer Actions: Heart, Comment, Share */}
-      <div className="mt-3 flex items-center gap-5 text-xs text-gray-600">
+      <div className="mt-3 flex items-center gap-5 text-xs text-gray-600 px-3.5 sm:px-4">
         {/* Like */}
         <button
           type="button"
@@ -439,7 +439,7 @@ export default function PostCard({
 
       {/* Comments Section */}
       {showComments && (
-        <div className="mt-3.5 pt-3 border-t border-gray-100 space-y-3">
+        <div className="mt-3.5 pt-3 border-t border-gray-100 space-y-3 px-3.5 sm:px-4">
           {/* View in Full Modal Button */}
           {commentsCount > 0 && (
             <div className="flex items-center justify-between pb-1 text-xs">
