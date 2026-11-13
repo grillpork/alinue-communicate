@@ -1,18 +1,79 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Heart, Check, Play, Images, Trash2 } from 'lucide-react';
+import {
+  Heart,
+  Check,
+  Play,
+  Images,
+  Trash2,
+  MoreHorizontal,
+  Copy,
+  Share2,
+  Flag,
+} from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
 
 export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const menuRef = useRef(null);
+
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
   const deleteMutation = useDeleteShowcaseMutation();
 
   const isOwner = currentUserId && Number(currentUserId) === Number(showcase.user_id);
   const isLiked = Boolean(showcase.is_liked);
   const likesCount = showcase.likes_count || 0;
+
+  // ปิดเมนูเมื่อคลิกนอกพื้นที่
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCopyLink = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+        setShowMenu(false);
+      }, 1200);
+    }
+  };
+
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowMenu(false);
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: showcase.title || 'Showcase ผลงานบน Alinue',
+            text: `ดูผลงาน "${showcase.title}" โดย @${author.username} บน Alinue`,
+            url,
+          });
+        } catch {
+          // Ignore cancel
+        }
+      } else {
+        handleCopyLink(e);
+      }
+    }
+  };
 
   // รายการ media (รองรับทั้ง Array หรือ JSON string)
   const mediaList = Array.isArray(showcase.media_urls || showcase.mediaUrls)
@@ -91,19 +152,92 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
           </div>
         )}
 
-        {/* Top-Left Badge: OPEN with Checkmark (ตรงตามแบบตัวอย่าง Pinterest) */}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-md bg-[#a3e635] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-black shadow-xs">
-          <span>OPEN</span>
-          <Check className="h-3 w-3 stroke-[3]" />
+        {/* Top-Left Badges: OPEN with Checkmark & Multi-image count */}
+        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
+          <div className="flex items-center gap-1 rounded-md bg-[#a3e635] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-black shadow-xs">
+            <span>OPEN</span>
+            <Check className="h-3 w-3 stroke-[3]" />
+          </div>
+
+          {mediaList.length > 1 && (
+            <div className="flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
+              <Images className="h-3 w-3" />
+              <span>{mediaList.length}</span>
+            </div>
+          )}
         </div>
 
-        {/* Top-Right Badge: Multi-image count (ถ้ามีมากกว่า 1 รูป) */}
-        {mediaList.length > 1 && (
-          <div className="absolute top-2.5 right-2.5 flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
-            <Images className="h-3 w-3" />
-            <span>{mediaList.length}</span>
-          </div>
-        )}
+        {/* Top-Right: Dropdown Menu (•••) */}
+        <div ref={menuRef} className="absolute top-2.5 right-2.5 z-20">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-black/45 hover:bg-black/70 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-xs"
+            aria-label="Showcase options"
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+
+          {showMenu && (
+            <div
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100 text-left"
+            >
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 text-gray-400" />
+                )}
+                <span>{copied ? 'คัดลอกลิงก์แล้ว!' : 'คัดลอกลิงก์'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Share2 className="h-3.5 w-3.5 text-gray-400" />
+                <span>แชร์ผลงาน</span>
+              </button>
+
+              {isOwner ? (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                  <span>ลบผลงานนี้</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMenu(false);
+                    alert('ส่งรายงานผลงานนี้ให้ผู้ดูแลระบบตรวจสอบแล้ว');
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  <Flag className="h-3.5 w-3.5 text-gray-400" />
+                  <span>รายงานผลงาน</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Bottom-Right: Floating Heart / Like Button */}
         <button

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
@@ -11,6 +11,9 @@ import {
   ArrowLeft,
   Briefcase,
   Plus,
+  SlidersHorizontal,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostCard from '@/components/post/PostCard';
@@ -34,6 +37,19 @@ function UserProfileContent() {
 
   const [activeTab, setActiveTab] = useState('showcases');
   const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
+  const [showcaseFilter, setShowcaseFilter] = useState('all'); // 'all' | 'popular' | 'image' | 'video'
+  const [showFilterMenu, setShowFilterMenu] = useState(false);
+  const filterMenuRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (filterMenuRef.current && !filterMenuRef.current.contains(e.target)) {
+        setShowFilterMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // 1. ดึงข้อมูลผู้ใช้ปัจจุบันที่ Login อยู่
   const { data: meData } = useMeQuery();
@@ -69,6 +85,24 @@ function UserProfileContent() {
     { enabled: Boolean(username) }
   );
   const showcases = showcasesData?.showcases || [];
+
+  const filteredShowcases = useMemo(() => {
+    let list = [...showcases];
+    if (showcaseFilter === 'popular') {
+      list.sort((a, b) => (b.likes_count || 0) - (a.likes_count || 0));
+    } else if (showcaseFilter === 'image') {
+      list = list.filter((s) => {
+        const cover = s.cover_url || s.coverUrl || '';
+        return s.media_type !== 'video' && !/\.(mp4|webm|mov|ogg)$/i.test(cover);
+      });
+    } else if (showcaseFilter === 'video') {
+      list = list.filter((s) => {
+        const cover = s.cover_url || s.coverUrl || '';
+        return s.media_type === 'video' || /\.(mp4|webm|mov|ogg)$/i.test(cover);
+      });
+    }
+    return list;
+  }, [showcases, showcaseFilter]);
 
   const updateProfileMutation = useUpdateProfileMutation();
 
@@ -176,34 +210,125 @@ function UserProfileContent() {
         {/* Tab: Showcase */}
         {activeTab === 'showcases' && (
           <div>
-            {/* Action Bar (หากเป็นโปรไฟล์ตัวเอง ให้มีปุ่มโพสต์ผลงาน) */}
-            {isSelf && (
-              <div className="mb-4 flex items-center justify-between rounded-2xl bg-gray-50/70 p-3 border border-gray-100">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-gray-700" />
-                  <span className="text-xs font-semibold text-gray-800">
-                    พื้นที่โชว์รูปและคลิปผลงานของคุณโดยเฉพาะ
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsShowcaseModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-black px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-gray-800 transition-all cursor-pointer"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>เพิ่มผลงาน</span>
-                </button>
+            {/* Showcase Action Bar (ด้านขวาบนมี Dropdown Menu สำหรับจัดเรียง/กรอง + ปุ่มเพิ่มผลงาน) */}
+            <div className="mb-4 flex items-center justify-between rounded-2xl bg-gray-50/70 p-3 border border-gray-100">
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-4 w-4 text-gray-700" />
+                <span className="text-xs font-semibold text-gray-800">
+                  {isSelf
+                    ? 'พื้นที่โชว์รูปและคลิปผลงานของคุณโดยเฉพาะ'
+                    : `ผลงาน Showcase ทั้งหมดของ @${username}`}
+                </span>
               </div>
-            )}
+
+              <div className="flex items-center gap-2">
+                {/* Dropdown Menu ด้านขวาบนของ Showcase */}
+                <div ref={filterMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowFilterMenu(!showFilterMenu)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-2xs hover:bg-gray-50 transition-all cursor-pointer"
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-gray-500" />
+                    <span>
+                      {showcaseFilter === 'all' && 'ทั้งหมด'}
+                      {showcaseFilter === 'popular' && 'ยอดนิยม'}
+                      {showcaseFilter === 'image' && 'เฉพาะรูปภาพ'}
+                      {showcaseFilter === 'video' && 'เฉพาะวิดีโอ'}
+                    </span>
+                    <ChevronDown className="h-3 w-3 text-gray-400" />
+                  </button>
+
+                  {showFilterMenu && (
+                    <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowcaseFilter('all');
+                          setShowFilterMenu(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                          showcaseFilter === 'all'
+                            ? 'bg-gray-100 font-bold text-black'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>ทั้งหมด (ล่าสุด)</span>
+                        {showcaseFilter === 'all' && <Check className="h-3.5 w-3.5 text-black" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowcaseFilter('popular');
+                          setShowFilterMenu(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                          showcaseFilter === 'popular'
+                            ? 'bg-gray-100 font-bold text-black'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>ยอดนิยมสูงสุด</span>
+                        {showcaseFilter === 'popular' && <Check className="h-3.5 w-3.5 text-black" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowcaseFilter('image');
+                          setShowFilterMenu(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                          showcaseFilter === 'image'
+                            ? 'bg-gray-100 font-bold text-black'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>เฉพาะรูปภาพ</span>
+                        {showcaseFilter === 'image' && <Check className="h-3.5 w-3.5 text-black" />}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowcaseFilter('video');
+                          setShowFilterMenu(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                          showcaseFilter === 'video'
+                            ? 'bg-gray-100 font-bold text-black'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>เฉพาะวิดีโอ</span>
+                        {showcaseFilter === 'video' && <Check className="h-3.5 w-3.5 text-black" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isSelf && (
+                  <button
+                    type="button"
+                    onClick={() => setIsShowcaseModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-black px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-gray-800 transition-all cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>เพิ่มผลงาน</span>
+                  </button>
+                )}
+              </div>
+            </div>
 
             {isShowcasesLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
                 <p className="text-xs">กำลังโหลดผลงาน Showcase...</p>
               </div>
-            ) : showcases.length > 0 ? (
+            ) : filteredShowcases.length > 0 ? (
               <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3.5 [column-fill:_balance]">
-                {showcases.map((sc) => (
+                {filteredShowcases.map((sc) => (
                   <div key={sc.id} className="break-inside-avoid mb-4">
                     <ShowcaseCard
                       showcase={sc}
