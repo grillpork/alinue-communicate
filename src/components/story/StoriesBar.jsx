@@ -26,6 +26,7 @@ export default function StoriesBar() {
     (g) => currentUser?.id && Number(g.user.id) === Number(currentUser.id)
   );
   const myStoryGroup = myStoryGroupIndex !== -1 ? storyGroups[myStoryGroupIndex] : null;
+  const hasMyStory = Boolean(myStoryGroup && myStoryGroup.stories?.length > 0 && myStoryGroup.latestStory?.mediaUrl);
 
   // เลื่อนบาร์ซ้าย-ขวาบนจอคอมพิวเตอร์
   const scroll = (direction) => {
@@ -70,60 +71,66 @@ export default function StoriesBar() {
         ref={scrollRef}
         className="flex items-center gap-2.5 overflow-x-auto py-1 px-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth"
       >
-        {/* 1. "Your Story" Card (ตรงตาม Reference ในรูป) */}
+        {/* 1. "Your Story" Card */}
         <div
           onClick={handleYourStoryClick}
           className="relative flex-none w-[78px] sm:w-[84px] h-[106px] sm:h-[114px] rounded-2xl sm:rounded-3xl bg-white border border-gray-100 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer flex flex-col items-center justify-between p-2 group hover:scale-[1.02]"
         >
-          {/* Background Preview (ถ้ามี story ตัวเอง) */}
-          {myStoryGroup?.latestStory?.mediaUrl ? (
-            <img
-              src={myStoryGroup.latestStory.mediaUrl}
-              alt="My latest story"
-              className="absolute inset-0 h-full w-full object-cover opacity-80 group-hover:opacity-90 transition-opacity"
-            />
+          {hasMyStory ? (
+            /* กรณีลง Story แล้ว: ซ่อนรูปโปรไฟล์และ plus icon แสดงแค่รูปที่ลง */
+            <>
+              <img
+                src={myStoryGroup.latestStory.mediaUrl}
+                alt="My latest story"
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
+              <div className="flex-1" />
+              <span className="relative z-10 text-[10px] sm:text-[11px] font-bold text-white drop-shadow-md truncate max-w-full px-0.5">
+                Your Story
+              </span>
+            </>
           ) : (
-            <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100" />
-          )}
+            /* กรณียังไม่มี Story: แสดงรูปโปรไฟล์และ plus icon เพื่อกดเพิ่ม */
+            <>
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-50 to-gray-100" />
 
-          {/* Avatar Container with Plus Button */}
-          <div className="relative mt-1 z-10">
-            <div className={`relative h-11 w-11 rounded-full overflow-hidden ring-2 ${
-              myStoryGroup
-                ? 'ring-black'
-                : 'ring-white shadow-xs'
-            } bg-gray-100 flex items-center justify-center`}>
-              {currentUser?.avatarUrl ? (
-                <img
-                  src={currentUser.avatarUrl}
-                  alt={currentUser.displayName || currentUser.username}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-gray-200 text-xs font-bold text-gray-700">
-                  {(currentUser?.displayName || currentUser?.username || 'U')[0].toUpperCase()}
+              {/* Avatar Container with Plus Button */}
+              <div className="relative mt-1 z-10">
+                <div className="relative h-11 w-11 rounded-full overflow-hidden ring-2 ring-white shadow-xs bg-gray-100 flex items-center justify-center">
+                  {currentUser?.avatarUrl ? (
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt={currentUser.displayName || currentUser.username}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gray-200 text-xs font-bold text-gray-700">
+                      {(currentUser?.displayName || currentUser?.username || 'U')[0].toUpperCase()}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Black Plus Icon Button (Theme ขาว ดำ) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsCreateOpen(true);
-              }}
-              className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white ring-2 ring-white shadow-xs hover:bg-gray-800 hover:scale-110 active:scale-90 transition-all cursor-pointer"
-              title="เพิ่ม Story"
-            >
-              <Plus className="h-3 w-3 stroke-[3]" />
-            </button>
-          </div>
+                {/* Black Plus Icon Button (Theme ขาว ดำ) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsCreateOpen(true);
+                  }}
+                  className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-black text-white ring-2 ring-white shadow-xs hover:bg-gray-800 hover:scale-110 active:scale-90 transition-all cursor-pointer"
+                  title="เพิ่ม Story"
+                >
+                  <Plus className="h-3 w-3 stroke-[3]" />
+                </button>
+              </div>
 
-          {/* Label: Your Story */}
-          <span className="relative z-10 text-[10px] sm:text-[11px] font-bold text-gray-800 truncate max-w-full px-0.5 group-hover:text-black">
-            Your Story
-          </span>
+              {/* Label: Your Story */}
+              <span className="relative z-10 text-[10px] sm:text-[11px] font-bold text-gray-800 truncate max-w-full px-0.5 group-hover:text-black">
+                Your Story
+              </span>
+            </>
+          )}
         </div>
 
         {/* 2. Loading Skeletons */}
