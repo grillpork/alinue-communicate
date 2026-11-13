@@ -120,52 +120,59 @@ export default function PostFeed() {
   return (
     <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-0 pt-3 sm:pt-6 pb-12">
       {/* 1. Search Bar with Live Popup */}
-      <div ref={searchContainerRef} className="relative mb-4 px-3 sm:px-4">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
-          <Search className="h-4 w-4" />
-        </div>
-        <input
-          type="text"
-          value={searchQuery}
-          onFocus={() => setIsSearchOpen(true)}
-          onClick={() => setIsSearchOpen(true)}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            if (!isSearchOpen) setIsSearchOpen(true);
-          }}
-          placeholder="Search Designers, tags, or posts..."
-          className="w-full rounded-2xl border border-gray-200/80 bg-gray-50/70 py-2.5 pl-10 pr-9 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-900 focus:bg-white focus:outline-none transition-all shadow-2xs"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => {
-              setSearchQuery('');
-              setIsSearchOpen(true);
+      <div ref={searchContainerRef} className="mb-4 px-3 sm:px-4">
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
+            <Search className="h-4 w-4" />
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onFocus={() => setIsSearchOpen(true)}
+            onClick={() => setIsSearchOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsSearchOpen(false);
+              }
             }}
-            className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (!isSearchOpen) setIsSearchOpen(true);
+            }}
+            placeholder="Search Designers, tags, or posts..."
+            className="w-full rounded-2xl border border-gray-200/80 bg-gray-50/70 py-2.5 pl-10 pr-9 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-900 focus:bg-white focus:outline-none transition-all shadow-2xs"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setIsSearchOpen(true);
+              }}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
 
-        {/* Live Search Popup */}
-        <SearchPopup
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          searchQuery={searchQuery}
-          onSelectTag={(tag) => {
-            setSearchQuery(tag);
-            setIsSearchOpen(false);
-          }}
-          onSelectPost={(post) => {
-            setActiveSharedPost(post);
-            setIsSearchOpen(false);
-          }}
-          matchingPosts={posts}
-          isLoadingPosts={isLoading}
-        />
+          {/* Live Search Popup */}
+          <SearchPopup
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+            searchQuery={searchQuery}
+            onSelectTag={(tag) => {
+              setSearchQuery(tag);
+              setIsSearchOpen(false);
+            }}
+            onSelectPost={(post) => {
+              setActiveSharedPost(post);
+              setIsSearchOpen(false);
+            }}
+            matchingPosts={posts}
+            isLoadingPosts={isLoading}
+          />
+        </div>
       </div>
 
       {/* 2. Top Post Input Trigger (แสดง User จริง หรือปุ่มชวนเข้าสู่ระบบ พร้อม Icon บาร์ Image, GIF, Video สไตล์ Threads) */}
