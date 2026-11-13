@@ -109,6 +109,7 @@ export default function PostFeed() {
       setIsModalOpen(false);
     } catch (err) {
       console.error('Failed to create post:', err);
+      throw err;
     }
   };
 

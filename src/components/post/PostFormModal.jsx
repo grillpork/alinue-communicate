@@ -11,9 +11,13 @@ import {
   AlignLeft,
   MapPin,
   Music,
+  ShieldAlert,
+  AlertTriangle,
+  Clock,
+  CheckCircle2,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
-import { uploadToR2 } from "@/lib/upload";
+import { uploadToR2, submitModerationAppeal } from "@/lib/upload";
 import { useSuggestedUsersQuery } from "@/services/user";
 
 export default function PostFormModal({
@@ -28,6 +32,14 @@ export default function PostFormModal({
   const [images, setImages] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Moderation Alert & Appeal States
+  const [moderationAlert, setModerationAlert] = useState(null);
+  const [showAppealForm, setShowAppealForm] = useState(false);
+  const [appealReason, setAppealReason] = useState("");
+  const [isAppealing, setIsAppealing] = useState(false);
+  const [appealSuccess, setAppealSuccess] = useState(false);
 
   // Tag (#) and User (@) Suggestion State
   const [suggestionType, setSuggestionType] = useState(null); // 'tag' | 'user' | null
@@ -105,6 +117,16 @@ export default function PostFormModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [suggestionType, onClose]);
 
+  // ล้างการแจ้งเตือนเมื่อเปิด/ปิด Modal
+  useEffect(() => {
+    if (!isOpen) {
+      setModerationAlert(null);
+      setShowAppealForm(false);
+      setAppealSuccess(false);
+      setAppealReason("");
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   // ตรวจจับการพิมพ์ # หรือ @ เพื่อเปิด Dropdown
@@ -166,6 +188,11 @@ export default function PostFormModal({
   // จัดการอัปโหลดไฟล์รูปภาพตรงเข้า Cloudflare R2 พร้อมแปลงเป็น WebP
   const handleFiles = async (fileList) => {
     setIsUploading(true);
+    setModerationAlert(null);
+    setShowAppealForm(false);
+    setAppealSuccess(false);
+    setAppealReason("");
+
     try {
       const files = Array.from(fileList);
       for (const file of files) {
@@ -181,8 +208,60 @@ export default function PostFormModal({
       }
     } catch (err) {
       console.error("Failed to upload image to R2:", err);
+
+      if (err.isTimedOut) {
+        setModerationAlert({
+          type: "timeout",
+          title: "พักการใช้งานชั่วคราว",
+          message:
+            err.message ||
+            `ระบบระงับการอัปโหลดชั่วคราวเป็นเวลา ${err.remainingMinutes || 15} นาที เนื่องจากตรวจพบภาพที่ไม่สอดคล้องกับมาตรฐานชุมชนซ้ำหลายครั้ง เพื่อความปลอดภัยของทุกคนครับ`,
+          reasons: err.reasons || [],
+        });
+      } else if (err.isModerationViolation || (err.reasons && err.reasons.length > 0)) {
+        setModerationAlert({
+          type: "moderation",
+          title: "ขออภัย ไม่สามารถใช้รูปภาพนี้ได้",
+          message:
+            "ระบบตรวจพบเนื้อหาที่อาจขัดต่อมาตรฐานความปลอดภัยของชุมชน เพื่อรักษาบรรยากาศที่ดีและปลอดภัยสำหรับผู้ใช้งานทุกคน รบกวนเลือกรูปภาพอื่นนะครับ",
+          reasons:
+            err.reasons && err.reasons.length > 0
+              ? err.reasons
+              : [err.message || "ตรวจพบเนื้อหาที่อาจไม่เหมาะสม"],
+          logId: err.logId,
+          imageUrl: err.imageUrl,
+        });
+      } else {
+        setModerationAlert({
+          type: "error",
+          title: "ไม่สามารถอัปโหลดรูปภาพได้",
+          message:
+            err.message || "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ กรุณาลองใหม่อีกครั้งครับ",
+          reasons: [],
+        });
+      }
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  // ส่งคำร้องอุทธรณ์ไปยัง Admin Backoffice
+  const handleSendAppeal = async () => {
+    if (!appealReason.trim() || isAppealing) return;
+    setIsAppealing(true);
+    try {
+      await submitModerationAppeal({
+        logId: moderationAlert?.logId,
+        imageUrl: moderationAlert?.imageUrl,
+        appealReason: appealReason.trim(),
+      });
+      setAppealSuccess(true);
+      setShowAppealForm(false);
+    } catch (appealErr) {
+      console.error("Appeal error:", appealErr);
+      alert(appealErr.message || "ไม่สามารถส่งคำร้องอุทธรณ์ได้ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsAppealing(false);
     }
   };
 
@@ -262,11 +341,25 @@ export default function PostFormModal({
     return elements;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (onSubmit) {
-      onSubmit({ content, images });
+      try {
+        setIsSubmitting(true);
+        await onSubmit({ content, images });
+        if (onClose) onClose();
+      } catch (err) {
+        console.error("Submit post error:", err);
+        setModerationAlert({
+          type: "error",
+          title: "ไม่สามารถโพสต์ได้",
+          message: err.message || "เกิดข้อผิดพลาดในการสร้างโพสต์ กรุณาลองใหม่อีกครั้ง",
+        });
+      } finally {
+        setIsSubmitting(false);
+      }
+    } else {
+      if (onClose) onClose();
     }
-    if (onClose) onClose();
   };
 
   return (
@@ -441,6 +534,124 @@ export default function PostFormModal({
           </div>
         )}
 
+        {/* Moderation Alert Banner (การแจ้งเตือนความปลอดภัยของภาพที่เข้าใจง่ายและสุภาพ) */}
+        {moderationAlert && (
+          <div className="mt-3 rounded-2xl border border-rose-200/90 bg-rose-50/80 p-3.5 text-xs shadow-xs transition-all animate-in fade-in duration-200">
+            <div className="flex items-start justify-between gap-2.5">
+              <div className="flex items-start gap-2.5">
+                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                  {moderationAlert.type === "timeout" ? (
+                    <Clock className="h-4 w-4" />
+                  ) : (
+                    <ShieldAlert className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-sm text-rose-900">
+                    {moderationAlert.title}
+                  </h4>
+                  <p className="mt-1 text-rose-700/90 leading-relaxed text-xs">
+                    {moderationAlert.message}
+                  </p>
+
+                  {/* Badges เหตุผลที่ตรวจพบ */}
+                  {moderationAlert.reasons && moderationAlert.reasons.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {moderationAlert.reasons.map((r, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center rounded-lg bg-white/80 px-2 py-0.5 font-medium text-[11px] text-rose-800 border border-rose-200/80 shadow-2xs"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Appeal / Change Image Actions */}
+                  {moderationAlert.type !== "timeout" && (
+                    <div className="mt-3 pt-2.5 border-t border-rose-200/60">
+                      {!appealSuccess ? (
+                        <>
+                          {!showAppealForm ? (
+                            <div className="flex flex-wrap items-center gap-2.5 text-xs">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (fileInputRef.current) {
+                                    fileInputRef.current.click();
+                                  }
+                                }}
+                                className="font-semibold text-rose-900 underline underline-offset-2 hover:text-rose-950 cursor-pointer transition-colors"
+                              >
+                                เลือกรูปภาพอื่น
+                              </button>
+                              <span className="text-rose-300">•</span>
+                              <button
+                                type="button"
+                                onClick={() => setShowAppealForm(true)}
+                                className="text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+                              >
+                                คิดว่าเป็นข้อผิดพลาด? ยื่นให้แอดมินตรวจสอบ
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="mt-1 space-y-2">
+                              <p className="text-[11px] text-rose-800">
+                                ระบุเหตุผลเพื่อให้เจ้าหน้าที่ตรวจสอบ (เช่น ภาพวาดศิลปะ/งานดีไซน์):
+                              </p>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={appealReason}
+                                  onChange={(e) => setAppealReason(e.target.value)}
+                                  placeholder="ระบุเหตุผล เช่น เป็นภาพวาดศิลปะ ไม่ได้มีเจตนาอนาจาร"
+                                  className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none shadow-2xs"
+                                />
+                                <button
+                                  type="button"
+                                  disabled={!appealReason.trim() || isAppealing}
+                                  onClick={handleSendAppeal}
+                                  className="rounded-xl bg-rose-600 px-3.5 py-1.5 font-semibold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer transition-all flex items-center gap-1 text-xs shrink-0"
+                                >
+                                  {isAppealing ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    "ส่งคำร้อง"
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          ส่งคำร้องให้เจ้าหน้าที่ตรวจสอบเรียบร้อยแล้ว แอดมินจะพิจารณาให้โดยเร็วครับ
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ปุ่มปิดคำเตือน */}
+              <button
+                type="button"
+                onClick={() => {
+                  setModerationAlert(null);
+                  setShowAppealForm(false);
+                  setAppealSuccess(false);
+                }}
+                className="rounded-lg p-1 text-rose-400 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                title="ปิดการแจ้งเตือน"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Hidden File Input for Image Upload (เฉพาะรูปภาพ JPG, PNG, WebP) */}
         <input
           ref={fileInputRef}
@@ -518,11 +729,27 @@ export default function PostFormModal({
           {/* Post / Update Button */}
           <button
             type="button"
-            disabled={isUploading || (!content.trim() && images.length === 0)}
+            disabled={
+              isUploading ||
+              isSubmitting ||
+              Boolean(moderationAlert) ||
+              (!content.trim() && images.length === 0)
+            }
             onClick={handleSubmit}
-            className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-50 disabled:bg-gray-300 cursor-pointer disabled:cursor-not-allowed"
+            title={
+              moderationAlert
+                ? "ไม่สามารถโพสต์ได้ขณะมีรูปภาพไม่ผ่านเกณฑ์ความปลอดภัย"
+                : undefined
+            }
+            className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-500 cursor-pointer disabled:cursor-not-allowed"
           >
-            {isUploading ? "Uploading..." : isUpdateMode ? "Update post" : "Post"}
+            {isUploading
+              ? "Uploading..."
+              : isSubmitting
+                ? "Posting..."
+                : isUpdateMode
+                  ? "Update post"
+                  : "Post"}
           </button>
         </div>
       </div>

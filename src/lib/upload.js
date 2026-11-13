@@ -119,6 +119,7 @@ export async function uploadToR2(rawFile, options = {}) {
   const presignedRes = await fetch(`${API_BASE_URL}/api/upload/presigned-url`, {
     method: 'POST',
     headers,
+    credentials: 'include',
     body: JSON.stringify({
       filename: processedFile.name,
       contentType: 'image/webp',
@@ -175,6 +176,7 @@ export async function uploadToR2(rawFile, options = {}) {
   const completeRes = await fetch(`${API_BASE_URL}/api/upload/complete`, {
     method: 'POST',
     headers,
+    credentials: 'include',
     body: JSON.stringify({
       fileKey,
       url: publicUrl,
@@ -195,12 +197,15 @@ export async function uploadToR2(rawFile, options = {}) {
       );
       err.isTimedOut = true;
       err.remainingMinutes = completeData.remainingMinutes;
+      err.isModerationViolation = true;
+      err.reasons = completeData.reasons || [];
       throw err;
     }
     const err = new Error(
       completeData.message ||
         'รูปภาพไม่ผ่านการตรวจสอบความปลอดภัย กรุณาเลือกรูปภาพอื่น'
     );
+    err.isModerationViolation = Boolean(completeData.reasons && completeData.reasons.length > 0) || completeRes.status === 400;
     err.logId = completeData.logId || null;
     err.imageUrl = publicUrl;
     err.reasons = completeData.reasons || [];
@@ -230,6 +235,7 @@ export async function submitModerationAppeal({ logId, imageUrl, appealReason, to
   const res = await fetch(`${API_BASE_URL}/api/upload/appeal`, {
     method: 'POST',
     headers,
+    credentials: 'include',
     body: JSON.stringify({
       logId,
       imageUrl,

@@ -241,7 +241,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
             </button>
             <button
               type="submit"
-              disabled={isUploading || !title.trim() || !selectedFile}
+              disabled={isUploading || Boolean(error) || !title.trim() || !selectedFile}
               className="flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {isUploading ? (
