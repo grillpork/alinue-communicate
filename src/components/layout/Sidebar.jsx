@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   Briefcase,
+  Search,
   Mail,
   Bell,
   Bookmark,
@@ -53,6 +54,12 @@ export default function Sidebar() {
       href: '/',
       icon: Briefcase,
       active: pathname === '/',
+    },
+    {
+      label: 'Search',
+      href: '/search',
+      icon: Search,
+      active: pathname === '/search',
     },
     {
       label: 'Messages',

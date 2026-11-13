@@ -1,10 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Search,
-  X,
   Loader2,
   User,
   Image as ImageIcon,
@@ -17,7 +15,6 @@ import {
 import PostCard from './PostCard';
 import PostFormModal from './PostFormModal';
 import PostDetailModal from './PostDetailModal';
-import SearchPopup from './SearchPopup';
 import EmptyState from '@/components/shared/EmptyState';
 import { useMeQuery } from '@/services/auth';
 import {
@@ -32,33 +29,7 @@ export default function PostFeed() {
   const searchParams = useSearchParams();
   const sharedPostId = searchParams?.get('post');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSharedPost, setActiveSharedPost] = useState(null);
-  const searchContainerRef = useRef(null);
-
-  // ปิด Search Popup เมื่อคลิกนอกพื้นที่หรือกดปุ่ม Escape
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(e.target)
-      ) {
-        setIsSearchOpen(false);
-      }
-    };
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setIsSearchOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   // ตรวจสอบและดึงข้อมูลโพสต์ที่ถูกแชร์ผ่าน URL query (?post=ID)
   const { data: sharedPostData } = usePostQuery(sharedPostId, {
@@ -76,9 +47,7 @@ export default function PostFeed() {
   const currentUser = meData?.user || null;
 
   // 2. ดึงโพสต์จริงจาก Neon DB ผ่าน TanStack Query
-  const { data: postsData, isLoading } = usePostsQuery({
-    search: searchQuery.trim(),
-  });
+  const { data: postsData, isLoading } = usePostsQuery();
 
   const createPostMutation = useCreatePostMutation();
   const deletePostMutation = useDeletePostMutation();
@@ -119,63 +88,7 @@ export default function PostFeed() {
 
   return (
     <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-0 pt-3 sm:pt-6 pb-12">
-      {/* 1. Search Bar with Live Popup */}
-      <div ref={searchContainerRef} className="mb-4 px-3 sm:px-4">
-        <div className="relative">
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
-            <Search className="h-4 w-4" />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onFocus={() => setIsSearchOpen(true)}
-            onClick={() => setIsSearchOpen(true)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                setIsSearchOpen(false);
-              }
-            }}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              if (!isSearchOpen) setIsSearchOpen(true);
-            }}
-            placeholder="Search Designers, tags, or posts..."
-            className="w-full rounded-2xl border border-gray-200/80 bg-gray-50/70 py-2.5 pl-10 pr-9 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-900 focus:bg-white focus:outline-none transition-all shadow-2xs"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setIsSearchOpen(true);
-              }}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
-
-          {/* Live Search Popup */}
-          <SearchPopup
-            isOpen={isSearchOpen}
-            onClose={() => setIsSearchOpen(false)}
-            searchQuery={searchQuery}
-            onSelectTag={(tag) => {
-              setSearchQuery(tag);
-              setIsSearchOpen(false);
-            }}
-            onSelectPost={(post) => {
-              setActiveSharedPost(post);
-              setIsSearchOpen(false);
-            }}
-            matchingPosts={posts}
-            isLoadingPosts={isLoading}
-          />
-        </div>
-      </div>
-
-      {/* 2. Top Post Input Trigger (แสดง User จริง หรือปุ่มชวนเข้าสู่ระบบ พร้อม Icon บาร์ Image, GIF, Video สไตล์ Threads) */}
+      {/* 1. Top Post Input Trigger (แสดง User จริง หรือปุ่มชวนเข้าสู่ระบบ พร้อม Icon บาร์ Image, GIF, Video สไตล์ Threads) */}
       <div className="px-3 sm:px-4 mb-4">
         <div
           onClick={handleOpenPostModal}
