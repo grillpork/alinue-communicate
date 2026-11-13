@@ -30,6 +30,7 @@ import PostDetailModal from './PostDetailModal';
 import SharePostModal from './SharePostModal';
 import CommentPortfolioCard from './CommentPortfolioCard';
 import CommentActionsMenu from './CommentActionsMenu';
+import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
 
 /**
  * แปลงข้อความที่มี #hashtag หรือ @user ให้เป็นสีฟ้า
@@ -296,27 +297,8 @@ export default function PostCard({
       {/* Header: Author Avatar, Name, Dot, Time, More Options */}
       <div className="flex items-center justify-between px-3.5 sm:px-4">
         <div className="flex items-center gap-2.5">
-          {/* Avatar & Name Linked to /[username] */}
-          <Link
-            href={post.author?.username ? `/${post.author.username}` : '#'}
-            className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity"
-          >
-            <div className="h-9 w-9 rounded-full ring-1 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0 group-hover:ring-gray-300 transition-all">
-              {post.author?.avatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={post.author.avatar}
-                  alt={post.author?.name || 'User'}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <User className="h-4 w-4 text-gray-400" />
-              )}
-            </div>
-            <span className="font-semibold text-gray-900 text-sm group-hover:underline">
-              {post.author?.name || 'User'}
-            </span>
-          </Link>
+          {/* Post Author Profile Trigger (Hover = Mini Popup, Toggle/Click = Modal Profile) */}
+          <PostAuthorProfileTrigger author={post.author} />
           <span className="text-gray-400 text-xs">•</span>
           <span
             className="text-gray-400 hover:text-gray-600 transition-colors text-xs cursor-default"

@@ -28,6 +28,7 @@ import {
 import { useMeQuery } from '@/services/auth';
 import { formatRelativeTime, formatFullDateTime } from '@/lib/date';
 import CommentPortfolioCard from './CommentPortfolioCard';
+import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
 import CommentActionsMenu from './CommentActionsMenu';
 import SharePostModal from './SharePostModal';
 
@@ -283,39 +284,13 @@ export default function PostDetailModal({
             {/* Post Header & Caption */}
             <div className="p-4 sm:p-5">
               <div className="flex items-center justify-between">
-                <Link
-                  href={post.author?.username ? `/${post.author.username}` : '#'}
-                  className="flex items-center gap-3 group"
-                >
-                  <div className="relative h-10 w-10 rounded-full ring-1 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-                    {post.author?.avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={post.author.avatar}
-                        alt={post.author?.name || 'User'}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-5 w-5 text-gray-400" />
-                    )}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-gray-900 group-hover:underline">
-                        {post.author?.username || post.author?.name || 'User'}
-                      </span>
-                      <span className="text-xs text-gray-400">•</span>
-                      <span className="text-xs text-gray-400">
-                        {formatRelativeTime(post.createdAt)}
-                      </span>
-                    </div>
-                    {post.author?.name && post.author?.username && (
-                      <p className="text-xs text-gray-500">
-                        {post.author.name}
-                      </p>
-                    )}
-                  </div>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <PostAuthorProfileTrigger author={post.author} />
+                  <span className="text-xs text-gray-400">•</span>
+                  <span className="text-xs text-gray-400">
+                    {formatRelativeTime(post.createdAt)}
+                  </span>
+                </div>
 
                 <button
                   type="button"

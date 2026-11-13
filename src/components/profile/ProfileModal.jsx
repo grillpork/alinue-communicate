@@ -1,0 +1,320 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  X,
+  User,
+  Check,
+  Plus,
+  BadgeCheck,
+  MapPin,
+  Link as LinkIcon,
+  Calendar,
+  Share2,
+  ExternalLink,
+  Loader2,
+} from 'lucide-react';
+import { useUserProfileQuery, useToggleFollowMutation } from '@/services/user';
+import { useMeQuery } from '@/services/auth';
+
+function formatStatNumber(num) {
+  const n = typeof num === 'number' ? num : parseInt(num, 10) || 0;
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'm';
+  if (n >= 10000) return (n / 1000).toFixed(0) + 'k';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(n);
+}
+
+/**
+ * ProfileModal - Dialog Modal แสดงข้อมูลโปรไฟล์เต็มเมื่อ Toggle/Click ที่รูปโปรไฟล์ของ Post
+ */
+export default function ProfileModal({ isOpen, onClose, author }) {
+  const router = useRouter();
+  const [copied, setCopied] = useState(false);
+  const { data: meData } = useMeQuery();
+  const currentUser = meData?.user;
+
+  const username = author?.username || '';
+  const { data: profileData } = useUserProfileQuery(username, {
+    enabled: isOpen && Boolean(username),
+  });
+
+  const profile = profileData?.profile;
+  const isSelf =
+    Boolean(currentUser?.username && username) &&
+    currentUser.username.toLowerCase() === username.toLowerCase();
+
+  const toggleFollowMutation = useToggleFollowMutation();
+  const isFollowing = Boolean(profile?.isFollowing);
+
+  const handleToggleFollow = () => {
+    if (!currentUser) {
+      router.push('/sign-in');
+      return;
+    }
+    const targetId = profile?.id || author?.id;
+    if (targetId) {
+      toggleFollowMutation.mutate(targetId);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/${username}`;
+      navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // ปิด Modal เมื่อกดปุ่ม Escape
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const displayName = profile?.name || author?.name || author?.username || 'User';
+  const displayAvatar = profile?.avatar || author?.avatar;
+  const displayBanner =
+    profile?.banner ||
+    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
+  const displayBio = profile?.bio || author?.bio || '';
+  const displayNote = profile?.note || '';
+  const location = profile?.location;
+  const website = profile?.website;
+  const joinedDate = profile?.joinedDate;
+  const stats = profile?.stats || {
+    posts: 0,
+    followers: 0,
+    following: 0,
+    likes: 0,
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="relative w-full max-w-sm sm:max-w-md rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden animate-in zoom-in-95 duration-150 text-left"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Banner with Close Button */}
+        <div className="relative h-28 sm:h-32 w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500 overflow-hidden">
+          {displayBanner && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={displayBanner}
+              alt="Banner"
+              className="h-full w-full object-cover opacity-90"
+            />
+          )}
+
+          {/* Close Button (X) */}
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md transition-all active:scale-95 cursor-pointer shadow-sm z-10"
+            aria-label="Close modal"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Content Body */}
+        <div className="px-5 pt-0 pb-5">
+          {/* Avatar and Action Buttons Row */}
+          <div className="flex items-end justify-between -mt-12 sm:-mt-14 mb-3">
+            {/* Large Avatar */}
+            <div className="relative">
+              <div className="h-20 w-20 sm:h-22 sm:w-22 rounded-full ring-4 ring-white bg-gray-100 overflow-hidden shadow-md flex items-center justify-center shrink-0">
+                {displayAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={displayAvatar}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <User className="h-8 w-8 text-gray-400" />
+                )}
+              </div>
+
+              {/* Note Bubble (ถ้ามี) */}
+              {displayNote && (
+                <div className="absolute -top-3 left-14 bg-white/95 backdrop-blur-sm rounded-xl px-2 py-0.5 shadow-sm border border-gray-200 text-[10px] text-gray-700 font-medium max-w-[120px] truncate">
+                  💭 {displayNote}
+                </div>
+              )}
+            </div>
+
+            {/* Actions: Follow / Share */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors shadow-2xs cursor-pointer"
+                title={copied ? 'Copied link!' : 'Share profile'}
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Share2 className="h-4 w-4" />
+                )}
+              </button>
+
+              {isSelf ? (
+                <Link
+                  href={`/${username}`}
+                  onClick={onClose}
+                  className="rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-2 transition-colors cursor-pointer"
+                >
+                  Edit Profile
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleToggleFollow}
+                  disabled={toggleFollowMutation.isPending}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-semibold transition-all active:scale-95 cursor-pointer shadow-2xs ${
+                    isFollowing
+                      ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600 hover:border-red-200 border border-gray-200'
+                      : 'bg-black text-white hover:bg-gray-800'
+                  }`}
+                >
+                  {toggleFollowMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : isFollowing ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3.5 w-3.5 stroke-[2.5]" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Name & @username */}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h2 className="font-bold text-gray-900 text-base sm:text-lg">
+                {displayName}
+              </h2>
+              {profile?.isVerified && (
+                <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />
+              )}
+            </div>
+            <p className="text-xs sm:text-sm text-gray-400">@{username}</p>
+          </div>
+
+          {/* Bio */}
+          {displayBio && (
+            <p className="mt-3 text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+              {displayBio}
+            </p>
+          )}
+
+          {/* Metadata Row: Location, Website, Joined */}
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+            {location && (
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                <span>{location}</span>
+              </div>
+            )}
+            {website && (
+              <div className="flex items-center gap-1">
+                <LinkIcon className="h-3.5 w-3.5 text-gray-400" />
+                <a
+                  href={website.startsWith('http') ? website : `https://${website}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-600 hover:underline truncate max-w-[150px]"
+                >
+                  {website.replace(/^https?:\/\//, '')}
+                </a>
+              </div>
+            )}
+            {joinedDate && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                <span>
+                  Joined{' '}
+                  {new Date(joinedDate).toLocaleDateString('en-US', {
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Stats Grid: Posts, Followers, Following, Likes */}
+          <div className="mt-4 pt-3.5 border-t border-gray-100 grid grid-cols-4 divide-x divide-gray-100 bg-gray-50/60 rounded-2xl py-2.5">
+            <div className="flex flex-col items-center justify-center px-1 text-center">
+              <span className="text-sm sm:text-base font-bold text-gray-900 leading-none">
+                {formatStatNumber(stats.posts || 0)}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-gray-400 font-normal mt-1">
+                Posts
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center px-1 text-center">
+              <span className="text-sm sm:text-base font-bold text-gray-900 leading-none">
+                {formatStatNumber(stats.followers || 0)}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-gray-400 font-normal mt-1">
+                Followers
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center px-1 text-center">
+              <span className="text-sm sm:text-base font-bold text-gray-900 leading-none">
+                {formatStatNumber(stats.following || 0)}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-gray-400 font-normal mt-1">
+                Following
+              </span>
+            </div>
+            <div className="flex flex-col items-center justify-center px-1 text-center">
+              <span className="text-sm sm:text-base font-bold text-gray-900 leading-none">
+                {formatStatNumber(stats.likes || 0)}
+              </span>
+              <span className="text-[10px] sm:text-[11px] text-gray-400 font-normal mt-1">
+                Likes
+              </span>
+            </div>
+          </div>
+
+          {/* Bottom Action: View Full Profile */}
+          <div className="mt-4">
+            <Link
+              href={`/${username}`}
+              onClick={onClose}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-black hover:bg-gray-800 text-white py-2.5 text-xs sm:text-sm font-semibold transition-all active:scale-[0.99] shadow-2xs cursor-pointer"
+            >
+              <span>View Full Profile</span>
+              <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
