@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import {
   Briefcase,
   Search,
-  Mail,
   Bell,
   Bookmark,
   User,
@@ -60,13 +59,6 @@ export default function Sidebar() {
       href: '/search',
       icon: Search,
       active: pathname === '/search',
-    },
-    {
-      label: 'Messages',
-      href: '#messages',
-      icon: Mail,
-      badge: null,
-      active: pathname === '/messages',
     },
     {
       label: 'Notifications',

@@ -17,7 +17,6 @@ import {
   LogIn,
   ChevronRight,
   Shield,
-  Mail,
 } from 'lucide-react';
 import { useMeQuery, useSignOutMutation } from '@/services/auth';
 import { useUnreadNotificationCountQuery } from '@/services/notification';

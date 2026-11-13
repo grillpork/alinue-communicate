@@ -7,7 +7,6 @@ import {
   Home,
   Search,
   Bell,
-  MessageCircle,
   User,
 } from 'lucide-react';
 import { useMeQuery } from '@/services/auth';
@@ -28,7 +27,6 @@ export default function MobileBottomBar() {
   const isHomeActive = pathname === '/';
   const isSearchActive = pathname === '/search';
   const isNotifActive = pathname === '/notifications';
-  const isMessagesActive = pathname === '/messages';
   const isProfileActive = Boolean(
     pathname.startsWith('/profile') ||
     (user?.username && pathname === `/${user.username}`)
@@ -56,13 +54,6 @@ export default function MobileBottomBar() {
       icon: Bell,
       badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null,
       isActive: isNotifActive,
-    },
-    {
-      id: 'messages',
-      label: 'Messages',
-      href: '#messages',
-      icon: MessageCircle,
-      isActive: isMessagesActive,
     },
     {
       id: 'profile',

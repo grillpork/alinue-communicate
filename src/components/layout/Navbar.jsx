@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search, Mail, Bell, Bookmark } from 'lucide-react';
+import { Search, Bell, Bookmark } from 'lucide-react';
 import UserDropdown from '../common/UserDropdown';
 import { useMeQuery, useSignOutMutation } from '@/services/auth';
 
@@ -51,19 +51,10 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Right: Actions (Message, Bell, Bookmark, Avatar) */}
+        {/* Right: Actions (Bell, Bookmark, Avatar) */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {isLogin ? (
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Messages Icon */}
-              <button
-                type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
-                aria-label="Messages"
-              >
-                <Mail className="h-4 w-4" />
-              </button>
-
               {/* Notify (Bell) Icon */}
               <button
                 type="button"

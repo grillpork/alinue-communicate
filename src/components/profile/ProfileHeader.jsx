@@ -257,7 +257,7 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
             </div>
           </div>
 
-          {/* Right Side: Chat & Three Dots Action Button */}
+          {/* Right Side: Three Dots Action Button */}
           <div className="flex items-center gap-2 shrink-0">
             {/* Three Dots Action Button */}
             <div className="relative">

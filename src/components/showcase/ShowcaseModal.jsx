@@ -12,7 +12,6 @@ import {
   Check,
   Trash2,
   Eye,
-  MessageCircle,
   ExternalLink,
   Sparkles,
   Calendar,
@@ -422,21 +421,21 @@ export default function ShowcaseModal({
               </span>
             </div>
 
-            {/* Hire / Commission CTA */}
+            {/* Creator Profile CTA */}
             <div className="rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-4 text-white shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-bold">สนใจผลงานหรือต้องการจ้างงาน?</p>
                   <p className="text-[11px] text-gray-300 mt-0.5">
-                    ติดต่อพูดคุยหรือบรีฟงานกับ @{author.username}
+                    ดูผลงานอื่น ๆ เพิ่มเติมของ @{author.username}
                   </p>
                 </div>
                 <Link
-                  href={`#messages`}
+                  href={`/${author.username}`}
                   onClick={onClose}
                   className="rounded-xl bg-white px-3.5 py-1.5 text-xs font-bold text-gray-900 hover:bg-gray-100 transition-colors shrink-0 shadow-xs"
                 >
-                  สอบถาม
+                  ดูโปรไฟล์
                 </Link>
               </div>
             </div>
