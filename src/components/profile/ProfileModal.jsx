@@ -318,3 +318,4 @@ export default function ProfileModal({ isOpen, onClose, author }) {
     </div>
   );
 }
+

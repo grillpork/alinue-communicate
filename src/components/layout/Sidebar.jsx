@@ -16,6 +16,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useMeQuery, useSignOutMutation } from '@/services/auth';
+import { useUnreadNotificationCountQuery } from '@/services/notification';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -28,6 +29,12 @@ export default function Sidebar() {
 
   const user = meData?.user || null;
   const isLogin = Boolean(user);
+
+  // ดึงจำนวนการแจ้งเตือนที่ยังไม่ได้อ่าน
+  const { data: notifData } = useUnreadNotificationCountQuery({
+    enabled: isLogin,
+  });
+  const unreadCount = notifData?.unreadCount || 0;
 
   // ปิดเมนูผู้ใช้เมื่อคลิกนอกพื้นที่
   useEffect(() => {
@@ -56,9 +63,9 @@ export default function Sidebar() {
     },
     {
       label: 'Notifications',
-      href: '#notifications',
+      href: '/notifications',
       icon: Bell,
-      badge: null,
+      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null,
       active: pathname === '/notifications',
     },
     {

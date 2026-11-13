@@ -113,3 +113,4 @@ export default function PostAuthorProfileTrigger({ author }) {
     </div>
   );
 }
+
