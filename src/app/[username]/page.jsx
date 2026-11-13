@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import {
   Grid,
   Heart,
@@ -18,6 +18,7 @@ import {
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostCard from '@/components/post/PostCard';
 import ShowcaseCard from '@/components/showcase/ShowcaseCard';
+import ShowcaseModal from '@/components/showcase/ShowcaseModal';
 import CreateShowcaseModal from '@/components/showcase/CreateShowcaseModal';
 import { useMeQuery } from '@/services/auth';
 import {
@@ -29,6 +30,10 @@ import { useShowcasesQuery } from '@/services/showcase';
 
 function UserProfileContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const showcaseParamId = searchParams?.get('showcase');
+  const [urlSelectedShowcase, setUrlSelectedShowcase] = useState(null);
+
   const rawUsername = params?.username;
   const username =
     typeof rawUsername === 'string'
@@ -85,6 +90,16 @@ function UserProfileContent() {
     { enabled: Boolean(username) }
   );
   const showcases = showcasesData?.showcases || [];
+
+  // ตรวจสอบว่ามี ?showcase=:id ใน URL หรือไม่ เพื่อเปิด Modal ทันที
+  useEffect(() => {
+    if (showcaseParamId && showcases.length > 0) {
+      const found = showcases.find((s) => String(s.id) === String(showcaseParamId));
+      if (found) {
+        setUrlSelectedShowcase(found);
+      }
+    }
+  }, [showcaseParamId, showcases]);
 
   const filteredShowcases = useMemo(() => {
     let list = [...showcases];
@@ -400,6 +415,16 @@ function UserProfileContent() {
         isOpen={isShowcaseModalOpen}
         onClose={() => setIsShowcaseModalOpen(false)}
       />
+
+      {/* 5. URL Showcase Modal (เมื่อมี ?showcase=:id) */}
+      {urlSelectedShowcase && (
+        <ShowcaseModal
+          showcase={urlSelectedShowcase}
+          isOpen={Boolean(urlSelectedShowcase)}
+          onClose={() => setUrlSelectedShowcase(null)}
+          currentUserId={currentUser?.id}
+        />
+      )}
     </div>
   );
 }

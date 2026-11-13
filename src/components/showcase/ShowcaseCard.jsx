@@ -14,11 +14,13 @@ import {
   Flag,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
+import ShowcaseModal from './ShowcaseModal';
 
 export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const menuRef = useRef(null);
 
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
@@ -116,7 +118,10 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
   return (
     <div className="group relative flex flex-col">
       {/* 1. Pinterest-style Media Card */}
-      <div className="relative w-full overflow-hidden rounded-2xl bg-gray-100 transition-all duration-300 group-hover:shadow-md">
+      <div
+        onClick={() => setIsModalOpen(true)}
+        className="relative w-full overflow-hidden rounded-2xl bg-gray-100 transition-all duration-300 group-hover:shadow-md cursor-pointer"
+      >
         {isVideo ? (
           <div className="relative w-full">
             <video
@@ -262,7 +267,10 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
       {/* 2. Metadata Below Image (Pinterest Typography & Author) */}
       <div className="pt-2 px-0.5">
         {/* Title */}
-        <h3 className="line-clamp-1 text-xs sm:text-[13px] font-bold text-gray-900 leading-snug group-hover:text-black">
+        <h3
+          onClick={() => setIsModalOpen(true)}
+          className="line-clamp-1 text-xs sm:text-[13px] font-bold text-gray-900 leading-snug group-hover:text-black cursor-pointer hover:underline"
+        >
           {showcase.title}
         </h3>
 
@@ -313,6 +321,15 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
           </div>
         </div>
       </div>
+
+      {/* 3. Showcase Detail Modal */}
+      <ShowcaseModal
+        showcase={showcase}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        currentUserId={currentUserId}
+        onDeleted={onDeleted}
+      />
     </div>
   );
 }
