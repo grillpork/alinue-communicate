@@ -26,6 +26,7 @@ export default function PostFormModal({
   onSubmit,
   isEdit = false,
   mode,
+  initialPost = null,
 }) {
   const isUpdateMode = isEdit || mode === "update";
   const [content, setContent] = useState("");
@@ -105,34 +106,65 @@ export default function PostFormModal({
     }
   }, [content]);
 
+  // รีเซ็ตข้อมูลฟอร์มทั้งหมดให้ว่างเปล่า
+  const resetForm = () => {
+    setContent("");
+    setImages([]);
+    setUploadingFiles([]);
+    setModerationAlert(null);
+    setShowAppealForm(false);
+    setAppealReason("");
+    setAppealSuccess(false);
+    setSuggestionType(null);
+    setSuggestionQuery("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "56px";
+    }
+  };
+
+  const handleClose = () => {
+    if (!isUpdateMode) {
+      resetForm();
+    }
+    if (onClose) onClose();
+  };
+
   // ปิด modal หรือ popup เมื่อกด ESC
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         if (suggestionType) {
           setSuggestionType(null);
-        } else if (onClose) {
-          onClose();
+        } else {
+          handleClose();
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [suggestionType, onClose]);
+  }, [suggestionType, isUpdateMode, onClose]);
 
-  // ล้างการแจ้งเตือนและคิวอัปโหลดเมื่อเปิด/ปิด Modal
+  // ซิงก์ค่าเริ่มต้น หรือล้างการแจ้งเตือนและคิวอัปโหลดเมื่อเปิด/ปิด Modal
   useEffect(() => {
     if (!isOpen) {
       setModerationAlert(null);
       setShowAppealForm(false);
       setAppealSuccess(false);
       setAppealReason("");
+      setSuggestionType(null);
+      setSuggestionQuery("");
       uploadingFiles.forEach((u) => {
         if (u.previewUrl) URL.revokeObjectURL(u.previewUrl);
       });
       setUploadingFiles([]);
+      if (!isUpdateMode) {
+        resetForm();
+      }
+    } else if (initialPost) {
+      setContent(initialPost.content || initialPost.caption || "");
+      setImages(initialPost.images || initialPost.media_urls || []);
     }
-  }, [isOpen]);
+  }, [isOpen, initialPost, isUpdateMode]);
 
   if (!isOpen) return null;
 
@@ -386,6 +418,8 @@ export default function PostFormModal({
       try {
         setIsSubmitting(true);
         await onSubmit({ content, images });
+        // เคลียร์ข้อมูลฟอร์มทั้งหมดหลังสร้างโพสต์สำเร็จ
+        resetForm();
         if (onClose) onClose();
       } catch (err) {
         console.error("Submit post error:", err);
@@ -398,7 +432,7 @@ export default function PostFormModal({
         setIsSubmitting(false);
       }
     } else {
-      if (onClose) onClose();
+      handleClose();
     }
   };
 
@@ -407,7 +441,7 @@ export default function PostFormModal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Modal Container */}
@@ -435,7 +469,7 @@ export default function PostFormModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close modal"
             className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer"
           >
