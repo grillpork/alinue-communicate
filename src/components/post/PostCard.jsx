@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import useEmblaCarousel from 'embla-carousel-react';
 import {
@@ -207,7 +207,37 @@ export default function PostCard({
   const [commentText, setCommentText] = useState('');
   const [attachPortfolio, setAttachPortfolio] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount ?? 0);
+  const [isContentExpanded, setIsContentExpanded] = useState(false);
   const menuRef = useRef(null);
+
+  const contentText = post.content || '';
+  const isLongContent = useMemo(() => {
+    const lines = contentText.split('\n');
+    return lines.length > 5 || contentText.length > 260;
+  }, [contentText]);
+
+  const displayContent = useMemo(() => {
+    if (!isLongContent || isContentExpanded) {
+      return contentText;
+    }
+    const lines = contentText.split('\n');
+    const maxLines = 4;
+    const maxChars = 240;
+    let resultLines = [];
+    let chars = 0;
+
+    for (let i = 0; i < lines.length && i < maxLines; i++) {
+      const line = lines[i];
+      if (chars + line.length > maxChars) {
+        const remaining = Math.max(0, maxChars - chars);
+        resultLines.push(line.slice(0, remaining).trimEnd() + '...');
+        return resultLines.join('\n');
+      }
+      resultLines.push(line);
+      chars += line.length + 1;
+    }
+    return resultLines.join('\n');
+  }, [contentText, isLongContent, isContentExpanded]);
 
   useEffect(() => {
     if (typeof post.commentsCount === 'number') {
@@ -362,10 +392,19 @@ export default function PostCard({
         </div>
       </div>
 
-      {/* Post Text Content */}
+      {/* Post Text Content (มีปุ่มดูเพิ่มเติมเมื่อข้อความยาวเกินไป) */}
       {post.content && (
         <div className="mt-2.5 text-xs sm:text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words px-3.5 sm:px-4">
-          {renderPostText(post.content)}
+          {renderPostText(displayContent)}
+          {isLongContent && (
+            <button
+              type="button"
+              onClick={() => setIsContentExpanded((prev) => !prev)}
+              className="mt-1 block text-xs sm:text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+            >
+              {isContentExpanded ? 'ดูน้อยลง' : 'ดูเพิ่มเติม'}
+            </button>
+          )}
         </div>
       )}
 
