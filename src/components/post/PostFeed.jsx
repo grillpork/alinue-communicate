@@ -302,8 +302,8 @@ export default function PostFeed() {
                       <div className="h-3 w-16 rounded-full bg-gray-100" />
                     </div>
                     <div className="h-3.5 w-5/6 rounded-full bg-gray-200/80" />
-                    <div className="h-3 w-1/2 rounded-full bg-gray-150" />
-                    <div className="h-44 w-full rounded-2xl bg-gray-150/80 mt-3" />
+                    <div className="h-3 w-1/2 rounded-full bg-gray-100" />
+                    <div className="h-44 w-full rounded-2xl bg-gray-100 mt-3" />
                   </div>
                 </div>
               </div>

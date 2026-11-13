@@ -121,7 +121,7 @@ function PostImagesCarousel({ images, onImageClick }) {
       <div className="mt-3 flex">
         <div
           onClick={() => onImageClick && onImageClick(singleImage.url)}
-          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-gray-150/90 bg-gray-50/50 shadow-2xs cursor-pointer group"
+          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -146,7 +146,7 @@ function PostImagesCarousel({ images, onImageClick }) {
           {normalizedImages.map((img, idx) => (
             <div
               key={img.id || idx}
-              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-gray-100/90 bg-gray-50 shadow-2xs"
+              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
