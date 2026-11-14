@@ -210,33 +210,49 @@ export default function ProfileModal({ isOpen, onClose, author }) {
 
         {/* Content Body */}
         <div className="px-5 pt-0 pb-5">
-          {/* Avatar and Action Buttons Row */}
-          <div className="flex items-end justify-between -mt-12 sm:-mt-14 mb-3">
-            {/* Large Avatar */}
-            <div className="relative">
-              <div className="h-20 w-20 sm:h-22 sm:w-22 rounded-full ring-4 ring-white bg-gray-100 overflow-hidden shadow-md flex items-center justify-center shrink-0">
-                {displayAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={displayAvatar}
-                    alt={displayName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-8 w-8 text-gray-400" />
+          {/* Avatar, User Info & Action Buttons Row */}
+          <div className="flex items-end justify-between -mt-10 sm:-mt-12 mb-3">
+            {/* Left: Avatar + Name / Username */}
+            <div className="flex items-end gap-3 min-w-0">
+              {/* Avatar with Note Bubble */}
+              <div className="relative shrink-0">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full ring-4 ring-white bg-gray-100 overflow-hidden shadow-md flex items-center justify-center shrink-0">
+                  {displayAvatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={displayAvatar}
+                      alt={displayName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+
+                {/* Note Bubble (ถ้ามี) */}
+                {displayNote && (
+                  <div className="absolute -top-3 left-10 sm:left-12 bg-white/95 backdrop-blur-sm rounded-xl px-2 py-0.5 shadow-sm border border-gray-200 text-[10px] text-gray-700 font-medium max-w-[110px] truncate">
+                    💭 {displayNote}
+                  </div>
                 )}
               </div>
 
-              {/* Note Bubble (ถ้ามี) */}
-              {displayNote && (
-                <div className="absolute -top-3 left-14 bg-white/95 backdrop-blur-sm rounded-xl px-2 py-0.5 shadow-sm border border-gray-200 text-[10px] text-gray-700 font-medium max-w-[120px] truncate">
-                  💭 {displayNote}
+              {/* User Name & @username วางอยู่ข้างขวาของ Avatar */}
+              <div className="min-w-0 pb-1">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="font-bold text-gray-900 text-base sm:text-lg leading-tight truncate">
+                    {displayName}
+                  </h2>
+                  {profile?.isVerified && (
+                    <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />
+                  )}
                 </div>
-              )}
+                <p className="text-xs sm:text-sm text-gray-400 truncate">@{username}</p>
+              </div>
             </div>
 
-            {/* Actions: Follow / Share */}
-            <div className="flex items-center gap-2">
+            {/* Right Actions: Follow / Share */}
+            <div className="flex items-center gap-2 mb-1 shrink-0">
               <button
                 type="button"
                 onClick={handleCopyLink}
@@ -285,19 +301,6 @@ export default function ProfileModal({ isOpen, onClose, author }) {
                 </button>
               )}
             </div>
-          </div>
-
-          {/* Name & @username */}
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h2 className="font-bold text-gray-900 text-base sm:text-lg">
-                {displayName}
-              </h2>
-              {profile?.isVerified && (
-                <BadgeCheck className="h-4 w-4 text-blue-500 shrink-0" />
-              )}
-            </div>
-            <p className="text-xs sm:text-sm text-gray-400">@{username}</p>
           </div>
 
           {/* Bio */}
