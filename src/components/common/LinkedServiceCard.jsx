@@ -8,7 +8,18 @@ export default function LinkedServiceCard({ service, authorUsername, compact = f
   if (!service || !service.id) return null;
 
   const title = service.title || 'บริการรับงาน';
-  const price = service.price ? `฿${Number(service.price).toLocaleString()}` : service.priceText || null;
+  let price = null;
+  if (service.startPrice !== undefined && service.startPrice !== null) {
+    if (service.endPrice !== undefined && service.endPrice !== null && Number(service.endPrice) > Number(service.startPrice)) {
+      price = `฿${Number(service.startPrice).toLocaleString()} - ฿${Number(service.endPrice).toLocaleString()}`;
+    } else {
+      price = `฿${Number(service.startPrice).toLocaleString()}`;
+    }
+  } else if (service.priceText) {
+    price = service.priceText;
+  } else if (service.price) {
+    price = `฿${Number(service.price).toLocaleString()}`;
+  }
   const cover =
     service.coverUrl ||
     (Array.isArray(service.images) && service.images[0]) ||

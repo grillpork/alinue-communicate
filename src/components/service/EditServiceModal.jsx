@@ -37,10 +37,15 @@ export default function EditServiceModal({ isOpen, onClose, service }) {
       setTitle(service.title || '');
       setDescription(service.description || '');
 
-      // Parse price range from priceText / price
+      // Parse price range from startPrice / endPrice / priceText / price
       let minP = '';
       let maxP = '';
-      if (service.priceText && service.priceText.includes('-')) {
+      if (service.startPrice !== undefined && service.startPrice !== null) {
+        minP = String(service.startPrice);
+        if (service.endPrice !== undefined && service.endPrice !== null) {
+          maxP = String(service.endPrice);
+        }
+      } else if (service.priceText && service.priceText.includes('-')) {
         const parts = service.priceText.split('-');
         const p1 = parts[0]?.replace(/[^\d.]/g, '');
         const p2 = parts[1]?.replace(/[^\d.]/g, '');
@@ -250,6 +255,10 @@ export default function EditServiceModal({ isOpen, onClose, service }) {
         description: description.trim() || null,
         price: parsedMin !== null ? parsedMin : parsedMax !== null ? parsedMax : null,
         priceText: priceText || null,
+        startPrice: parsedMin,
+        endPrice: parsedMax,
+        start_price: parsedMin,
+        end_price: parsedMax,
         coverUrl: finalImages[0] || null,
         images: finalImages,
         tags: finalTags,

@@ -141,10 +141,14 @@ export default function LinkServiceModal({
                       {service.title}
                     </h4>
                     <p className="text-xs font-semibold text-gray-700 mt-0.5">
-                      {service.priceText ||
-                        (service.price
-                          ? `฿${Number(service.price).toLocaleString()}`
-                          : 'ติดต่อสอบถาม')}
+                      {service.startPrice !== undefined && service.startPrice !== null
+                        ? service.endPrice !== undefined && service.endPrice !== null && Number(service.endPrice) > Number(service.startPrice)
+                          ? `฿${Number(service.startPrice).toLocaleString()} - ฿${Number(service.endPrice).toLocaleString()}`
+                          : `฿${Number(service.startPrice).toLocaleString()}`
+                        : service.priceText ||
+                          (service.price
+                            ? `฿${Number(service.price).toLocaleString()}`
+                            : 'ติดต่อสอบถาม')}
                     </p>
                   </div>
 

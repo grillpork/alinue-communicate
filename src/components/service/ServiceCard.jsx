@@ -201,11 +201,14 @@ export default function ServiceCard({
           </div>
 
           {/* Bottom Overlay: Price */}
-          {(service.priceText || service.price) && (
+          {(service.priceText || service.price || service.startPrice) && (
             <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white">
               <span className="rounded-xl bg-black/70 backdrop-blur-xs px-2.5 py-1 text-xs font-bold shadow-2xs">
-                {service.priceText ||
-                  `฿${Number(service.price).toLocaleString()}`}
+                {service.startPrice !== undefined && service.startPrice !== null
+                  ? service.endPrice !== undefined && service.endPrice !== null && Number(service.endPrice) > Number(service.startPrice)
+                    ? `฿${Number(service.startPrice).toLocaleString()} - ฿${Number(service.endPrice).toLocaleString()}`
+                    : `฿${Number(service.startPrice).toLocaleString()}`
+                  : service.priceText || (service.price ? `฿${Number(service.price).toLocaleString()}` : '')}
               </span>
             </div>
           )}
