@@ -188,7 +188,7 @@ export default function ServiceDetailModal({
         {/* Modal Container */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full h-full sm:h-[92vh] max-h-[900px] max-w-5xl overflow-hidden rounded-none sm:rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col md:flex-row animate-in zoom-in-95 duration-150"
+          className="relative w-full h-full sm:h-[92vh] max-h-[900px] max-w-6xl overflow-hidden rounded-none sm:rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col md:flex-row animate-in zoom-in-95 duration-150"
         >
           {/* Floating Close Button */}
           <button
@@ -415,25 +415,26 @@ export default function ServiceDetailModal({
                 </div>
               )}
 
-              {/* Title & Price Header */}
-              <div>
-                <div className="flex items-start justify-between gap-3">
-                  <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
-                    {service.title}
-                  </h1>
-                  {(service.priceText || service.price) && (
-                    <div className="shrink-0 rounded-2xl bg-gray-50 border border-gray-200/80 px-3 py-1.5 text-right">
-                      <span className="block text-xs font-medium text-gray-500">ราคา</span>
-                      <span className="text-sm sm:text-base font-bold text-gray-900">
-                        {service.priceText || `฿${Number(service.price).toLocaleString()}`}
-                      </span>
-                    </div>
-                  )}
-                </div>
+              {/* Price & Title Section */}
+              <div className="space-y-2">
+                {/* Price (วางบน Title ให้เด่นชัด) */}
+                {(service.priceText || service.price) && (
+                  <div className="inline-flex items-baseline gap-1.5 rounded-2xl bg-neutral-900 text-white px-3.5 py-1.5 shadow-xs">
+                    <span className="text-[11px] font-medium text-neutral-300">ราคา</span>
+                    <span className="text-base sm:text-lg font-black tracking-tight text-white">
+                      {service.priceText || `฿${Number(service.price).toLocaleString()}`}
+                    </span>
+                  </div>
+                )}
+
+                {/* Title Header */}
+                <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 leading-snug">
+                  {service.title}
+                </h1>
 
                 {/* Tags */}
                 {Array.isArray(service.tags) && service.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
+                  <div className="flex flex-wrap gap-1.5 pt-1">
                     {service.tags.map((tag, idx) => (
                       <span
                         key={idx}
