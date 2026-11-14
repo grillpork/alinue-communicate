@@ -18,9 +18,11 @@ import {
   Tag,
   Play,
   Briefcase,
+  Pencil,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
 import { formatRelativeTime } from '@/lib/date';
+import EditShowcaseModal from './EditShowcaseModal';
 
 /**
  * ฟังก์ชันแปลงข้อความให้ Hashtags (#tag) และ Mentions (@user) กลายเป็นลิงก์คลิกได้
@@ -77,6 +79,7 @@ export default function ShowcaseModal({
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
   const deleteMutation = useDeleteShowcaseMutation();
@@ -141,7 +144,10 @@ export default function ShowcaseModal({
     avatar: showcase.author_avatar || showcase.author_avatar_url || null,
   };
 
-  const isOwner = currentUserId && Number(currentUserId) === Number(showcase.user_id || author.id);
+  const isOwner = Boolean(
+    currentUserId &&
+      (Number(currentUserId) === Number(showcase.userId || showcase.user_id || author.id))
+  );
 
   const tags = Array.isArray(showcase.tags)
     ? showcase.tags
@@ -494,6 +500,19 @@ export default function ShowcaseModal({
                 <span className="hidden sm:inline">แชร์</span>
               </button>
 
+              {/* Edit Button (Owner Only) */}
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 shadow-2xs transition-all cursor-pointer"
+                  title="แก้ไขผลงานนี้"
+                >
+                  <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                  <span className="hidden sm:inline">แก้ไข</span>
+                </button>
+              )}
+
               {/* Delete Button (Owner Only) */}
               {isOwner && (
                 <button
@@ -511,6 +530,13 @@ export default function ShowcaseModal({
           </div>
         </div>
       </div>
+
+      {/* Edit Showcase Modal */}
+      <EditShowcaseModal
+        showcase={showcase}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+      />
     </div>
   );
 }

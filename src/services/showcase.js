@@ -34,6 +34,14 @@ export const showcaseService = {
     });
   },
 
+  // แก้ไขผลงาน Showcase
+  updateShowcase: async ({ id, ...payload }) => {
+    return fetchApi(`/api/showcases/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // กด Like / Unlike Showcase
   toggleLike: async (id) => {
     return fetchApi(`/api/showcases/${id}/like`, {
@@ -161,6 +169,25 @@ export function useToggleShowcaseLikeMutation(options = {}) {
       // Sync ข้อมูลจริงจาก server
       queryClient.invalidateQueries({ queryKey: showcaseKeys.lists() });
       options.onSettled?.(data, err, showcaseId, context);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook แก้ไข Showcase ผลงาน
+ */
+export function useUpdateShowcaseMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: showcaseService.updateShowcase,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: showcaseKeys.lists() });
+      if (variables?.id) {
+        queryClient.invalidateQueries({ queryKey: showcaseKeys.detail(variables.id) });
+      }
+      options.onSuccess?.(data, variables, context);
     },
     ...options,
   });

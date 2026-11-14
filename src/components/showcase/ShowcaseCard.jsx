@@ -12,21 +12,31 @@ import {
   Copy,
   Share2,
   Flag,
+  Pencil,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
 import ShowcaseModal from './ShowcaseModal';
+import EditShowcaseModal from './EditShowcaseModal';
 
 export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const menuRef = useRef(null);
 
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
   const deleteMutation = useDeleteShowcaseMutation();
 
-  const isOwner = currentUserId && Number(currentUserId) === Number(showcase.user_id);
+  const author = showcase.author || {
+    id: showcase.userId || showcase.user_id,
+    name: showcase.author_name || showcase.author_username || showcase.authorName || 'Creator',
+    username: showcase.author_username || showcase.authorUsername || 'user',
+    avatar: showcase.author_avatar || showcase.author_avatar_url || showcase.authorAvatar || null,
+  };
+  const ownerId = showcase.userId || showcase.user_id || author.id;
+  const isOwner = Boolean(currentUserId && ownerId && Number(currentUserId) === Number(ownerId));
   const isLiked = Boolean(showcase.is_liked);
   const likesCount = showcase.likes_count || 0;
 
@@ -89,13 +99,6 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
     showcase.media_type === 'video' ||
     showcase.mediaType === 'video' ||
     /\.(mp4|webm|mov|ogg)$/i.test(mainMedia);
-
-  const author = showcase.author || {
-    id: showcase.user_id,
-    name: showcase.author_name || showcase.author_username || 'Creator',
-    username: showcase.author_username || 'user',
-    avatar: showcase.author_avatar || showcase.author_avatar_url || null,
-  };
 
   const handleLike = (e) => {
     e.preventDefault();
@@ -218,15 +221,31 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
               </button>
 
               {isOwner ? (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleteMutation.isPending}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                  <span>ลบผลงานนี้</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      setIsEditModalOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                    <span>แก้ไขผลงาน</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleteMutation.isPending}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                    <span>ลบผลงานนี้</span>
+                  </button>
+                </>
               ) : (
                 <button
                   type="button"
@@ -329,6 +348,13 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
         onClose={() => setIsModalOpen(false)}
         currentUserId={currentUserId}
         onDeleted={onDeleted}
+      />
+
+      {/* 4. Edit Showcase Modal */}
+      <EditShowcaseModal
+        showcase={showcase}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
       />
     </div>
   );
