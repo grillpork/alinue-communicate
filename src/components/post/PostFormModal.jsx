@@ -524,8 +524,8 @@ export default function PostFormModal({
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-0 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
           {/* Previews when images are added */}
           {(images.length > 0 || uploadingFiles.length > 0) && (
-            <div>
-              <div className="flex items-center justify-between mb-3 px-2">
+            <div className="">
+              <div className="flex items-center justify-between mb-3 px-3">
                 <span className="text-xs text-gray-400 font-medium">
                   {images.length + uploadingFiles.length} / 20
                 </span>
@@ -541,11 +541,11 @@ export default function PostFormModal({
               </div>
 
               {/* Horizontal Scrollable Carousel like reference image */}
-              <div className="flex items-center gap-3.5 overflow-x-auto pb-2 pt-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex px-3 items-center gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {images.map((img, idx) => (
                   <div
                     key={img.id}
-                    className="group relative h-64 w-auto min-w-[140px] max-w-[340px] shrink-0 overflow-hidden rounded-3xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
+                    className="group relative h-64 w-auto min-w-[140px] max-w-[340px] shrink-0 overflow-hidden rounded-2xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -632,7 +632,7 @@ export default function PostFormModal({
           )}
 
           {/* 2. Caption Textarea Area */}
-          <div className=" px-2.5">
+          <div className=" px-3">
             <div ref={containerRef} className="relative min-h-[90px]">
               {/* Backdrop Layer: แสดงข้อความและไฮไลต์ #hashtag เป็นสีฟ้า */}
               <div
@@ -728,7 +728,7 @@ export default function PostFormModal({
           </div>
 
           {/* 3. Link to service Button Row */}
-          <div className="pt-2 border-t border-gray-100">
+          <div className="pt-2 px-3 border-t border-gray-100">
             <button
               type="button"
               onClick={() => setIsLinkServiceOpen(true)}
@@ -747,14 +747,15 @@ export default function PostFormModal({
                     <img
                       src={
                         selectedService.coverUrl ||
-                        (Array.isArray(selectedService.images) && selectedService.images[0]) ||
+                        (Array.isArray(selectedService.images) &&
+                          selectedService.images[0]) ||
                         selectedService.cover_url ||
-                        '/empty/no-image.png'
+                        "/empty/no-image.png"
                       }
-                      alt={selectedService.title || 'Linked service'}
+                      alt={selectedService.title || "Linked service"}
                       className="h-full w-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.src = '/empty/no-image.png';
+                        e.currentTarget.src = "/empty/no-image.png";
                       }}
                     />
                   </div>
