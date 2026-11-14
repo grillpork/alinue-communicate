@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   X,
   ChevronLeft,
@@ -20,14 +20,17 @@ import {
   Briefcase,
   Pencil,
   MoreHorizontal,
-} from 'lucide-react';
-import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
-import { useMeQuery } from '@/services/auth';
-import { formatRelativeTime } from '@/lib/date';
-import EditShowcaseModal from './EditShowcaseModal';
-import LinkedServiceCard from '@/components/common/LinkedServiceCard';
-import useBodyScrollLock from '@/hooks/useBodyScrollLock';
-import useEmblaCarousel from 'embla-carousel-react';
+} from "lucide-react";
+import {
+  useToggleShowcaseLikeMutation,
+  useDeleteShowcaseMutation,
+} from "@/services/showcase";
+import { useMeQuery } from "@/services/auth";
+import { formatRelativeTime } from "@/lib/date";
+import EditShowcaseModal from "./EditShowcaseModal";
+import LinkedServiceCard from "@/components/common/LinkedServiceCard";
+import useBodyScrollLock from "@/hooks/useBodyScrollLock";
+import useEmblaCarousel from "embla-carousel-react";
 
 /**
  * ฟังก์ชันแปลงข้อความให้ Hashtags (#tag) และ Mentions (@user) กลายเป็นลิงก์คลิกได้
@@ -38,7 +41,7 @@ function renderFormattedDescription(text) {
   const parts = text.split(regex);
 
   return parts.map((part, index) => {
-    if (part.startsWith('#')) {
+    if (part.startsWith("#")) {
       const tag = part.slice(1);
       return (
         <Link
@@ -51,7 +54,7 @@ function renderFormattedDescription(text) {
         </Link>
       );
     }
-    if (part.startsWith('@')) {
+    if (part.startsWith("@")) {
       const username = part.slice(1);
       return (
         <Link
@@ -122,12 +125,12 @@ export default function ShowcaseModal({
       setIsVideoPlaying(false);
     };
 
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
 
     return () => {
-      emblaApi.off('select', onSelect);
-      emblaApi.off('reInit', onSelect);
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
     };
   }, [emblaApi]);
 
@@ -138,8 +141,8 @@ export default function ShowcaseModal({
         setShowMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // รองรับปุ่ม Escape / แป้นลูกศร ซ้าย-ขวา
@@ -147,19 +150,19 @@ export default function ShowcaseModal({
     if (!isOpen) return;
 
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === "ArrowLeft") {
         setActiveMediaIndex((prev) => (prev > 0 ? prev - 1 : prev));
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === "ArrowRight") {
         const total = mediaList.length;
         setActiveMediaIndex((prev) => (prev < total - 1 ? prev + 1 : prev));
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, onClose]);
 
@@ -168,42 +171,49 @@ export default function ShowcaseModal({
   // แปลงรายการ Media (รองรับ Array หรือ JSON string)
   const mediaList = Array.isArray(showcase.media_urls || showcase.mediaUrls)
     ? showcase.media_urls || showcase.mediaUrls
-    : typeof (showcase.media_urls || showcase.mediaUrls) === 'string'
-    ? JSON.parse(showcase.media_urls || showcase.mediaUrls || '[]')
-    : [];
+    : typeof (showcase.media_urls || showcase.mediaUrls) === "string"
+      ? JSON.parse(showcase.media_urls || showcase.mediaUrls || "[]")
+      : [];
 
   if (mediaList.length === 0 && (showcase.cover_url || showcase.coverUrl)) {
     mediaList.push(showcase.cover_url || showcase.coverUrl);
   }
 
-  const currentMedia = mediaList[activeMediaIndex] || '';
+  const currentMedia = mediaList[activeMediaIndex] || "";
   const isVideo =
-    showcase.media_type === 'video' ||
-    showcase.mediaType === 'video' ||
+    showcase.media_type === "video" ||
+    showcase.mediaType === "video" ||
     /\.(mp4|webm|mov|ogg)$/i.test(currentMedia);
 
   const author = showcase.author || {
     id: showcase.userId || showcase.user_id,
-    name: showcase.author_name || showcase.author_username || 'Creator',
-    username: showcase.author_username || 'user',
+    name: showcase.author_name || showcase.author_username || "Creator",
+    username: showcase.author_username || "user",
     avatar: showcase.author_avatar || showcase.author_avatar_url || null,
   };
 
   const effectiveUserId = currentUserId || loggedInUser?.id;
-  const authorUsername = author?.username || showcase.authorUsername || showcase.author_username;
+  const authorUsername =
+    author?.username || showcase.authorUsername || showcase.author_username;
 
-  const isOwner = isOwnerProp !== undefined
-    ? Boolean(isOwnerProp)
-    : Boolean(
-        (effectiveUserId && (Number(effectiveUserId) === Number(showcase.userId || showcase.user_id || author.id))) ||
-        (loggedInUser?.username && authorUsername && loggedInUser.username.toLowerCase() === authorUsername.toLowerCase())
-      );
+  const isOwner =
+    isOwnerProp !== undefined
+      ? Boolean(isOwnerProp)
+      : Boolean(
+          (effectiveUserId &&
+            Number(effectiveUserId) ===
+              Number(showcase.userId || showcase.user_id || author.id)) ||
+          (loggedInUser?.username &&
+            authorUsername &&
+            loggedInUser.username.toLowerCase() ===
+              authorUsername.toLowerCase()),
+        );
 
   const tags = Array.isArray(showcase.tags)
     ? showcase.tags
-    : typeof showcase.tags === 'string'
-    ? JSON.parse(showcase.tags || '[]')
-    : [];
+    : typeof showcase.tags === "string"
+      ? JSON.parse(showcase.tags || "[]")
+      : [];
 
   const viewsCount = showcase.views_count ?? showcase.viewsCount ?? 0;
   const createdAt = showcase.createdAt || showcase.created_at;
@@ -218,7 +228,7 @@ export default function ShowcaseModal({
 
   const handleCopyLink = (e) => {
     e?.stopPropagation?.();
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
@@ -228,12 +238,12 @@ export default function ShowcaseModal({
 
   const handleShare = async (e) => {
     e?.stopPropagation?.();
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
       if (navigator.share) {
         try {
           await navigator.share({
-            title: showcase.title || 'Showcase ผลงานบน Alinue',
+            title: showcase.title || "Showcase ผลงานบน Alinue",
             text: `ดูผลงาน "${showcase.title}" โดย @${author.username} บน Alinue`,
             url,
           });
@@ -248,7 +258,7 @@ export default function ShowcaseModal({
 
   const handleDelete = (e) => {
     e?.stopPropagation?.();
-    if (confirm('คุณต้องการลบผลงาน Showcase นี้ใช่หรือไม่?')) {
+    if (confirm("คุณต้องการลบผลงาน Showcase นี้ใช่หรือไม่?")) {
       deleteMutation.mutate(showcase.id, {
         onSuccess: () => {
           onClose();
@@ -298,8 +308,9 @@ export default function ShowcaseModal({
               ) : (
                 mediaList.map((mediaUrl, idx) => {
                   const isItemVideo =
-                    (showcase.media_type === 'video' || showcase.mediaType === 'video') &&
-                    idx === 0 ||
+                    ((showcase.media_type === "video" ||
+                      showcase.mediaType === "video") &&
+                      idx === 0) ||
                     /\.(mp4|webm|mov|ogg)$/i.test(mediaUrl);
 
                   return (
@@ -311,7 +322,9 @@ export default function ShowcaseModal({
                         <div className="relative max-h-full max-w-full flex items-center justify-center">
                           <video
                             src={mediaUrl}
-                            controls={isVideoPlaying && idx === activeMediaIndex}
+                            controls={
+                              isVideoPlaying && idx === activeMediaIndex
+                            }
                             playsInline
                             className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl"
                             onPlay={() => setIsVideoPlaying(true)}
@@ -339,7 +352,7 @@ export default function ShowcaseModal({
                           draggable={false}
                           className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl transition-all pointer-events-auto"
                           onError={(e) => {
-                            e.currentTarget.src = '/empty/no-image.png';
+                            e.currentTarget.src = "/empty/no-image.png";
                           }}
                         />
                       )}
@@ -385,7 +398,6 @@ export default function ShowcaseModal({
                 <span className="text-[11px] font-semibold text-white/90">
                   {activeMediaIndex + 1} / {mediaList.length}
                 </span>
-            
               </div>
             </>
           )}
@@ -409,7 +421,7 @@ export default function ShowcaseModal({
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-gray-200 text-sm font-bold text-gray-700">
-                    {(author.name || author.username || 'U')[0].toUpperCase()}
+                    {(author.name || author.username || "U")[0].toUpperCase()}
                   </div>
                 )}
               </div>
@@ -502,12 +514,20 @@ export default function ShowcaseModal({
             {/* Stats Overview */}
             <div className="flex items-center gap-4 py-2 border-y border-gray-100 text-xs text-gray-500">
               <span className="flex items-center gap-1.5">
-                <Heart className={`h-4 w-4 ${isLiked ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
-                <strong className="text-gray-900 font-semibold">{likesCount}</strong> ไลก์
+                <Heart
+                  className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : "text-gray-400"}`}
+                />
+                <strong className="text-gray-900 font-semibold">
+                  {likesCount}
+                </strong>{" "}
+                ไลก์
               </span>
               <span className="flex items-center gap-1.5">
                 <Eye className="h-4 w-4 text-gray-400" />
-                <strong className="text-gray-900 font-semibold">{viewsCount}</strong> ยอดวิว
+                <strong className="text-gray-900 font-semibold">
+                  {viewsCount}
+                </strong>{" "}
+                ยอดวิว
               </span>
             </div>
 
@@ -515,7 +535,9 @@ export default function ShowcaseModal({
             <div className="rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-4 text-white shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-bold">สนใจผลงานหรือต้องการจ้างงาน?</p>
+                  <p className="text-xs font-bold">
+                    สนใจผลงานหรือต้องการจ้างงาน?
+                  </p>
                   <p className="text-[11px] text-gray-300 mt-0.5">
                     ดูผลงานอื่น ๆ เพิ่มเติมของ @{author.username}
                   </p>
@@ -540,16 +562,16 @@ export default function ShowcaseModal({
               disabled={toggleLikeMutation.isPending}
               className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${
                 isLiked
-                  ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200 shadow-2xs'
-                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-100'
+                  ? "bg-rose-50 text-rose-600 ring-1 ring-rose-200 shadow-2xs"
+                  : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100"
               }`}
             >
               <Heart
                 className={`h-4 w-4 transition-transform active:scale-125 ${
-                  isLiked ? 'fill-rose-500 text-rose-500' : 'text-gray-500'
+                  isLiked ? "fill-rose-500 text-rose-500" : "text-gray-500"
                 }`}
               />
-              <span>{isLiked ? 'ถูกใจแล้ว' : 'ถูกใจ'}</span>
+              <span>{isLiked ? "ถูกใจแล้ว" : "ถูกใจ"}</span>
             </button>
 
             {/* Actions Dropdown Menu */}
@@ -578,7 +600,7 @@ export default function ShowcaseModal({
                     ) : (
                       <Copy className="h-3.5 w-3.5 text-gray-500" />
                     )}
-                    <span>{copied ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}</span>
+                    <span>{copied ? "คัดลอกแล้ว" : "คัดลอกลิงก์"}</span>
                   </button>
 
                   <button
