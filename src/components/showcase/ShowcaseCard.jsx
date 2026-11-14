@@ -284,12 +284,35 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
         </div>
 
         {/* Bottom-Left: Linked service badge */}
-        {showcase.service && (
-          <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-2 py-1 text-[10px] font-semibold text-white shadow-xs">
-            <Layers className="h-3 w-3 text-white/90" />
-            <span className="max-w-[110px] truncate">{showcase.service.title}</span>
-          </div>
-        )}
+        {showcase.service && (() => {
+          const serviceCover =
+            showcase.service.coverUrl ||
+            showcase.service.cover_url ||
+            (Array.isArray(showcase.service.images) && showcase.service.images[0]) ||
+            (Array.isArray(showcase.service.Images) && showcase.service.Images[0]) ||
+            (typeof showcase.service.images === 'string' && showcase.service.images) ||
+            (typeof showcase.service.Images === 'string' && showcase.service.Images) ||
+            null;
+
+          return (
+            <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-black/65 backdrop-blur-md pl-1 pr-2.5 py-1 text-[10px] font-semibold text-white shadow-xs max-w-[170px]">
+              {serviceCover ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={serviceCover}
+                  alt={showcase.service.title || 'Service'}
+                  className="h-4 w-4 rounded-full object-cover shrink-0 ring-1 ring-white/30"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : (
+                <Layers className="h-3 w-3 text-white/90 shrink-0 ml-1" />
+              )}
+              <span className="truncate">{showcase.service.title || 'บริการที่เชื่อมโยง'}</span>
+            </div>
+          );
+        })()}
 
         {/* Bottom-Right: Floating Heart / Like Button */}
         <button
