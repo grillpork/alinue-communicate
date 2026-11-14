@@ -1,48 +1,116 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { X, Upload, Film, Image as ImageIcon, Loader2, Briefcase } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, Upload, Loader2, Briefcase, Plus, Star } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useCreateShowcaseMutation } from '@/services/showcase';
+
+const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
 
 export default function CreateShowcaseModal({ isOpen, onClose }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [tagsInput, setTagsInput] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null);
+  const [images, setImages] = useState([]); // Array of { id, file, previewUrl }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatusText, setUploadStatusText] = useState('');
   const [error, setError] = useState('');
 
   const fileInputRef = useRef(null);
   const createMutation = useCreateShowcaseMutation();
 
+  // Cleanup object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => {
+        if (img.previewUrl && img.previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(img.previewUrl);
+        }
+      });
+    };
+  }, [images]);
+
   if (!isOpen) return null;
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFilesSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    const mime = file.type?.toLowerCase() || '';
-    if (mime === 'image/gif' || mime.startsWith('video/')) {
-      setError('ไม่อนุญาตให้อัปโหลดไฟล์ GIF หรือวิดีโอ (ระบบรองรับเฉพาะรูปภาพ JPG, PNG, WebP เท่านั้น)');
-      return;
-    }
+    const invalid = [];
+    const newItems = [];
 
-    const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
-    if (!ALLOWED.includes(mime)) {
-      setError('ระบบรองรับเฉพาะรูปภาพ JPG, PNG, WebP เท่านั้น');
-      return;
-    }
-
-    setError('');
-    setSelectedFile(file);
-    const objectUrl = URL.createObjectURL(file);
-    setFilePreview({
-      url: objectUrl,
-      type: 'image',
+    files.forEach((file) => {
+      const mime = file.type?.toLowerCase() || '';
+      if (mime === 'image/gif' || mime.startsWith('video/')) {
+        invalid.push(`${file.name}: ไม่อนุญาตไฟล์ GIF หรือวิดีโอ (รองรับเฉพาะ JPG, PNG, WebP)`);
+        return;
+      }
+      if (!ALLOWED_MIME.includes(mime)) {
+        invalid.push(`${file.name}: รองรับเฉพาะรูปภาพ JPG, PNG, WebP เท่านั้น`);
+        return;
+      }
+      const previewUrl = URL.createObjectURL(file);
+      newItems.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        file,
+        previewUrl,
+      });
     });
+
+    if (invalid.length > 0) {
+      setError(invalid[0]);
+    } else {
+      setError('');
+    }
+
+    if (newItems.length > 0) {
+      setImages((prev) => [...prev, ...newItems]);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleRemoveImage = (idToRemove) => {
+    setImages((prev) => {
+      const target = prev.find((img) => img.id === idToRemove);
+      if (target?.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(target.previewUrl);
+      }
+      return prev.filter((img) => img.id !== idToRemove);
+    });
+  };
+
+  const handleSetCover = (index) => {
+    if (index === 0) return;
+    setImages((prev) => {
+      const copy = [...prev];
+      const [item] = copy.splice(index, 1);
+      return [item, ...copy];
+    });
+  };
+
+  const handleResetForm = () => {
+    images.forEach((img) => {
+      if (img.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    });
+    setImages([]);
+    setTitle('');
+    setDescription('');
+    setTagsInput('');
+    setError('');
+    setUploadProgress(0);
+    setUploadStatusText('');
+  };
+
+  const handleClose = () => {
+    if (isUploading) return;
+    handleResetForm();
+    onClose();
   };
 
   const handleSubmit = async (e) => {
@@ -52,8 +120,8 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
       return;
     }
 
-    if (!selectedFile) {
-      setError('กรุณาเลือกรูปภาพผลงาน');
+    if (images.length === 0) {
+      setError('กรุณาเลือกรูปภาพผลงานอย่างน้อย 1 ภาพ');
       return;
     }
 
@@ -61,13 +129,26 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
       setIsUploading(true);
       setError('');
 
-      // 1. Upload ไฟล์ขึ้น Cloudflare R2
-      const uploadResult = await uploadToR2(selectedFile, {
-        folder: 'showcases',
-        onProgress: (percent) => setUploadProgress(percent),
-      });
+      const uploadedUrls = [];
+      const total = images.length;
 
-      const mediaUrl = uploadResult.publicUrl;
+      // 1. อัปโหลดรูปภาพขึ้น Cloudflare R2 ทีละภาพ พร้อมคำนวณ Progress รวม
+      for (let i = 0; i < total; i++) {
+        const item = images[i];
+        setUploadStatusText(`กำลังอัปโหลดรูปภาพ (${i + 1}/${total})...`);
+
+        const result = await uploadToR2(item.file, {
+          folder: 'showcases',
+          onProgress: (percent) => {
+            const overall = Math.round(((i + percent / 100) / total) * 100);
+            setUploadProgress(Math.min(99, overall));
+          },
+        });
+        uploadedUrls.push(result.publicUrl);
+      }
+
+      setUploadProgress(100);
+      setUploadStatusText('กำลังบันทึกข้อมูลผลงาน...');
 
       // 2. แปลง tags
       const tags = tagsInput
@@ -75,32 +156,28 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
         .map((t) => t.trim().replace(/^#/, ''))
         .filter(Boolean);
 
-      // 3. บันทึก Showcase ลงใน Neon DB
+      // 3. บันทึก Showcase ลงในฐานข้อมูล
       await createMutation.mutateAsync({
         title: title.trim(),
         description: description.trim() || null,
-        mediaUrls: [mediaUrl],
-        media_urls: [mediaUrl],
+        mediaUrls: uploadedUrls,
+        media_urls: uploadedUrls,
         mediaType: 'image',
         media_type: 'image',
-        coverUrl: mediaUrl,
-        cover_url: mediaUrl,
+        coverUrl: uploadedUrls[0],
+        cover_url: uploadedUrls[0],
         tags,
       });
 
       // ปิด modal และรีเซ็ตฟอร์ม
-      onClose();
-      setTitle('');
-      setDescription('');
-      setTagsInput('');
-      setSelectedFile(null);
-      setFilePreview(null);
+      handleClose();
     } catch (err) {
       console.error('Failed to create showcase:', err);
       setError(err.message || 'เกิดข้อผิดพลาดในการอัปโหลดผลงาน');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
+      setUploadStatusText('');
     }
   };
 
@@ -115,12 +192,12 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
             </div>
             <div>
               <h2 className="text-sm font-bold text-gray-900">โพสต์ผลงาน Showcase</h2>
-              <p className="text-[11px] text-gray-400">แชร์ภาพหรือคลิปผลงานของคุณสู่ครีเอทีฟคอมมูนิตี้</p>
+              <p className="text-[11px] text-gray-400">แชร์ภาพผลงานของคุณสู่ครีเอทีฟคอมมูนิตี้ (รองรับหลายภาพ)</p>
             </div>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isUploading}
             className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
           >
@@ -138,36 +215,27 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
 
           {/* Media Upload Area */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-              ไฟล์รูปภาพผลงาน (เฉพาะ JPG, PNG, WebP) *
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700">
+                รูปภาพผลงาน (เฉพาะ JPG, PNG, WebP) *
+              </label>
+              {images.length > 0 && (
+                <span className="text-[11px] text-gray-500 font-medium">
+                  {images.length} รูป (รูปแรกคือหน้าปก)
+                </span>
+              )}
+            </div>
+
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept="image/png,image/jpeg,image/webp,image/avif"
               className="hidden"
-              onChange={handleFileSelect}
+              onChange={handleFilesSelect}
             />
 
-            {filePreview ? (
-              <div className="relative aspect-16/9 w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
-                <img
-                  src={filePreview.url}
-                  alt="Preview"
-                  className="h-full w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedFile(null);
-                    setFilePreview(null);
-                  }}
-                  className="absolute top-2 right-2 rounded-full bg-black/70 p-1.5 text-white hover:bg-black transition-colors"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
+            {images.length === 0 ? (
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="flex aspect-16/9 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer p-6 text-center"
@@ -176,11 +244,71 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
                   <Upload className="h-5 w-5" />
                 </div>
                 <p className="text-xs font-semibold text-gray-700">
-                  คลิกเพื่อเลือกไฟล์รูปหรือคลิปผลงาน
+                  คลิกเพื่อเลือกไฟล์รูปภาพผลงาน (เลือกได้หลายภาพ)
                 </p>
                 <p className="text-[11px] text-gray-400 mt-0.5">
-                  รองรับ PNG, JPG, WebP, GIF หรือ MP4, WebM
+                  รองรับ PNG, JPG, WebP (สูงสุด 20MB ต่อรูป)
                 </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {images.map((img, index) => (
+                    <div
+                      key={img.id}
+                      className={`relative aspect-4/3 rounded-xl overflow-hidden border bg-gray-50 group transition-all ${
+                        index === 0
+                          ? 'border-black ring-2 ring-black/10'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <img
+                        src={img.previewUrl}
+                        alt={`Preview ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+
+                      {/* Cover Badge */}
+                      {index === 0 ? (
+                        <div className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 rounded-md bg-black/85 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs shadow-xs">
+                          <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
+                          <span>หน้าปก</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSetCover(index)}
+                          className="absolute bottom-1.5 left-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-white/95 hover:bg-white text-gray-900 text-[10px] font-semibold px-2 py-0.5 shadow-xs cursor-pointer backdrop-blur-xs"
+                        >
+                          ตั้งเป็นหน้าปก
+                        </button>
+                      )}
+
+                      {/* Remove Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(img.id)}
+                        disabled={isUploading}
+                        className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 hover:bg-black text-white transition-all shadow-xs cursor-pointer active:scale-90"
+                        title="ลบรูปภาพนี้"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add More Tile */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="flex aspect-4/3 flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 hover:border-black hover:bg-gray-50/80 transition-colors cursor-pointer text-gray-500 hover:text-black p-3"
+                  >
+                    <Plus className="h-5 w-5 mb-1" />
+                    <span className="text-xs font-semibold">เพิ่มรูปภาพ</span>
+                    <span className="text-[10px] text-gray-400">เลือกภาพเพิ่ม</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -229,11 +357,27 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
             />
           </div>
 
+          {/* Progress Indicator */}
+          {isUploading && (
+            <div className="space-y-1.5 rounded-xl bg-gray-50 p-3 border border-gray-100">
+              <div className="flex justify-between text-xs text-gray-600 font-medium">
+                <span>{uploadStatusText || 'กำลังอัปโหลด...'}</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-black transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Submit Buttons */}
           <div className="flex items-center justify-end gap-2 pt-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isUploading}
               className="rounded-xl px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
             >
@@ -241,7 +385,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
             </button>
             <button
               type="submit"
-              disabled={isUploading || Boolean(error) || !title.trim() || !selectedFile}
+              disabled={isUploading || Boolean(error) || !title.trim() || images.length === 0}
               className="flex items-center gap-2 rounded-xl bg-black px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {isUploading ? (
@@ -250,7 +394,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
                   <span>กำลังอัปโหลด ({uploadProgress}%)...</span>
                 </>
               ) : (
-                <span>เผยแพร่ผลงาน</span>
+                <span>เผยแพร่ผลงาน {images.length > 0 ? `(${images.length} รูป)` : ''}</span>
               )}
             </button>
           </div>
@@ -259,4 +403,3 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
     </div>
   );
 }
-
