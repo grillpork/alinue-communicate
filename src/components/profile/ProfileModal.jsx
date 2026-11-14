@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useUserProfileQuery, useToggleFollowMutation } from '@/services/user';
 import { useMeQuery } from '@/services/auth';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 function formatStatNumber(num) {
   const n = typeof num === 'number' ? num : parseInt(num, 10) || 0;
@@ -67,6 +68,7 @@ function renderBioText(text) {
  * ProfileModal - Dialog Modal แสดงข้อมูลโปรไฟล์เต็มเมื่อ Toggle/Click ที่รูปโปรไฟล์ของ Post
  */
 export default function ProfileModal({ isOpen, onClose, author }) {
+  useBodyScrollLock(isOpen);
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const { data: meData } = useMeQuery();

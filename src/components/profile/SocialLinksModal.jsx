@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Trash2, Plus, Globe, Loader2 } from 'lucide-react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 export const PLATFORMS = [
   {
@@ -131,6 +132,7 @@ export default function SocialLinksModal({
   onSave,
   isSaving = false,
 }) {
+  useBodyScrollLock(isOpen);
   const [linksList, setLinksList] = useState([]);
 
   useEffect(() => {

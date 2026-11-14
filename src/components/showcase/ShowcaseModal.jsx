@@ -26,6 +26,7 @@ import { useMeQuery } from '@/services/auth';
 import { formatRelativeTime } from '@/lib/date';
 import EditShowcaseModal from './EditShowcaseModal';
 import LinkedServiceCard from '@/components/common/LinkedServiceCard';
+import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 
 /**
  * ฟังก์ชันแปลงข้อความให้ Hashtags (#tag) และ Mentions (@user) กลายเป็นลิงก์คลิกได้
@@ -92,6 +93,8 @@ export default function ShowcaseModal({
   const { data: meData } = useMeQuery();
   const loggedInUser = meData?.user;
 
+  useBodyScrollLock(isOpen);
+
   // Sync state เมื่อ showcase เปลี่ยน
   useEffect(() => {
     if (showcase) {
@@ -113,11 +116,9 @@ export default function ShowcaseModal({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // ล็อค Scroll ของบอดี้ และรองรับปุ่ม Escape / แป้นลูกศร ซ้าย-ขวา
+  // รองรับปุ่ม Escape / แป้นลูกศร ซ้าย-ขวา
   useEffect(() => {
     if (!isOpen) return;
-
-    document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -132,7 +133,6 @@ export default function ShowcaseModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);

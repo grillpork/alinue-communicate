@@ -23,6 +23,7 @@ import { uploadToR2, submitModerationAppeal } from "@/lib/upload";
 import { useSuggestedUsersQuery } from "@/services/user";
 import { useMeQuery } from "@/services/auth";
 import LinkServiceModal from "@/components/showcase/LinkServiceModal";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 export default function PostFormModal({
   isOpen = true,
@@ -32,6 +33,8 @@ export default function PostFormModal({
   mode,
   initialPost = null,
 }) {
+  useBodyScrollLock(isOpen);
+
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
   const usernameDisplay = currentUser?.username

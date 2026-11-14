@@ -38,6 +38,7 @@ import CommentActionsMenu from './CommentActionsMenu';
 import SharePostModal from './SharePostModal';
 import UserAvatar from '@/components/common/UserAvatar';
 import LinkedServiceCard from '@/components/common/LinkedServiceCard';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /**
  * ฟังก์ชันแปลง Hashtag และ Mention เป็นตัวหนังสือสีฟ้า
@@ -141,15 +142,15 @@ export default function PostDetailModal({
   }, [post, initialImageIndex, isOpen]);
 
   // ล็อค Scroll ของ Body เมื่อเปิด Modal
+  useBodyScrollLock(isOpen);
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') onClose();
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => {
-        document.body.style.overflow = '';
         window.removeEventListener('keydown', handleKeyDown);
       };
     }

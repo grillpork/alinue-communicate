@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Search, Check, Layers, Loader2 } from 'lucide-react';
 import { useMyServicesQuery } from '@/services/service';
+import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 
 export default function LinkServiceModal({
   isOpen,
@@ -10,6 +11,7 @@ export default function LinkServiceModal({
   selectedServiceId,
   onSelectService,
 }) {
+  useBodyScrollLock(isOpen);
   const [search, setSearch] = useState('');
   const [tempSelectedId, setTempSelectedId] = useState(selectedServiceId || null);
 

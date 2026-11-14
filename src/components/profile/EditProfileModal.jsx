@@ -12,8 +12,10 @@ import {
 } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useUpdateProfileMutation } from '@/services/user';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 export default function EditProfileModal({ isOpen, onClose, user }) {
+  useBodyScrollLock(isOpen);
   const router = useRouter();
   const updateProfileMutation = useUpdateProfileMutation();
 

@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useSharePostMutation } from '@/services/post';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /**
  * SharePostModal - Modal สำหรับแชร์โพสต์ไปยังช่องทางต่างๆ พร้อมนับจำนวนแชร์ (sharesCount)
@@ -23,6 +24,7 @@ export default function SharePostModal({
   post,
   onShareSuccess,
 }) {
+  useBodyScrollLock(isOpen);
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
   const shareMutation = useSharePostMutation();

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { X, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
 
 /**
  * NoteFormModal - Modal สำหรับสร้างและแก้ไขสถานะ / โน้ต (Instagram / Threads Note style)
@@ -15,6 +16,7 @@ export default function NoteFormModal({
   user,
   onSave,
 }) {
+  useBodyScrollLock(isOpen);
   const [noteText, setNoteText] = useState(initialNote || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef(null);

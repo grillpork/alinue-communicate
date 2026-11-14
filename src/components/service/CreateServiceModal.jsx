@@ -11,10 +11,12 @@ import {
 } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useCreateServiceMutation } from '@/services/service';
+import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
 
 export default function CreateServiceModal({ isOpen, onClose }) {
+  useBodyScrollLock(isOpen);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [minPrice, setMinPrice] = useState('');

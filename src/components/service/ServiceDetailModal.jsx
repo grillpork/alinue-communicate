@@ -28,6 +28,7 @@ import {
   useToggleServiceStatusMutation,
 } from '@/services/service';
 import { useMeQuery } from '@/services/auth';
+import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 import EditServiceModal from './EditServiceModal';
 
 export default function ServiceDetailModal({
@@ -37,6 +38,7 @@ export default function ServiceDetailModal({
   onDeleted,
   isOwner: isOwnerProp,
 }) {
+  useBodyScrollLock(isOpen);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);

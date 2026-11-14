@@ -4,11 +4,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { X, Upload, Loader2, Plus, Star, ChevronRight, Layers, Image as ImageIcon } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useUpdateShowcaseMutation } from '@/services/showcase';
+import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 import LinkServiceModal from './LinkServiceModal';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
 
 export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
+  useBodyScrollLock(isOpen);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedService, setSelectedService] = useState(null);
