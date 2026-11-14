@@ -200,40 +200,42 @@ function UserProfileContent() {
         onUpdateNote={isSelf ? handleUpdateNote : undefined}
       />
 
-      {/* 2. Navigation Tabs */}
-      <div className="mt-6 flex border-b border-gray-100 px-2 sm:px-0">
-        {[
-          { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
-          { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
-          { id: 'likes', label: 'Likes', icon: Heart },
-          {
-            id: 'bookmarks',
-            label: 'Bookmark',
-            icon: Bookmark,
-            count: isSelf && bookmarkedPosts.length > 0 ? bookmarkedPosts.length : undefined,
-          },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
-                isActive
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-              {typeof tab.count === 'number' && (
-                <span className="text-[11px] text-gray-400">({tab.count})</span>
-              )}
-            </button>
-          );
-        })}
+      {/* 2. Navigation Tabs (Sticky Top) */}
+      <div className="sticky top-[53px] lg:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-100 px-2 sm:px-0 transition-all">
+        <div className="flex">
+          {[
+            { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
+            { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
+            { id: 'likes', label: 'Likes', icon: Heart },
+            {
+              id: 'bookmarks',
+              label: 'Bookmark',
+              icon: Bookmark,
+              count: isSelf && bookmarkedPosts.length > 0 ? bookmarkedPosts.length : undefined,
+            },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
+                  isActive
+                    ? 'border-gray-900 text-gray-900'
+                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+                {typeof tab.count === 'number' && (
+                  <span className="text-[11px] text-gray-400">({tab.count})</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* 3. Tab Content */}
