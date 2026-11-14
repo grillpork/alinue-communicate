@@ -233,6 +233,76 @@ export default function ServiceDetailModal({
             <X className="h-4.5 w-4.5" />
           </button>
 
+          {/* Mobile-only Top Right: Owner Options Dropdown */}
+          {isOwner && (
+            <div className="absolute top-4 right-4 z-40 md:hidden" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setShowMenu((prev) => !prev)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
+                title="ตัวเลือกเพิ่มเติม"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      handleRenew();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <RotateCw className="h-3.5 w-3.5" />
+                    <span>ต่ออายุอีก 30 วัน</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      handleToggleStatus();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <Power className="h-3.5 w-3.5" />
+                    <span>{status === 'paused' ? 'เปิดรับงาน' : 'พักรับงาน'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      setIsEditOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    <span>แก้ไขประกาศ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      handleDelete();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>ลบโพสต์</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* 1. LEFT SIDE: Image Viewer with Embla Carousel */}
           <div className="relative shrink-0 md:flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden h-[380px] sm:h-[480px] md:h-full md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
             {images.length > 0 ? (
@@ -260,60 +330,13 @@ export default function ServiceDetailModal({
                   </div>
                 </div>
 
-                {/* Slider Arrows if multiple images */}
+                {/* Counter Pill (ลบ Dots และลูกศร Arrow ออกตามคำขอ) */}
                 {images.length > 1 && (
-                  <>
-                    {activeImageIdx > 0 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          emblaApi?.scrollPrev();
-                        }}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md border border-gray-200/80 hover:bg-white hover:scale-105 transition-all active:scale-95 cursor-pointer"
-                        aria-label="Previous image"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                    )}
-                    {activeImageIdx < images.length - 1 && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          emblaApi?.scrollNext();
-                        }}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md border border-gray-200/80 hover:bg-white hover:scale-105 transition-all active:scale-95 cursor-pointer"
-                        aria-label="Next image"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    )}
-
-                    {/* Counter Pill & Thumbnails Bar */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full bg-black/60 px-3.5 py-1.5 backdrop-blur-md">
-                      <span className="text-[11px] font-semibold text-white/90">
-                        {activeImageIdx + 1} / {images.length}
-                      </span>
-                      <div className="mx-1 h-2.5 w-px bg-white/20" />
-                      <div className="flex items-center gap-1.5">
-                        {images.map((_, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              emblaApi?.scrollTo(idx);
-                            }}
-                            className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                              idx === activeImageIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
-                            }`}
-                            aria-label={`Go to image ${idx + 1}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center rounded-full bg-black/60 px-3 py-1 backdrop-blur-md">
+                    <span className="text-[11px] font-semibold text-white/90">
+                      {activeImageIdx + 1} / {images.length}
+                    </span>
+                  </div>
                 )}
               </>
             ) : (
@@ -330,30 +353,8 @@ export default function ServiceDetailModal({
 
           {/* 2. RIGHT SIDE: Service Details & Actions Panel */}
           <div className="w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col bg-white border-t md:border-t-0 md:border-l border-gray-100 md:overflow-hidden">
-            {/* Top Bar with Expiry & Actions */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-10">
-              {/* Status & Expiry Badge */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {isExpired ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-600 px-2.5 py-1 text-xs font-semibold">
-                    <Clock className="h-3 w-3 text-gray-500" />
-                    <span>หมดอายุแล้ว</span>
-                  </span>
-                ) : status === 'paused' ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/60 px-2.5 py-1 text-xs font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                    <span>พักรับงานชั่วคราว</span>
-                  </span>
-                ) : null}
-
-                {!isExpired && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200/60 px-2.5 py-1 text-xs font-medium">
-                    <Clock className="h-3.5 w-3.5 text-gray-500" />
-                    <span>เหลืออีก {daysLeft} วัน</span>
-                  </span>
-                )}
-              </div>
-
+            {/* Top Bar with Expiry & Actions (Desktop only) */}
+            <div className="hidden md:flex items-center justify-end px-5 py-3 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-10">
               {/* Owner Options Menu */}
               {isOwner && (
                 <div className="relative" ref={menuRef}>
