@@ -323,7 +323,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น Vtuber 2D Model, Cyberpunk Character Design..."
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none"
               maxLength={200}
               required
             />
@@ -339,7 +339,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="เล่ารายละเอียด เทคนิค หรือโปรแกรมที่ใช้สร้างผลงานชิ้นนี้..."
               rows={3}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none resize-none"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none resize-none"
             />
           </div>
 
@@ -353,7 +353,7 @@ export default function CreateShowcaseModal({ isOpen, onClose }) {
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="เช่น 2D, Vtuber, Commission, Illustration (คั่นด้วยจุลภาคหรือเว้นวรรค)"
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none"
             />
           </div>
 

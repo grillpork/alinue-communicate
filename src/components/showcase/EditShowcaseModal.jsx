@@ -344,7 +344,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น Live2D Anime Model, Character Illustration..."
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
               maxLength={120}
               required
             />
@@ -360,7 +360,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="บอกเล่าเรื่องราว เทคนิค หรือแรงบันดาลใจในการสร้างผลงานชิ้นนี้..."
               rows={4}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all resize-none"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all resize-none"
               maxLength={1000}
             />
           </div>
@@ -375,7 +375,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               value={tagsInput}
               onChange={(e) => setTagsInput(e.target.value)}
               placeholder="#art #illustration #design"
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
+              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
             />
           </div>
 
