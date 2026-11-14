@@ -373,17 +373,30 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
               {showMoreMenu && (
                 <div className="absolute right-0 top-12 w-48 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-50 animate-in fade-in zoom-in-95 duration-100">
                   {isSelf && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMoreMenu(false);
-                        setIsEditProfileOpen(true);
-                      }}
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
-                    >
-                      <Settings className="h-4 w-4 text-gray-400" />
-                      <span>Edit Profile</span>
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMoreMenu(false);
+                          setIsEditProfileOpen(true);
+                        }}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                      >
+                        <Pencil className="h-4 w-4 text-gray-400" />
+                        <span>Edit Profile</span>
+                      </button>
+
+                      <Link
+                        href="/settings"
+                        onClick={() => setShowMoreMenu(false)}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                      >
+                        <Settings className="h-4 w-4 text-gray-400" />
+                        <span>Settings</span>
+                      </Link>
+
+                      <div className="my-1 border-t border-gray-100" />
+                    </>
                   )}
 
                   <button
