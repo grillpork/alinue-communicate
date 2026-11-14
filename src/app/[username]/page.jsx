@@ -337,7 +337,7 @@ function UserProfileContent() {
                 <p className="text-xs">กำลังโหลดรายการบริการรับงาน...</p>
               </div>
             ) : services.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                 {services.map((srv) => (
                   <ServiceCard
                     key={srv.id}
