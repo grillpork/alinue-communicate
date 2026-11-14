@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   X,
@@ -19,6 +19,7 @@ import {
   Play,
   Briefcase,
   Pencil,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
 import { useMeQuery } from '@/services/auth';
@@ -82,6 +83,8 @@ export default function ShowcaseModal({
   const [likesCount, setLikesCount] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef(null);
 
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
   const deleteMutation = useDeleteShowcaseMutation();
@@ -97,6 +100,17 @@ export default function ShowcaseModal({
       setIsVideoPlaying(false);
     }
   }, [showcase]);
+
+  // ปิดเมนูเพิ่มเติมเมื่อคลิกข้างนอก
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // ล็อค Scroll ของบอดี้ และรองรับปุ่ม Escape / แป้นลูกศร ซ้าย-ขวา
   useEffect(() => {
@@ -168,7 +182,7 @@ export default function ShowcaseModal({
   const createdAt = showcase.createdAt || showcase.created_at;
 
   const handleToggleLike = (e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     const nextState = !isLiked;
     setIsLiked(nextState);
     setLikesCount((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
@@ -176,7 +190,7 @@ export default function ShowcaseModal({
   };
 
   const handleCopyLink = (e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (typeof window !== 'undefined') {
       const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
       navigator.clipboard.writeText(url);
@@ -186,7 +200,7 @@ export default function ShowcaseModal({
   };
 
   const handleShare = async (e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (typeof window !== 'undefined') {
       const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
       if (navigator.share) {
@@ -206,7 +220,7 @@ export default function ShowcaseModal({
   };
 
   const handleDelete = (e) => {
-    e.stopPropagation();
+    e?.stopPropagation?.();
     if (confirm('คุณต้องการลบผลงาน Showcase นี้ใช่หรือไม่?')) {
       deleteMutation.mutate(showcase.id, {
         onSuccess: () => {
@@ -483,63 +497,78 @@ export default function ShowcaseModal({
               <span>{isLiked ? 'ถูกใจแล้ว' : 'ถูกใจ'}</span>
             </button>
 
-            <div className="flex items-center gap-1.5">
-              {/* Copy Link Button */}
+            {/* Actions Dropdown Menu */}
+            <div className="relative" ref={menuRef}>
               <button
                 type="button"
-                onClick={handleCopyLink}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 shadow-2xs transition-all cursor-pointer"
-                title="คัดลอกลิงก์ผลงาน"
+                onClick={() => setShowMenu((prev) => !prev)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 hover:text-gray-900 shadow-2xs transition-all cursor-pointer"
+                title="ตัวเลือกเพิ่มเติม"
               >
-                {copied ? (
-                  <>
-                    <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    <span className="text-emerald-600">คัดลอกแล้ว</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3.5 w-3.5 text-gray-500" />
-                    <span>คัดลอกลิงก์</span>
-                  </>
-                )}
+                <MoreHorizontal className="h-4 w-4" />
               </button>
 
-              {/* Share Button */}
-              <button
-                type="button"
-                onClick={handleShare}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 shadow-2xs transition-all cursor-pointer"
-                title="แชร์ผลงาน"
-              >
-                <Share2 className="h-3.5 w-3.5 text-gray-500" />
-                <span className="hidden sm:inline">แชร์</span>
-              </button>
+              {showMenu && (
+                <div className="absolute right-0 bottom-full mb-1.5 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-20 animate-in fade-in zoom-in-95 duration-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleCopyLink();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5 text-gray-500" />
+                    )}
+                    <span>{copied ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}</span>
+                  </button>
 
-              {/* Edit Button (Owner Only) */}
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-100 shadow-2xs transition-all cursor-pointer"
-                  title="แก้ไขผลงานนี้"
-                >
-                  <Pencil className="h-3.5 w-3.5 text-gray-500" />
-                  <span className="hidden sm:inline">แก้ไข</span>
-                </button>
-              )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleShare();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <Share2 className="h-3.5 w-3.5 text-gray-500" />
+                    <span>แชร์ผลงาน</span>
+                  </button>
 
-              {/* Delete Button (Owner Only) */}
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={deleteMutation.isPending}
-                  className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-100 shadow-2xs transition-all cursor-pointer"
-                  title="ลบผลงานนี้"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                  <span className="hidden sm:inline">ลบ</span>
-                </button>
+                  {isOwner && (
+                    <>
+                      <div className="my-1 border-t border-gray-100" />
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false);
+                          setIsEditModalOpen(true);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                        <span>แก้ไขผลงาน</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false);
+                          handleDelete();
+                        }}
+                        disabled={deleteMutation.isPending}
+                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                        <span>ลบผลงาน</span>
+                      </button>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
