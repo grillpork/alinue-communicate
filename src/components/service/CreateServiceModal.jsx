@@ -3,12 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
-  Upload,
   Loader2,
-  LayoutList,
-  Plus,
   Clock,
-  Coins,
   Tag,
   AlertCircle,
   Image as ImageIcon,
@@ -138,37 +134,75 @@ export default function CreateServiceModal({ isOpen, onClose }) {
     });
   };
 
-  const handleClose = () => {
-    if (isUploading) return;
+  const handleResetForm = () => {
+    images.forEach((img) => {
+      if (img.previewUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    });
+    setImages([]);
     setTitle('');
     setDescription('');
     setMinPrice('');
     setMaxPrice('');
     setTags([]);
     setTagInput('');
-    setImages([]);
     setError('');
+    setUploadProgress(0);
+    setUploadStatusText('');
+  };
+
+  const handleClose = () => {
+    if (isUploading) return;
+    handleResetForm();
     onClose();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('กรุณากรอกชื่องานหรือบริการที่รับ');
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
+      setError('กรุณากรอกชื่องาน / บริการที่รับ');
       return;
+    }
+
+    // Process price
+    let parsedMin = null;
+    let parsedMax = null;
+    let priceText = '';
+
+    if (minPrice !== '') {
+      const p = parseFloat(minPrice);
+      if (!isNaN(p) && p >= 0) parsedMin = p;
+    }
+    if (maxPrice !== '') {
+      const p = parseFloat(maxPrice);
+      if (!isNaN(p) && p >= 0) parsedMax = p;
+    }
+
+    if (parsedMin !== null && parsedMax !== null) {
+      if (parsedMin > parsedMax) {
+        setError('ราคาเริ่มต้นต้องไม่มากกว่าราคาสูงสุด');
+        return;
+      }
+      priceText = `฿${parsedMin.toLocaleString()} - ฿${parsedMax.toLocaleString()}`;
+    } else if (parsedMin !== null) {
+      priceText = `฿${parsedMin.toLocaleString()}`;
+    } else if (parsedMax !== null) {
+      priceText = `฿${parsedMax.toLocaleString()}`;
     }
 
     try {
       setIsUploading(true);
       setError('');
 
+      // 1. Upload images to R2
       const uploadedUrls = [];
       const total = images.length;
 
-      // 1. อัปโหลดรูปภาพขึ้น Cloudflare R2
       for (let i = 0; i < total; i++) {
         const item = images[i];
-        setUploadStatusText(`กำลังอัปโหลดรูปตัวอย่างงาน (${i + 1}/${total})...`);
+        setUploadStatusText(`กำลังอัปโหลดรูปตัวอย่าง (${i + 1}/${total})...`);
 
         const result = await uploadToR2(item.file, {
           folder: 'services',
@@ -181,50 +215,32 @@ export default function CreateServiceModal({ isOpen, onClose }) {
       }
 
       setUploadProgress(100);
-      setUploadStatusText('กำลังสร้างโพสต์รับงาน...');
+      setUploadStatusText('กำลังบันทึกข้อมูลบริการ...');
 
-      // 2. จัดการ Tags (รวม tag ที่กำลังพิมพ์อยู่ถ้ามี)
-      let finalTags = [...tags];
-      const pendingTag = tagInput.trim().replace(/^#/, '');
-      if (pendingTag && finalTags.length < 10 && !finalTags.includes(pendingTag.toLowerCase())) {
-        finalTags.push(pendingTag.toLowerCase());
-      }
-
-      // 3. คำนวณราคาเริ่มต้นและราคาสูงสุด
-      const parsedMin = minPrice !== '' && !isNaN(Number(minPrice)) ? Number(minPrice) : null;
-      const parsedMax = maxPrice !== '' && !isNaN(Number(maxPrice)) ? Number(maxPrice) : null;
-
-      let computedPrice = parsedMin !== null ? parsedMin : parsedMax;
-      let computedPriceText = null;
-
-      if (parsedMin !== null && parsedMax !== null) {
-        if (parsedMin === parsedMax) {
-          computedPriceText = `${parsedMin.toLocaleString()}`;
-        } else {
-          computedPriceText = `${parsedMin.toLocaleString()} - ${parsedMax.toLocaleString()}`;
+      // 2. Add any remaining tag in input
+      const finalTags = [...tags];
+      if (tagInput.trim()) {
+        const clean = tagInput.trim().replace(/^#/, '');
+        if (clean && !finalTags.includes(clean.toLowerCase()) && finalTags.length < 10) {
+          finalTags.push(clean.toLowerCase());
         }
-      } else if (parsedMin !== null) {
-        computedPriceText = `${parsedMin.toLocaleString()}`;
-      } else if (parsedMax !== null) {
-        computedPriceText = `สูงสุด ${parsedMax.toLocaleString()}`;
       }
 
-      // 4. ส่งข้อมูลไปยัง Backend API
+      // 3. Create service via mutation
       await createMutation.mutateAsync({
-        title: title.trim(),
-        description: description.trim() || '',
-        price: computedPrice,
-        priceText: computedPriceText,
-        images: uploadedUrls,
+        title: trimmedTitle,
+        description: description.trim() || null,
+        price: parsedMin !== null ? parsedMin : parsedMax !== null ? parsedMax : null,
+        priceText: priceText || null,
         coverUrl: uploadedUrls[0] || null,
+        images: uploadedUrls,
         tags: finalTags,
-        durationDays: 30, // อายุ 1 เดือน
       });
 
       handleClose();
     } catch (err) {
       console.error('Failed to create service:', err);
-      setError(err.message || 'เกิดข้อผิดพลาดในการสร้างโพสต์รับงาน');
+      setError(err.message || 'เกิดข้อผิดพลาดในการบันทึกบริการ');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -233,55 +249,132 @@ export default function CreateServiceModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100 [scrollbar-width:thin]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+        onClick={handleClose}
+      />
+
+      {/* Modal Container */}
+      <div className="relative z-10 w-full max-w-[540px] max-h-[88vh] rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in fade-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-black text-white">
-              <LayoutList className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-bold text-gray-900">
-                โพสต์รับงาน (Service)
-              </h2>
-              <p className="text-[11px] text-gray-500">
-                ประกาศรับงานและแสดงตัวอย่างผลงาน โพสต์มีอายุ 1 เดือน
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0 bg-white">
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Add service
+          </h2>
           <button
             type="button"
             onClick={handleClose}
             disabled={isUploading}
-            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            aria-label="Close modal"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Notice Pill: 1 Month Expiration */}
-        <div className="mt-4 flex items-center gap-2 rounded-2xl bg-amber-50/70 border border-amber-200/60 p-3 text-amber-900">
-          <Clock className="h-4 w-4 shrink-0 text-amber-600" />
-          <p className="text-xs leading-relaxed">
-            โพสต์นี้จะมีอายุ <strong className="font-semibold">30 วัน (1 เดือน)</strong> และจะปิดรับอัตโนมัติเมื่อครบกำหนด (สามารถกดต่ออายุได้ตลอดเวลา)
-          </p>
-        </div>
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
+          {/* Subtle Notice Pill */}
+          <div className="flex items-center gap-2 rounded-2xl bg-amber-50/80 border border-amber-200/50 px-3.5 py-2 text-amber-900 text-xs">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+            <span>โพสต์รับงานมีอายุ 30 วัน (ต่ออายุได้ตลอดเวลา)</span>
+          </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Error Banner */}
           {error && (
-            <div className="flex items-center gap-2 rounded-2xl bg-red-50 p-3 text-xs text-red-600 border border-red-100">
+            <div className="flex items-center gap-2 rounded-2xl bg-rose-50 border border-rose-100 p-3 text-xs text-rose-600 font-medium">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          {/* Service Title */}
+          {/* Media Section */}
           <div>
-            <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-              ชื่องาน / บริการที่รับ <span className="text-red-500">*</span>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-900">ตัวอย่างงาน (Sample images)</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400 font-medium">
+                  {images.length} / 10
+                </span>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-semibold text-gray-800 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  <span>Add media</span>
+                </button>
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ALLOWED_MIME.join(',')}
+              className="hidden"
+              onChange={handleFilesSelect}
+            />
+
+            <div className="flex flex-wrap gap-3">
+              {images.map((img, idx) => (
+                <div
+                  key={img.id}
+                  className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-2xs"
+                >
+                  <img
+                    src={img.previewUrl}
+                    alt={`Preview ${idx + 1}`}
+                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  />
+
+                  {idx === 0 ? (
+                    <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-center">
+                      <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                        COVER
+                      </span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSetCover(idx)}
+                      className="absolute bottom-1.5 inset-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-black/75 hover:bg-black text-white text-[9px] font-semibold py-0.5 text-center cursor-pointer backdrop-blur-xs"
+                    >
+                      Make cover
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(img.id)}
+                    disabled={isUploading}
+                    className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white shadow-xs hover:bg-black transition-all cursor-pointer"
+                  >
+                    <X className="h-3 w-3 stroke-[2.5]" />
+                  </button>
+                </div>
+              ))}
+
+              {images.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-black/40 hover:bg-gray-50/80 transition-all text-gray-400 hover:text-gray-700 cursor-pointer"
+                >
+                  <ImageIcon className="h-5 w-5 stroke-[1.5]" />
+                  <span className="text-[11px] font-medium mt-1">Add media</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Title Input */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-gray-700">
+              ชื่องาน / บริการที่รับ *
             </label>
             <input
               type="text"
@@ -289,177 +382,89 @@ export default function CreateServiceModal({ isOpen, onClose }) {
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น รับวาดภาพประกอบจิบิ, ออกแบบ Logo & Mascot"
               maxLength={150}
-              className="w-full rounded-2xl border border-gray-200 px-3.5 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+              required
               disabled={isUploading}
+              className="w-full rounded-2xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
             />
           </div>
 
-          {/* Price Range: Min & Max */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-                ราคาเริ่มต้น
+          {/* Price Range */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-700">
+                ราคาเริ่มต้น (บาท)
               </label>
               <div className="relative">
-                <Coins className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  ฿
+                </span>
                 <input
                   type="number"
                   min="0"
                   step="any"
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
-                  placeholder="เช่น 500"
-                  className="w-full pl-9 pr-3 rounded-2xl border border-gray-200 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+                  placeholder="500"
                   disabled={isUploading}
+                  className="w-full pl-8 pr-3.5 py-2.5 rounded-2xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
                 />
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-                ราคาสูงสุด
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-700">
+                ราคาสูงสุด (บาท)
               </label>
               <div className="relative">
-                <Coins className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  ฿
+                </span>
                 <input
                   type="number"
                   min="0"
                   step="any"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
-                  placeholder="เช่น 3000"
-                  className="w-full pl-9 pr-3 rounded-2xl border border-gray-200 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+                  placeholder="3000"
                   disabled={isUploading}
+                  className="w-full pl-8 pr-3.5 py-2.5 rounded-2xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
                 />
               </div>
             </div>
           </div>
 
           {/* Description */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-800 mb-1.5">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-gray-700">
               รายละเอียดงานและเงื่อนไข (Description)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="ระบุขอบเขตงาน สิ่งที่ลูกค้าจะได้รับ ระยะเวลาการทำงาน หรือช่องทางการติดต่อเพิ่มเติม..."
-              rows={4}
+              placeholder="ระบุขอบเขตงาน สิ่งที่ลูกค้าจะได้รับ หรือระยะเวลาการทำงาน..."
+              rows={3}
               maxLength={2000}
-              className="w-full rounded-2xl border border-gray-200 p-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
               disabled={isUploading}
+              className="w-full rounded-2xl border border-gray-200 p-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
             />
-          </div>
-
-          {/* Sample Images Upload (Multiple) */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-gray-800">
-                ตัวอย่างงาน (Sample Images)
-              </label>
-              <span className="text-[11px] text-gray-400">
-                {images.length > 0 ? `${images.length} ภาพ` : 'เลือกได้หลายภาพ'}
+            <div className="flex justify-end">
+              <span className="text-xs text-gray-400 font-medium">
+                {description.length}/2,000
               </span>
             </div>
-
-            {/* Thumbnail Preview Grid */}
-            {images.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-2.5">
-                {images.map((img, idx) => (
-                  <div
-                    key={img.id}
-                    className="group relative aspect-square rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shadow-2xs"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img.previewUrl}
-                      alt={`Preview ${idx + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-
-                    {/* Cover Badge */}
-                    {idx === 0 && (
-                      <span className="absolute top-1 left-1 rounded-md bg-black/80 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-semibold text-white">
-                        หน้าปก
-                      </span>
-                    )}
-
-                    {/* Overlay Controls */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
-                      {idx !== 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleSetCover(idx)}
-                          title="ตั้งเป็นภาพหน้าปก"
-                          className="rounded-lg bg-white/90 p-1 text-[10px] font-medium text-gray-800 hover:bg-white transition-colors"
-                        >
-                          ปก
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveImage(img.id)}
-                        title="ลบรูปนี้"
-                        className="rounded-lg bg-red-500/90 p-1 text-white hover:bg-red-600 transition-colors"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Add More Button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-gray-200 hover:border-black/50 text-gray-400 hover:text-black transition-all cursor-pointer bg-gray-50/50"
-                >
-                  <Plus className="h-5 w-5" />
-                  <span className="text-[10px] mt-0.5 font-medium">เพิ่มรูป</span>
-                </button>
-              </div>
-            )}
-
-            {/* Empty Upload Area */}
-            {images.length === 0 && (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center hover:border-black/50 transition-colors cursor-pointer bg-gray-50/50"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-2xs text-gray-500 mb-2">
-                  <ImageIcon className="h-5 w-5" />
-                </div>
-                <p className="text-xs font-semibold text-gray-800">
-                  คลิกเพื่อเลือกรูปตัวอย่างงาน
-                </p>
-                <p className="text-[11px] text-gray-400 mt-0.5">
-                  รองรับ JPG, PNG, WebP (เลือกพร้อมกันได้หลายภาพ)
-                </p>
-              </div>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept={ALLOWED_MIME.join(',')}
-              onChange={handleFilesSelect}
-              className="hidden"
-            />
           </div>
 
           {/* Tags */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-gray-800">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-gray-700">
                 แท็ก (Tags)
               </label>
-              <span className={`text-[11px] ${tags.length >= 10 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
-                {tags.length}/10 แท็ก
+              <span className="text-xs text-gray-400 font-medium">
+                {tags.length}/10
               </span>
             </div>
-
-            <div className="w-full rounded-2xl border border-gray-200 p-2 focus-within:border-black transition-colors bg-white flex flex-wrap items-center gap-1.5 min-h-[46px]">
+            <div className="w-full rounded-2xl border border-gray-200 p-2 focus-within:border-black transition-colors bg-white flex flex-wrap items-center gap-1.5 min-h-[44px]">
               {tags.map((t, idx) => (
                 <span
                   key={idx}
@@ -478,7 +483,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
               ))}
 
               {tags.length < 10 && (
-                <div className="flex-1 min-w-[140px] flex items-center gap-1.5 px-1">
+                <div className="flex-1 min-w-[120px] flex items-center gap-1.5 px-1">
                   <Tag className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                   <input
                     type="text"
@@ -486,65 +491,60 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleKeyDownTag}
                     placeholder={tags.length === 0 ? "พิมพ์แท็กแล้วกด Enter..." : "พิมพ์แท็กเพิ่ม..."}
-                    className="w-full text-base text-gray-900 placeholder:text-gray-400 focus:outline-hidden bg-transparent"
+                    className="w-full text-xs text-gray-900 placeholder:text-gray-400 focus:outline-hidden bg-transparent"
                     disabled={isUploading}
                   />
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-gray-400 mt-1">
-              พิมพ์ชื่อแท็กแล้วกด Enter เพื่อเพิ่ม (ใส่ได้สูงสุดไม่เกิน 10 แท็ก)
-            </p>
           </div>
 
-          {/* Upload Progress */}
+          {/* Progress Indicator */}
           {isUploading && (
-            <div className="space-y-1.5 pt-2">
-              <div className="flex items-center justify-between text-xs text-gray-600">
+            <div className="space-y-1.5 rounded-2xl bg-gray-50 p-3.5 border border-gray-100">
+              <div className="flex justify-between text-xs text-gray-600 font-medium">
                 <span className="flex items-center gap-1.5">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>{uploadStatusText || 'กำลังประมวลผล...'}</span>
+                  <span>{uploadStatusText || 'กำลังบันทึกข้อมูล...'}</span>
                 </span>
-                <span className="font-semibold">{uploadProgress}%</span>
+                <span>{uploadProgress}%</span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+              <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-black transition-all duration-200"
+                  className="h-full bg-black transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 />
               </div>
             </div>
           )}
+        </div>
 
-          {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={handleClose}
-              disabled={isUploading}
-              className="rounded-2xl px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="submit"
-              disabled={isUploading || !title.trim()}
-              className="inline-flex items-center gap-1.5 rounded-2xl bg-black px-5 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>กำลังบันทึก...</span>
-                </>
-              ) : (
-                <>
-                  <LayoutList className="h-3.5 w-3.5" />
-                  <span>โพสต์รับงาน</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
+        {/* Footer Actions */}
+        <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-gray-100 shrink-0 bg-white">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={isUploading}
+            className="rounded-full px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            ยกเลิก
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isUploading || Boolean(error) || !title.trim()}
+            className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-500 cursor-pointer disabled:cursor-not-allowed"
+          >
+            {isUploading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>กำลังบันทึก...</span>
+              </span>
+            ) : (
+              <span>โพสต์รับงาน</span>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

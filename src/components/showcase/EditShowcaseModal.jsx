@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Upload, Loader2, Pencil, Plus, Star, ChevronRight, Layers } from 'lucide-react';
+import { X, Upload, Loader2, Plus, Star, ChevronRight, Layers, Image as ImageIcon } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useUpdateShowcaseMutation } from '@/services/showcase';
 import LinkServiceModal from './LinkServiceModal';
@@ -149,7 +149,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
     }
 
     if (mediaItems.length === 0) {
-      setError('กรุณามีรูปภาพผลงานอย่างน้อย 1 ภาพ');
+      setError('กรุณาเลือกรูปภาพผลงานอย่างน้อย 1 ภาพ');
       return;
     }
 
@@ -157,25 +157,24 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
       setIsUploading(true);
       setError('');
 
-      const newFilesCount = mediaItems.filter((m) => m.isNew && m.file).length;
+      const finalUrls = [];
+      const newItemsToUpload = mediaItems.filter((m) => m.isNew);
+      const totalNew = newItemsToUpload.length;
       let uploadedCount = 0;
 
-      const finalUrls = [];
-      for (const item of mediaItems) {
-        if (item.isNew && item.file) {
-          uploadedCount++;
-          setUploadStatusText(`กำลังอัปโหลดรูปภาพใหม่ (${uploadedCount}/${newFilesCount})...`);
-
-          const uploadResult = await uploadToR2(item.file, {
+      for (let i = 0; i < mediaItems.length; i++) {
+        const item = mediaItems[i];
+        if (item.isNew) {
+          setUploadStatusText(`กำลังอัปโหลดรูปภาพใหม่ (${uploadedCount + 1}/${totalNew})...`);
+          const result = await uploadToR2(item.file, {
             folder: 'showcases',
             onProgress: (percent) => {
-              if (newFilesCount > 0) {
-                const overall = Math.round(((uploadedCount - 1 + percent / 100) / newFilesCount) * 100);
-                setUploadProgress(Math.min(99, overall));
-              }
+              const overall = Math.round(((uploadedCount + percent / 100) / Math.max(1, totalNew)) * 100);
+              setUploadProgress(Math.min(99, overall));
             },
           });
-          finalUrls.push(uploadResult.publicUrl);
+          finalUrls.push(result.publicUrl);
+          uploadedCount++;
         } else {
           finalUrls.push(item.url);
         }
@@ -184,7 +183,6 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
       setUploadProgress(100);
       setUploadStatusText('กำลังบันทึกข้อมูลผลงาน...');
 
-      // 3. บันทึกข้อมูลที่แก้ไข
       await updateMutation.mutateAsync({
         id: showcase.id,
         title: title.trim(),
@@ -198,11 +196,10 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
         serviceId: selectedService?.id || null,
       });
 
-      // ปิด modal
       onClose();
     } catch (err) {
       console.error('Failed to update showcase:', err);
-      setError(err.message || 'เกิดข้อผิดพลาดในการแก้ไขผลงาน');
+      setError(err.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -211,180 +208,175 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-gray-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+      />
+
+      {/* Modal Container */}
+      <div className="relative z-10 w-full max-w-[540px] max-h-[88vh] rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col overflow-hidden animate-in fade-in duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-black text-white">
-              <Pencil className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-gray-900">แก้ไขผลงาน Showcase</h2>
-              <p className="text-[11px] text-gray-400">แก้ไขข้อมูลหรือจัดการรูปภาพผลงานของคุณ (รองรับหลายภาพ)</p>
-            </div>
-          </div>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0 bg-white">
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            Edit showcase
+          </h2>
           <button
             type="button"
             onClick={onClose}
             disabled={isUploading}
+            aria-label="Close modal"
             className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mt-4 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-xs text-rose-600 font-medium">
-            {error}
-          </div>
-        )}
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
+          {error && (
+            <div className="rounded-2xl bg-rose-50 border border-rose-100 p-3 text-xs text-rose-600 font-medium">
+              {error}
+            </div>
+          )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* File Upload / Preview Area */}
+          {/* Media Section */}
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-xs font-semibold text-gray-700">
-                รูปภาพผลงาน <span className="text-gray-400 font-normal">(รูปแรกคือภาพหน้าปก)</span>
-              </label>
-              {mediaItems.length > 0 && (
-                <span className="text-[11px] text-gray-500 font-medium">
-                  {mediaItems.length} รูป
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-gray-900">Media</span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-gray-400 font-medium">
+                  {mediaItems.length} / 20
                 </span>
-              )}
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-semibold text-gray-800 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  <span>Add media</span>
+                </button>
+              </div>
             </div>
 
             <input
               ref={fileInputRef}
               type="file"
               multiple
-              accept="image/png,image/jpeg,image/webp,image/avif"
-              onChange={handleFilesSelect}
+              accept={ALLOWED_MIME.join(',')}
               className="hidden"
+              onChange={handleFilesSelect}
             />
 
-            {mediaItems.length === 0 ? (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-gray-400 transition-colors bg-gray-50/50"
-              >
-                <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                <p className="text-xs font-semibold text-gray-700">คลิกเพื่ออัปโหลดรูปภาพ</p>
-                <p className="text-[11px] text-gray-400 mt-1">PNG, JPG, WebP สูงสุด 20MB</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {mediaItems.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className={`relative aspect-4/3 rounded-xl overflow-hidden border bg-gray-50 group transition-all ${
-                        index === 0
-                          ? 'border-black ring-2 ring-black/10'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <img
-                        src={item.url}
-                        alt={`Preview ${index + 1}`}
-                        className="h-full w-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.src = '/empty/no-image.png';
-                        }}
-                      />
+            <div className="flex flex-wrap gap-3">
+              {mediaItems.map((img, idx) => (
+                <div
+                  key={img.id}
+                  className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-2xs"
+                >
+                  <img
+                    src={img.url}
+                    alt={`Preview ${idx + 1}`}
+                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  />
 
-                      {/* Cover Badge */}
-                      {index === 0 ? (
-                        <div className="absolute top-1.5 left-1.5 z-10 flex items-center gap-1 rounded-md bg-black/85 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs shadow-xs">
-                          <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" />
-                          <span>หน้าปก</span>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleSetCover(index)}
-                          className="absolute bottom-1.5 left-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-white/95 hover:bg-white text-gray-900 text-[10px] font-semibold px-2 py-0.5 shadow-xs cursor-pointer backdrop-blur-xs"
-                        >
-                          ตั้งเป็นหน้าปก
-                        </button>
-                      )}
-
-                      {/* Remove Button */}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveItem(item.id)}
-                        disabled={isUploading}
-                        className="absolute top-1.5 right-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/70 hover:bg-black text-white transition-all shadow-xs cursor-pointer active:scale-90"
-                        title="ลบรูปภาพนี้"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
+                  {idx === 0 ? (
+                    <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-center">
+                      <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                        COVER
+                      </span>
                     </div>
-                  ))}
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSetCover(idx)}
+                      className="absolute bottom-1.5 inset-x-1.5 opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-black/75 hover:bg-black text-white text-[9px] font-semibold py-0.5 text-center cursor-pointer backdrop-blur-xs"
+                    >
+                      Make cover
+                    </button>
+                  )}
 
-                  {/* Add More Tile */}
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => handleRemoveItem(img.id)}
                     disabled={isUploading}
-                    className="flex aspect-4/3 flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 hover:border-black hover:bg-gray-50/80 transition-colors cursor-pointer text-gray-500 hover:text-black p-3"
+                    className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white shadow-xs hover:bg-black transition-all cursor-pointer"
                   >
-                    <Plus className="h-5 w-5 mb-1" />
-                    <span className="text-xs font-semibold">เพิ่มรูปภาพ</span>
-                    <span className="text-[10px] text-gray-400">เลือกภาพเพิ่ม</span>
+                    <X className="h-3 w-3 stroke-[2.5]" />
                   </button>
                 </div>
-              </div>
-            )}
+              ))}
+
+              {mediaItems.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-black/40 hover:bg-gray-50/80 transition-all text-gray-400 hover:text-gray-700 cursor-pointer"
+                >
+                  <ImageIcon className="h-5 w-5 stroke-[1.5]" />
+                  <span className="text-[11px] font-medium mt-1">Add media</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Title Input */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              ชื่อผลงาน <span className="text-rose-500">*</span>
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-gray-700">
+              ชื่อผลงาน (Title) *
             </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="เช่น Live2D Anime Model, Character Illustration..."
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
-              maxLength={120}
+              placeholder="เช่น Cyberpunk Illustration, 2D Character Design..."
+              maxLength={200}
               required
+              disabled={isUploading}
+              className="w-full rounded-2xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
             />
           </div>
 
-          {/* Description Input */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              คำอธิบายผลงาน <span className="text-gray-400 font-normal">(ไม่บังคับ)</span>
+          {/* Description Textarea */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-gray-700">
+              คำอธิบายผลงาน (Description)
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="บอกเล่าเรื่องราว เทคนิค หรือแรงบันดาลใจในการสร้างผลงานชิ้นนี้..."
-              rows={4}
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all resize-none"
-              maxLength={1000}
+              placeholder="เล่าเรื่องราว เทคนิค หรือแรงบันดาลใจในการสร้างผลงานชิ้นนี้..."
+              rows={3}
+              maxLength={2000}
+              disabled={isUploading}
+              className="w-full rounded-2xl border border-gray-200 p-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
             />
+            <div className="flex justify-end">
+              <span className="text-xs text-gray-400 font-medium">
+                {description.length}/2,000
+              </span>
+            </div>
           </div>
 
           {/* Link to service Row */}
-          <div>
+          <div className="pt-2 border-t border-gray-100">
             <button
               type="button"
               onClick={() => setIsLinkServiceOpen(true)}
               className="flex w-full items-center justify-between py-2.5 px-1 hover:bg-gray-50/80 rounded-xl transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5 text-gray-800">
-                <Layers className="h-4 w-4 text-gray-600" />
-                <span className="text-xs sm:text-sm font-semibold text-gray-900">Link to service</span>
+                <Layers className="h-5 w-5 text-gray-600 stroke-[1.75]" />
+                <span className="text-sm font-medium text-gray-900">
+                  Link to service
+                </span>
               </div>
-              <div className="flex items-center gap-1.5 text-gray-400 group-hover:text-gray-700 transition-colors">
+              <div className="flex items-center gap-2 text-gray-400 group-hover:text-gray-700 transition-colors">
                 {selectedService ? (
-                  <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg max-w-[180px] truncate">
+                  <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg max-w-[200px] truncate">
                     {selectedService.title}
                   </span>
                 ) : null}
@@ -393,14 +385,17 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
             </button>
           </div>
 
-          {/* Progress Bar (ถ้ากำลังอัปโหลด) */}
+          {/* Progress Indicator */}
           {isUploading && (
-            <div className="space-y-1.5 pt-2">
-              <div className="flex justify-between text-[11px] text-gray-500">
-                <span>{uploadStatusText || 'กำลังบันทึกข้อมูล...'}</span>
+            <div className="space-y-1.5 rounded-2xl bg-gray-50 p-3.5 border border-gray-100">
+              <div className="flex justify-between text-xs text-gray-600 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>{uploadStatusText || 'กำลังบันทึกข้อมูล...'}</span>
+                </span>
                 <span>{uploadProgress}%</span>
               </div>
-              <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-black transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
@@ -408,34 +403,34 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Buttons */}
-          <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isUploading}
-              className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              ยกเลิก
-            </button>
-
-            <button
-              type="submit"
-              disabled={isUploading || !title.trim() || mediaItems.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-gray-800 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isUploading ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>กำลังบันทึก...</span>
-                </>
-              ) : (
-                <span>บันทึกการแก้ไข ({mediaItems.length} รูป)</span>
-              )}
-            </button>
-          </div>
-        </form>
+        {/* Footer Actions */}
+        <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-gray-100 shrink-0 bg-white">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isUploading}
+            className="rounded-full px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+          >
+            ยกเลิก
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isUploading || Boolean(error) || !title.trim() || mediaItems.length === 0}
+            className="rounded-full bg-black px-5 py-2 text-sm font-semibold text-white shadow-xs hover:bg-gray-800 active:scale-95 transition-all disabled:opacity-40 disabled:bg-gray-300 disabled:text-gray-500 cursor-pointer disabled:cursor-not-allowed"
+          >
+            {isUploading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>กำลังบันทึก...</span>
+              </span>
+            ) : (
+              <span>บันทึกการแก้ไข ({mediaItems.length})</span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Link to Service Modal */}
