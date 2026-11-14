@@ -182,7 +182,7 @@ export default function ServiceDetailModal({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200">
-        <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col [scrollbar-width:thin]">
+        <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {/* Top Bar */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-10">
             {/* Status & Expiry Badge */}
@@ -356,7 +356,7 @@ export default function ServiceDetailModal({
 
                 {/* Thumbnails strip */}
                 {images.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                  <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                     {images.map((img, idx) => (
                       <button
                         key={idx}
@@ -408,44 +408,9 @@ export default function ServiceDetailModal({
               )}
             </div>
 
-            {/* Author Profile Card */}
-            <div className="flex items-center justify-between rounded-2xl bg-gray-50/70 border border-gray-100 p-3.5">
-              <Link
-                href={`/${author.username}`}
-                onClick={onClose}
-                className="flex items-center gap-3 group"
-              >
-                <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 border border-white shadow-2xs shrink-0">
-                  {author.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={author.avatar} alt={author.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-400">
-                      <User className="h-5 w-5" />
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:underline">
-                    {author.name}
-                  </h4>
-                  <p className="text-[11px] text-gray-500">@{author.username}</p>
-                </div>
-              </Link>
-
-              <Link
-                href={`/${author.username}`}
-                onClick={onClose}
-                className="inline-flex items-center gap-1 rounded-xl bg-white border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-2xs hover:bg-gray-50 transition-colors"
-              >
-                <span>ดูโปรไฟล์</span>
-                <ExternalLink className="h-3 w-3" />
-              </Link>
-            </div>
-
-            {/* Description */}
+            {/* Description (ไว้ล่าง title & tags) */}
             {service.description && (
-              <div className="space-y-1.5 pt-1">
+              <div className="space-y-1.5">
                 <h3 className="text-xs font-bold text-gray-700 uppercase tracking-wider">
                   รายละเอียดและเงื่อนไข
                 </h3>
