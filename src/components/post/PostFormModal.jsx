@@ -182,7 +182,25 @@ export default function PostFormModal({
       }
     } else if (initialPost) {
       setContent(initialPost.content || initialPost.caption || "");
-      setImages(initialPost.images || initialPost.media_urls || []);
+      const rawImages = initialPost.images || initialPost.media_urls || [];
+      const normalized = (Array.isArray(rawImages) ? rawImages : [])
+        .map((img, idx) => {
+          if (!img) return null;
+          if (typeof img === "string") {
+            return {
+              id: `existing-${idx}-${img.slice(-10)}`,
+              url: img,
+              name: `Image ${idx + 1}`,
+            };
+          }
+          return {
+            id: img.id || `existing-${idx}-${(img.url || "").slice(-10)}`,
+            url: img.url || "",
+            name: img.name || `Image ${idx + 1}`,
+          };
+        })
+        .filter((img) => Boolean(img?.url));
+      setImages(normalized);
       if (initialPost.service) {
         setSelectedService(initialPost.service);
       } else if (initialPost.serviceId || initialPost.service_id) {
@@ -547,7 +565,7 @@ export default function PostFormModal({
               <div className="flex px-3 items-center gap-1.5 overflow-x-auto no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {images.map((img, idx) => (
                   <div
-                    key={img.id}
+                    key={img.id || img.url || idx}
                     className="group relative h-64 w-auto min-w-[140px] max-w-[340px] shrink-0 overflow-hidden rounded-2xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
