@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,6 +25,42 @@ function formatStatNumber(num) {
   if (n >= 10000) return (n / 1000).toFixed(0) + 'k';
   if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
   return String(n);
+}
+
+function renderBioText(text) {
+  if (!text) return null;
+  const regex = /(#[^\s]+|@[^\s]+)/g;
+  const parts = text.split(regex);
+
+  return parts.map((part, index) => {
+    if (part.startsWith('#')) {
+      const tag = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/search?q=${encodeURIComponent(tag)}`}
+          className="text-blue-500 font-medium hover:underline transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      );
+    }
+    if (part.startsWith('@')) {
+      const targetUsername = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/${targetUsername}`}
+          className="text-blue-500 font-medium hover:underline transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
 }
 
 /**
@@ -88,6 +124,40 @@ export default function ProfileModal({ isOpen, onClose, author }) {
     profile?.banner ||
     'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
   const displayBio = profile?.bio || author?.bio || '';
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
+
+  const isLongBio = useMemo(() => {
+    const lines = displayBio.split('\n');
+    return lines.length > 2 || displayBio.length > 120;
+  }, [displayBio]);
+
+  const truncatedBio = useMemo(() => {
+    if (!isLongBio || isBioExpanded) {
+      return displayBio;
+    }
+    const lines = displayBio.split('\n');
+    const maxLines = 2;
+    const maxChars = 110;
+
+    let resultLines = [];
+    let chars = 0;
+    for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+      const line = lines[i];
+      if (chars + line.length > maxChars) {
+        const remaining = maxChars - chars;
+        resultLines.push(line.slice(0, Math.max(0, remaining)) + '...');
+        break;
+      }
+      resultLines.push(line);
+      chars += line.length + 1;
+      if (i === maxLines - 1 && (lines.length > maxLines || chars < displayBio.length)) {
+        if (!resultLines[i].endsWith('...')) {
+          resultLines[i] = resultLines[i] + '...';
+        }
+      }
+    }
+    return resultLines.join('\n');
+  }, [displayBio, isLongBio, isBioExpanded]);
   const displayNote = profile?.note || '';
   const location = profile?.location;
   const website = profile?.website;
@@ -226,9 +296,18 @@ export default function ProfileModal({ isOpen, onClose, author }) {
 
           {/* Bio */}
           {displayBio && (
-            <p className="mt-3 text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-              {displayBio}
-            </p>
+            <div className="mt-3 text-xs sm:text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+              {renderBioText(truncatedBio)}
+              {isLongBio && (
+                <button
+                  type="button"
+                  onClick={() => setIsBioExpanded((prev) => !prev)}
+                  className="mt-1 block text-xs sm:text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+                >
+                  {isBioExpanded ? 'ดูน้อยลง' : 'ดูเพิ่มเติม'}
+                </button>
+              )}
+            </div>
           )}
 
           {/* Metadata Row: Location, Website, Joined */}

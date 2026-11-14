@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -41,6 +41,45 @@ function formatStatNumber(num) {
   return String(n);
 }
 
+/**
+ * ฟังก์ชันแปลงข้อความใน Bio ให้ #tags และ @mentions กลายเป็นลิงก์คลิกได้
+ */
+function renderBioText(text) {
+  if (!text) return null;
+  const regex = /(#[^\s]+|@[^\s]+)/g;
+  const parts = text.split(regex);
+
+  return parts.map((part, index) => {
+    if (part.startsWith("#")) {
+      const tag = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/search?q=${encodeURIComponent(tag)}`}
+          className="text-blue-500 font-medium hover:underline transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      );
+    }
+    if (part.startsWith("@")) {
+      const username = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/${username}`}
+          className="text-blue-500 font-medium hover:underline transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </Link>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
+
 export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
   const router = useRouter();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -48,6 +87,41 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [noteText, setNoteText] = useState(user?.note || "");
   const [copied, setCopied] = useState(false);
+  const [isBioExpanded, setIsBioExpanded] = useState(false);
+
+  const bioText = user?.bio || "";
+  const isLongBio = useMemo(() => {
+    const lines = bioText.split("\n");
+    return lines.length > 2 || bioText.length > 120;
+  }, [bioText]);
+
+  const displayBio = useMemo(() => {
+    if (!isLongBio || isBioExpanded) {
+      return bioText;
+    }
+    const lines = bioText.split("\n");
+    const maxLines = 2;
+    const maxChars = 110;
+
+    let resultLines = [];
+    let chars = 0;
+    for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+      const line = lines[i];
+      if (chars + line.length > maxChars) {
+        const remaining = maxChars - chars;
+        resultLines.push(line.slice(0, Math.max(0, remaining)) + "...");
+        break;
+      }
+      resultLines.push(line);
+      chars += line.length + 1;
+      if (i === maxLines - 1 && (lines.length > maxLines || chars < bioText.length)) {
+        if (!resultLines[i].endsWith("...")) {
+          resultLines[i] = resultLines[i] + "...";
+        }
+      }
+    }
+    return resultLines.join("\n");
+  }, [bioText, isLongBio, isBioExpanded]);
 
   useEffect(() => {
     if (user?.note !== undefined) {
@@ -294,11 +368,20 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
           </div>
         </div>
 
-        {/* Bio Description (ถ้ามี) */}
+        {/* Bio Description (ถ้ามี พร้อมปุ่มดูเพิ่มเติมเมื่อข้อความยาว) */}
         {user?.bio && (
-          <p className="mt-4 text-xs sm:text-sm text-gray-700 leading-relaxed font-normal">
-            {user.bio}
-          </p>
+          <div className="mt-4 text-xs sm:text-sm text-gray-700 leading-relaxed font-normal whitespace-pre-wrap break-words">
+            {renderBioText(displayBio)}
+            {isLongBio && (
+              <button
+                type="button"
+                onClick={() => setIsBioExpanded((prev) => !prev)}
+                className="mt-1 block text-xs sm:text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+              >
+                {isBioExpanded ? "ดูน้อยลง" : "ดูเพิ่มเติม"}
+              </button>
+            )}
+          </div>
         )}
 
         {/* Meta Details: Location, Website, Joined Date */}
