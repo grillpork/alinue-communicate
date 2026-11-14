@@ -13,6 +13,7 @@ import {
   Share2,
   Flag,
   Pencil,
+  Layers,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
 import { useMeQuery } from '@/services/auth';
@@ -281,6 +282,14 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
             </div>
           )}
         </div>
+
+        {/* Bottom-Left: Linked service badge */}
+        {showcase.service && (
+          <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1 rounded-full bg-black/60 backdrop-blur-md px-2 py-1 text-[10px] font-semibold text-white shadow-xs">
+            <Layers className="h-3 w-3 text-white/90" />
+            <span className="max-w-[110px] truncate">{showcase.service.title}</span>
+          </div>
+        )}
 
         {/* Bottom-Right: Floating Heart / Like Button */}
         <button

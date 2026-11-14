@@ -34,6 +34,7 @@ import CommentPortfolioCard from './CommentPortfolioCard';
 import CommentActionsMenu from './CommentActionsMenu';
 import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
 import UserAvatar from '@/components/common/UserAvatar';
+import LinkedServiceCard from '@/components/common/LinkedServiceCard';
 
 /**
  * แปลงข้อความที่มี #hashtag หรือ @user ให้เป็นสีฟ้า
@@ -418,6 +419,17 @@ export default function PostCard({
         images={post.images}
         onImageClick={onImageClick || (() => setIsDetailModalOpen(true))}
       />
+
+      {/* Linked Service Card */}
+      {post.service && (
+        <div className="px-3.5 sm:px-4">
+          <LinkedServiceCard
+            service={post.service}
+            authorUsername={post.author?.username}
+            compact
+          />
+        </div>
+      )}
 
       {/* Footer Actions: Heart, Comment, Share, Bookmark */}
       <div className="mt-3 flex items-center justify-between text-xs text-gray-600 px-3.5 sm:px-4">

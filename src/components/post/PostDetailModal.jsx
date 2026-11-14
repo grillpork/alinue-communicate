@@ -34,6 +34,7 @@ import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
 import CommentActionsMenu from './CommentActionsMenu';
 import SharePostModal from './SharePostModal';
 import UserAvatar from '@/components/common/UserAvatar';
+import LinkedServiceCard from '@/components/common/LinkedServiceCard';
 
 /**
  * ฟังก์ชันแปลง Hashtag และ Mention เป็นตัวหนังสือสีฟ้า
@@ -311,6 +312,15 @@ export default function PostDetailModal({
                 <div className="mt-3.5 text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words">
                   {renderFormattedText(post.content)}
                 </div>
+              )}
+
+              {/* Linked Service */}
+              {post.service && (
+                <LinkedServiceCard
+                  service={post.service}
+                  authorUsername={post.author?.username}
+                  compact
+                />
               )}
 
               {/* Action Buttons: Heart, Comment, Repost, Share */}

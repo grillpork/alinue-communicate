@@ -25,6 +25,7 @@ import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/serv
 import { useMeQuery } from '@/services/auth';
 import { formatRelativeTime } from '@/lib/date';
 import EditShowcaseModal from './EditShowcaseModal';
+import LinkedServiceCard from '@/components/common/LinkedServiceCard';
 
 /**
  * ฟังก์ชันแปลงข้อความให้ Hashtags (#tag) และ Mentions (@user) กลายเป็นลิงก์คลิกได้
@@ -420,6 +421,14 @@ export default function ShowcaseModal({
               <p className="text-xs italic text-gray-400">
                 ครีเอเตอร์ไม่ได้ระบุคำอธิบายผลงาน
               </p>
+            )}
+
+            {/* Linked Service Card */}
+            {showcase.service && (
+              <LinkedServiceCard
+                service={showcase.service}
+                authorUsername={author?.username}
+              />
             )}
 
             {/* Tags Pills */}
