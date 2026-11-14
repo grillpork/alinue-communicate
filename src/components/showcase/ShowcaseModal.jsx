@@ -27,6 +27,7 @@ import { formatRelativeTime } from '@/lib/date';
 import EditShowcaseModal from './EditShowcaseModal';
 import LinkedServiceCard from '@/components/common/LinkedServiceCard';
 import useBodyScrollLock from '@/hooks/useBodyScrollLock';
+import useEmblaCarousel from 'embla-carousel-react';
 
 /**
  * ฟังก์ชันแปลงข้อความให้ Hashtags (#tag) และ Mentions (@user) กลายเป็นลิงก์คลิกได้
@@ -80,6 +81,10 @@ export default function ShowcaseModal({
   onDeleted,
 }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    duration: 25,
+  });
   const [copied, setCopied] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -102,8 +107,29 @@ export default function ShowcaseModal({
       setLikesCount(showcase.likes_count ?? showcase.likesCount ?? 0);
       setActiveMediaIndex(0);
       setIsVideoPlaying(false);
+      if (emblaApi) {
+        emblaApi.scrollTo(0, true);
+      }
     }
-  }, [showcase]);
+  }, [showcase, emblaApi]);
+
+  // Sync Embla Carousel กับ activeMediaIndex
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const onSelect = () => {
+      setActiveMediaIndex(emblaApi.selectedScrollSnap());
+      setIsVideoPlaying(false);
+    };
+
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+
+    return () => {
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
+    };
+  }, [emblaApi]);
 
   // ปิดเมนูเพิ่มเติมเมื่อคลิกข้างนอก
   useEffect(() => {
@@ -252,49 +278,76 @@ export default function ShowcaseModal({
           <X className="h-4.5 w-4.5" />
         </button>
 
-        {/* 1. LEFT SIDE: Media Lightbox Viewer */}
-        <div className="relative flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden min-h-[300px] sm:min-h-[420px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100">
-          {/* Active Media Container */}
-          <div className="relative flex h-full w-full items-center justify-center p-2 sm:p-6">
-            {isVideo ? (
-              <div className="relative max-h-full max-w-full flex items-center justify-center">
-                <video
-                  src={currentMedia}
-                  controls={isVideoPlaying}
-                  playsInline
-                  className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl"
-                  onPlay={() => setIsVideoPlaying(true)}
-                  onPause={() => setIsVideoPlaying(false)}
-                />
-                {!isVideoPlaying && (
-                  <div
-                    onClick={() => setIsVideoPlaying(true)}
-                    className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] cursor-pointer"
-                  >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-gray-900 shadow-xl transition-transform hover:scale-110">
-                      <Play className="h-6 w-6 fill-current ml-1" />
+        {/* 1. LEFT SIDE: Media Lightbox Viewer with Embla Carousel */}
+        <div className="relative flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden min-h-[300px] sm:min-h-[420px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
+          {/* Embla Viewport */}
+          <div
+            ref={emblaRef}
+            className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
+          >
+            <div className="flex h-full w-full">
+              {mediaList.length === 0 ? (
+                <div className="relative min-w-0 flex-[0_0_100%] h-full flex flex-col items-center justify-center p-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/empty/no-image.png"
+                    alt="No image"
+                    className="max-h-[60vh] max-w-full rounded-xl object-contain opacity-90"
+                  />
+                </div>
+              ) : (
+                mediaList.map((mediaUrl, idx) => {
+                  const isItemVideo =
+                    (showcase.media_type === 'video' || showcase.mediaType === 'video') &&
+                    idx === 0 ||
+                    /\.(mp4|webm|mov|ogg)$/i.test(mediaUrl);
+
+                  return (
+                    <div
+                      key={idx}
+                      className="relative min-w-0 flex-[0_0_100%] h-full flex items-center justify-center p-2 sm:p-6"
+                    >
+                      {isItemVideo ? (
+                        <div className="relative max-h-full max-w-full flex items-center justify-center">
+                          <video
+                            src={mediaUrl}
+                            controls={isVideoPlaying && idx === activeMediaIndex}
+                            playsInline
+                            className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl"
+                            onPlay={() => setIsVideoPlaying(true)}
+                            onPause={() => setIsVideoPlaying(false)}
+                          />
+                          {(!isVideoPlaying || idx !== activeMediaIndex) && (
+                            <div
+                              onClick={() => {
+                                emblaApi?.scrollTo(idx);
+                                setIsVideoPlaying(true);
+                              }}
+                              className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px] cursor-pointer"
+                            >
+                              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/95 text-gray-900 shadow-xl transition-transform hover:scale-110">
+                                <Play className="h-6 w-6 fill-current ml-1" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={mediaUrl}
+                          alt={showcase.title || `Showcase image ${idx + 1}`}
+                          draggable={false}
+                          className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl transition-all pointer-events-auto"
+                          onError={(e) => {
+                            e.currentTarget.src = '/empty/no-image.png';
+                          }}
+                        />
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : currentMedia ? (
-              <img
-                src={currentMedia}
-                alt={showcase.title || 'Showcase image'}
-                className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl transition-all"
-                onError={(e) => {
-                  e.currentTarget.src = '/empty/no-image.png';
-                }}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center p-6">
-                <img
-                  src="/empty/no-image.png"
-                  alt="No image"
-                  className="max-h-[60vh] max-w-full rounded-xl object-contain opacity-90"
-                />
-              </div>
-            )}
+                  );
+                })
+              )}
+            </div>
           </div>
 
           {/* Carousel Arrows */}
@@ -303,7 +356,10 @@ export default function ShowcaseModal({
               {activeMediaIndex > 0 && (
                 <button
                   type="button"
-                  onClick={() => setActiveMediaIndex((prev) => prev - 1)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    emblaApi?.scrollPrev();
+                  }}
                   className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md border border-gray-200/80 hover:bg-white hover:scale-105 transition-all active:scale-95 cursor-pointer"
                   aria-label="Previous image"
                 >
@@ -313,7 +369,10 @@ export default function ShowcaseModal({
               {activeMediaIndex < mediaList.length - 1 && (
                 <button
                   type="button"
-                  onClick={() => setActiveMediaIndex((prev) => prev + 1)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    emblaApi?.scrollNext();
+                  }}
                   className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md border border-gray-200/80 hover:bg-white hover:scale-105 transition-all active:scale-95 cursor-pointer"
                   aria-label="Next image"
                 >
@@ -332,7 +391,10 @@ export default function ShowcaseModal({
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setActiveMediaIndex(idx)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        emblaApi?.scrollTo(idx);
+                      }}
                       className={`h-1.5 rounded-full transition-all cursor-pointer ${
                         idx === activeMediaIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
                       }`}

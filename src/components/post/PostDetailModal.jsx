@@ -39,6 +39,7 @@ import SharePostModal from './SharePostModal';
 import UserAvatar from '@/components/common/UserAvatar';
 import LinkedServiceCard from '@/components/common/LinkedServiceCard';
 import { useBodyScrollLock } from '@/hooks/useBodyScrollLock';
+import useEmblaCarousel from 'embla-carousel-react';
 
 /**
  * ฟังก์ชันแปลง Hashtag และ Mention เป็นตัวหนังสือสีฟ้า
@@ -76,6 +77,11 @@ export default function PostDetailModal({
   onDelete,
 }) {
   const [activeImageIndex, setActiveImageIndex] = useState(initialImageIndex);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    startIndex: initialImageIndex,
+    loop: false,
+    duration: 25,
+  });
   const [commentText, setCommentText] = useState('');
   const [attachPortfolio, setAttachPortfolio] = useState(false);
   const [isLiked, setIsLiked] = useState(post?.isLiked || false);
@@ -137,9 +143,30 @@ export default function PostDetailModal({
       setIsLiked(post.isLiked || false);
       setLikesCount(post.likesCount ?? 0);
       setCommentsCount(post.commentsCount ?? 0);
-      setActiveImageIndex(initialImageIndex || 0);
+      const startIdx = initialImageIndex || 0;
+      setActiveImageIndex(startIdx);
+      if (emblaApi) {
+        emblaApi.scrollTo(startIdx, true);
+      }
     }
-  }, [post, initialImageIndex, isOpen]);
+  }, [post, initialImageIndex, isOpen, emblaApi]);
+
+  // Sync Embla Carousel กับ activeImageIndex
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const onSelect = () => {
+      setActiveImageIndex(emblaApi.selectedScrollSnap());
+    };
+
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+
+    return () => {
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
+    };
+  }, [emblaApi]);
 
   // ล็อค Scroll ของ Body เมื่อเปิด Modal
   useBodyScrollLock(isOpen);
@@ -238,25 +265,41 @@ export default function PostDetailModal({
           <X className="h-5 w-5" />
         </button>
 
-        {/* 1. LEFT SIDE: Media Carousel (Image View) */}
+        {/* 1. LEFT SIDE: Media Carousel (Image View with Embla Carousel) */}
         {hasImages && (
-          <div className="relative flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden min-h-[280px] sm:min-h-[380px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100">
-            {/* Active Image */}
-            <div className="relative h-full w-full flex items-center justify-center p-3 sm:p-5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={images[activeImageIndex]?.url}
-                alt="Post media"
-                className="max-h-full max-w-full object-contain pointer-events-auto rounded-xl shadow-xs"
-              />
+          <div className="relative flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden min-h-[280px] sm:min-h-[380px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
+            {/* Embla Viewport */}
+            <div
+              ref={emblaRef}
+              className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
+            >
+              <div className="flex h-full w-full">
+                {images.map((img, idx) => (
+                  <div
+                    key={img.id || idx}
+                    className="relative min-w-0 flex-[0_0_100%] h-full flex items-center justify-center p-3 sm:p-5"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.url}
+                      alt={`Post media ${idx + 1}`}
+                      draggable={false}
+                      className="max-h-full max-w-full object-contain pointer-events-auto rounded-xl shadow-xs"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Prev Arrow */}
             {images.length > 1 && activeImageIndex > 0 && (
               <button
                 type="button"
-                onClick={() => setActiveImageIndex((prev) => prev - 1)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 hover:bg-white hover:text-black shadow-md border border-gray-200/80 backdrop-blur-md transition-all active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  emblaApi?.scrollPrev();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 hover:bg-white hover:text-black shadow-md border border-gray-200/80 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
                 aria-label="Previous image"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -267,8 +310,11 @@ export default function PostDetailModal({
             {images.length > 1 && activeImageIndex < images.length - 1 && (
               <button
                 type="button"
-                onClick={() => setActiveImageIndex((prev) => prev + 1)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 hover:bg-white hover:text-black shadow-md border border-gray-200/80 backdrop-blur-md transition-all active:scale-95"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  emblaApi?.scrollNext();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-800 hover:bg-white hover:text-black shadow-md border border-gray-200/80 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
                 aria-label="Next image"
               >
                 <ChevronRight className="h-5 w-5" />
@@ -281,7 +327,10 @@ export default function PostDetailModal({
                 {images.map((_, idx) => (
                   <span
                     key={idx}
-                    onClick={() => setActiveImageIndex(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      emblaApi?.scrollTo(idx);
+                    }}
                     className={`h-1.5 rounded-full transition-all cursor-pointer ${
                       idx === activeImageIndex
                         ? 'w-4 bg-black'

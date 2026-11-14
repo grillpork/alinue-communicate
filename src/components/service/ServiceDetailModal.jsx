@@ -29,6 +29,7 @@ import {
 } from '@/services/service';
 import { useMeQuery } from '@/services/auth';
 import useBodyScrollLock from '@/hooks/useBodyScrollLock';
+import useEmblaCarousel from 'embla-carousel-react';
 import EditServiceModal from './EditServiceModal';
 
 export default function ServiceDetailModal({
@@ -40,6 +41,10 @@ export default function ServiceDetailModal({
 }) {
   useBodyScrollLock(isOpen);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    duration: 25,
+  });
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -56,7 +61,27 @@ export default function ServiceDetailModal({
   useEffect(() => {
     setActiveImageIdx(0);
     setShowMenu(false);
-  }, [service?.id]);
+    if (emblaApi) {
+      emblaApi.scrollTo(0, true);
+    }
+  }, [service?.id, emblaApi]);
+
+  // Sync Embla Carousel กับ activeImageIdx
+  useEffect(() => {
+    if (!emblaApi) return;
+
+    const onSelect = () => {
+      setActiveImageIdx(emblaApi.selectedScrollSnap());
+    };
+
+    emblaApi.on('select', onSelect);
+    emblaApi.on('reInit', onSelect);
+
+    return () => {
+      emblaApi.off('select', onSelect);
+      emblaApi.off('reInit', onSelect);
+    };
+  }, [emblaApi]);
 
   // ปิดเมนูเมื่อคลิกนอกพื้นที่
   useEffect(() => {
@@ -266,39 +291,63 @@ export default function ServiceDetailModal({
 
           {/* Modal Body */}
           <div className="p-5 sm:p-6 space-y-5">
-            {/* Image Gallery */}
+            {/* Image Gallery with Embla Carousel */}
             {images.length > 0 && (
               <div className="space-y-2">
-                <div className="relative aspect-video sm:aspect-16/10 w-full rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-2xs flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={images[activeImageIdx]}
-                    alt={`Sample ${activeImageIdx + 1}`}
-                    className="max-h-full max-w-full object-contain"
-                  />
+                <div className="relative aspect-video sm:aspect-16/10 w-full rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-2xs group select-none">
+                  {/* Embla Viewport */}
+                  <div
+                    ref={emblaRef}
+                    className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
+                  >
+                    <div className="flex h-full w-full">
+                      {images.map((img, idx) => (
+                        <div
+                          key={idx}
+                          className="relative min-w-0 flex-[0_0_100%] h-full flex items-center justify-center p-2"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={img}
+                            alt={`Sample ${idx + 1}`}
+                            draggable={false}
+                            className="max-h-full max-w-full object-contain pointer-events-auto"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* Slider Arrows if multiple images */}
                   {images.length > 1 && (
                     <>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveImageIdx((prev) => (prev > 0 ? prev - 1 : images.length - 1))
-                        }
-                        className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 backdrop-blur-xs p-1.5 text-white hover:bg-black/80 transition-colors"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setActiveImageIdx((prev) => (prev < images.length - 1 ? prev + 1 : 0))
-                        }
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 backdrop-blur-xs p-1.5 text-white hover:bg-black/80 transition-colors"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </button>
-                      <span className="absolute bottom-2 right-2 rounded-lg bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] font-semibold text-white">
+                      {activeImageIdx > 0 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            emblaApi?.scrollPrev();
+                          }}
+                          className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 text-gray-800 shadow-md border border-gray-200/80 backdrop-blur-xs p-2 hover:bg-white transition-all cursor-pointer"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                      )}
+                      {activeImageIdx < images.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            emblaApi?.scrollNext();
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 rounded-full bg-white/90 text-gray-800 shadow-md border border-gray-200/80 backdrop-blur-xs p-2 hover:bg-white transition-all cursor-pointer"
+                          aria-label="Next image"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      )}
+                      <span className="absolute bottom-2.5 right-2.5 z-20 rounded-lg bg-black/60 backdrop-blur-xs px-2.5 py-1 text-[11px] font-semibold text-white shadow-xs">
                         {activeImageIdx + 1} / {images.length}
                       </span>
                     </>
@@ -312,7 +361,7 @@ export default function ServiceDetailModal({
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setActiveImageIdx(idx)}
+                        onClick={() => emblaApi?.scrollTo(idx)}
                         className={`relative h-14 w-14 shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                           idx === activeImageIdx
                             ? 'border-black ring-2 ring-black/10'
