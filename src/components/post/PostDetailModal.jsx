@@ -594,18 +594,11 @@ export default function PostDetailModal({
               className="flex flex-col gap-2"
             >
               <div className="flex items-center gap-2.5 sm:gap-3">
-                <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-full ring-1 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-                  {currentUserAvatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={currentUserAvatar}
-                      alt={currentUser?.name || 'User'}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
+                <UserAvatar
+                  src={currentUserAvatar}
+                  alt={currentUser?.name || 'User'}
+                  className="h-10 w-10 sm:h-11 sm:w-11 ring-1 ring-gray-100 shrink-0"
+                />
 
                 <div className="flex-1 relative">
                   <input
@@ -618,45 +611,47 @@ export default function PostDetailModal({
                     value={commentText}
                     disabled={!currentUser || addCommentMutation.isPending}
                     onChange={(e) => setCommentText(e.target.value)}
-                    className="w-full rounded-full bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200/80 focus:border-gray-400 py-2.5 sm:py-3 pl-4 sm:pl-5 pr-12 text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all shadow-2xs"
+                    className="w-full rounded-full bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200/80 focus:border-gray-400 py-2.5 sm:py-3 pl-4 sm:pl-5 pr-20 sm:pr-24 text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all shadow-2xs"
                   />
-                  <button
-                    type="submit"
-                    disabled={
-                      !commentText.trim() ||
-                      addCommentMutation.isPending ||
-                      !currentUser
-                    }
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all cursor-pointer disabled:cursor-not-allowed shadow-xs"
-                    aria-label="Send comment"
-                  >
-                    {addCommentMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    ) : (
-                      <Send className="h-4 w-4" />
+                  <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {currentUser && (
+                      <button
+                        type="button"
+                        onClick={() => setAttachPortfolio(!attachPortfolio)}
+                        title={
+                          attachPortfolio
+                            ? `แนบ Portfolio (${currentUser.username}) แล้ว (คลิกเพื่อยกเลิก)`
+                            : `แนบ Portfolio (${currentUser.username})`
+                        }
+                        aria-label="แนบ Portfolio"
+                        className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-all cursor-pointer ${
+                          attachPortfolio
+                            ? 'bg-black text-white shadow-xs'
+                            : 'text-gray-400 hover:text-gray-700 hover:bg-gray-200/70'
+                        }`}
+                      >
+                        <FolderKanban className="h-4 w-4" />
+                      </button>
                     )}
-                  </button>
+                    <button
+                      type="submit"
+                      disabled={
+                        !commentText.trim() ||
+                        addCommentMutation.isPending ||
+                        !currentUser
+                      }
+                      className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all cursor-pointer disabled:cursor-not-allowed shadow-xs"
+                      aria-label="Send comment"
+                    >
+                      {addCommentMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              {/* Toggle Attach Portfolio */}
-              {currentUser && (
-                <div className="flex items-center gap-2 pl-12.5 sm:pl-14">
-                  <button
-                    type="button"
-                    onClick={() => setAttachPortfolio(!attachPortfolio)}
-                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-medium border transition-all cursor-pointer ${
-                      attachPortfolio
-                        ? 'bg-black text-white border-black shadow-xs'
-                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-black'
-                    }`}
-                  >
-                    <FolderKanban className="h-4 w-4" />
-                    <span>แนบ Portfolio ({currentUser.username})</span>
-                    {attachPortfolio && <Check className="h-3.5 w-3.5 text-white" />}
-                  </button>
-                </div>
-              )}
             </form>
           </div>
         </div>
