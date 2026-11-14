@@ -77,6 +77,13 @@ export const serviceService = {
       method: 'POST',
     });
   },
+
+  // บันทึกยอดวิวโพสต์รับงาน
+  recordView: async (id) => {
+    return fetchApi(`/api/services/${id}/view`, {
+      method: 'POST',
+    });
+  },
 };
 
 // -------------------------------------------------------------
@@ -233,6 +240,25 @@ export function useToggleServiceLikeMutation(options = {}) {
 
   return useMutation({
     mutationFn: serviceService.toggleLike,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
+      if (variables) {
+        queryClient.invalidateQueries({ queryKey: serviceKeys.detail(variables) });
+      }
+      options.onSuccess?.(data, variables, context);
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook บันทึกยอดวิวโพสต์รับงาน
+ */
+export function useRecordServiceViewMutation(options = {}) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: serviceService.recordView,
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: serviceKeys.lists() });
       if (variables) {

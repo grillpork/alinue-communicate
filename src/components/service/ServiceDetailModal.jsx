@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   X,
   Heart,
+  Eye,
   Share2,
   Clock,
   Coins,
@@ -96,6 +97,7 @@ export default function ServiceDetailModal({
   const daysLeft = service.daysLeft ?? 0;
   const isLiked = Boolean(service.isLiked);
   const likesCount = service.likesCount || 0;
+  const viewsCount = service.viewsCount ?? service.views_count ?? 0;
 
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
@@ -402,20 +404,30 @@ export default function ServiceDetailModal({
               </div>
             )}
 
-            {/* Bottom Actions: Like & Share */}
+            {/* Bottom Actions: Like, Views & Share */}
             <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={handleToggleLike}
-                className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
-                  isLiked
-                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                <Heart className={`h-4 w-4 ${isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
-                <span>{likesCount > 0 ? likesCount : 'ถูกใจ'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleToggleLike}
+                  className={`inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
+                    isLiked
+                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                  }`}
+                >
+                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
+                  <span>{likesCount > 0 ? likesCount : 'ถูกใจ'}</span>
+                </button>
+
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-gray-50 border border-gray-200 px-3.5 py-2 text-xs font-medium text-gray-500"
+                  title="ยอดเข้าชม"
+                >
+                  <Eye className="h-4 w-4 text-gray-400" />
+                  <span>{viewsCount} ยอดวิว</span>
+                </div>
+              </div>
 
               <div className="flex items-center gap-2">
                 <button

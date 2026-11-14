@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Heart,
+  Eye,
   Clock,
   Images,
   MoreHorizontal,
@@ -77,6 +78,7 @@ export default function ServiceCard({
   const daysLeft = service.daysLeft ?? 0;
   const isLiked = Boolean(service.isLiked);
   const likesCount = service.likesCount || 0;
+  const viewsCount = service.viewsCount ?? service.views_count ?? 0;
 
   // ปิดเมนูเมื่อคลิกด้านนอก
   useEffect(() => {
@@ -245,27 +247,42 @@ export default function ServiceCard({
 
           {/* Card Footer: Author + Like + Menu */}
           <div className="mt-3.5 pt-2.5 border-t w-full border-gray-100 flex items-center justify-between">
-            {/* Actions */}
-            {/* Like Button */}
-            <button
-              type="button"
-              onClick={handleToggleLike}
-              className="flex items-center gap-1 rounded-full p-1.5 text-xs text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-              title="ถูกใจ"
-            >
-              <Heart
-                className={`h-3.5 w-3.5 ${
-                  isLiked ? "fill-rose-500 text-rose-500" : "text-gray-400"
-                }`}
-              />
-              {likesCount > 0 && (
-                <span
-                  className={`text-[11px] ${isLiked ? "text-rose-600 font-semibold" : ""}`}
-                >
-                  {likesCount}
-                </span>
-              )}
-            </button>
+            {/* Actions: Like & Views */}
+            <div className="flex items-center gap-1">
+              {/* Like Button */}
+              <button
+                type="button"
+                onClick={handleToggleLike}
+                className="flex items-center gap-1 rounded-full p-1.5 text-xs text-gray-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                title="ถูกใจ"
+              >
+                <Heart
+                  className={`h-3.5 w-3.5 ${
+                    isLiked ? "fill-rose-500 text-rose-500" : "text-gray-400"
+                  }`}
+                />
+                {likesCount > 0 && (
+                  <span
+                    className={`text-[11px] ${isLiked ? "text-rose-600 font-semibold" : ""}`}
+                  >
+                    {likesCount}
+                  </span>
+                )}
+              </button>
+
+              {/* View Count */}
+              <div
+                className="flex items-center gap-1 rounded-full p-1.5 text-xs text-gray-400"
+                title="ยอดเข้าชม"
+              >
+                <Eye className="h-3.5 w-3.5 text-gray-400" />
+                {viewsCount > 0 && (
+                  <span className="text-[11px] font-medium text-gray-500">
+                    {viewsCount}
+                  </span>
+                )}
+              </div>
+            </div>
 
             {/* 3-Dots Menu */}
             <div className="relative" ref={menuRef}>
