@@ -116,8 +116,6 @@ export default function ProfileModal({ isOpen, onClose, author }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   const displayName = profile?.name || author?.name || author?.username || 'User';
   const displayAvatar = profile?.avatar || author?.avatar;
   const displayBanner =
@@ -168,6 +166,8 @@ export default function ProfileModal({ isOpen, onClose, author }) {
     following: 0,
     likes: 0,
   };
+
+  if (!isOpen) return null;
 
   return (
     <div

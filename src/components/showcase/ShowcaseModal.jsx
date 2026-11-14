@@ -85,6 +85,8 @@ export default function ShowcaseModal({
 
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
   const deleteMutation = useDeleteShowcaseMutation();
+  const { data: meData } = useMeQuery();
+  const loggedInUser = meData?.user;
 
   // Sync state เมื่อ showcase เปลี่ยน
   useEffect(() => {
@@ -138,9 +140,6 @@ export default function ShowcaseModal({
     showcase.media_type === 'video' ||
     showcase.mediaType === 'video' ||
     /\.(mp4|webm|mov|ogg)$/i.test(currentMedia);
-
-  const { data: meData } = useMeQuery();
-  const loggedInUser = meData?.user;
 
   const author = showcase.author || {
     id: showcase.userId || showcase.user_id,
