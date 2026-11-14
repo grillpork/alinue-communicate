@@ -502,109 +502,83 @@ export default function PostFormModal({
 
         {/* Scrollable Modal Body */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
-          {/* 1. Media Section */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-bold text-gray-900">Media</h3>
+          {/* Previews when images are added */}
+          {(images.length > 0 || uploadingFiles.length > 0) && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-xs text-gray-400 font-medium">
                   {images.length + uploadingFiles.length} / 20
                 </span>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-semibold text-gray-800 transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  <span>Add media</span>
+                </button>
               </div>
 
-              <button
-                type="button"
-                disabled={isUploading}
-                onClick={() => {
-                  if (fileInputRef.current) {
-                    fileInputRef.current.click();
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-semibold text-gray-800 transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <ImageIcon className="h-4 w-4" />
-                <span>Add media</span>
-              </button>
-            </div>
+              <div className="flex flex-wrap gap-3">
+                {images.map((img, idx) => (
+                  <div
+                    key={img.id}
+                    className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-2xs animate-in fade-in duration-200"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img.url}
+                      alt={img.name}
+                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    />
 
-            {/* Media Grid / Thumbnails */}
-            <div className="flex flex-wrap gap-3">
-              {/* Uploaded Images */}
-              {images.map((img, idx) => (
-                <div
-                  key={img.id}
-                  className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-2xs animate-in fade-in duration-200"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img.url}
-                    alt={img.name}
-                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                  />
+                    {idx === 0 && (
+                      <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-center">
+                        <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                          COVER
+                        </span>
+                      </div>
+                    )}
 
-                  {/* COVER badge on first image */}
-                  {idx === 0 && (
-                    <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-center">
-                      <span className="text-[10px] font-bold text-white tracking-wider uppercase">
-                        COVER
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(img.id)}
+                      className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white shadow-xs hover:bg-black transition-all cursor-pointer"
+                    >
+                      <X className="h-3 w-3 stroke-[2.5]" />
+                    </button>
+                  </div>
+                ))}
+
+                {uploadingFiles.map((upload) => (
+                  <div
+                    key={upload.tempId}
+                    className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-2xs animate-in fade-in duration-200"
+                  >
+                    {upload.previewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={upload.previewUrl}
+                        alt={upload.name}
+                        className="h-full w-full object-cover blur-[2px] opacity-60 scale-105"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-gray-200 animate-pulse" />
+                    )}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/30 backdrop-blur-[1px] p-1 text-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      <span className="text-[10px] font-semibold text-white">
+                        {upload.progress > 0 && upload.progress < 100
+                          ? `${upload.progress}%`
+                          : "..."}
                       </span>
                     </div>
-                  )}
-
-                  {/* Remove (✕) Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveImage(img.id)}
-                    className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white shadow-xs hover:bg-black transition-all cursor-pointer"
-                  >
-                    <X className="h-3 w-3 stroke-[2.5]" />
-                  </button>
-                </div>
-              ))}
-
-              {/* Skeleton Cards for files being uploaded */}
-              {uploadingFiles.map((upload) => (
-                <div
-                  key={upload.tempId}
-                  className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-2xs animate-in fade-in duration-200"
-                >
-                  {upload.previewUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={upload.previewUrl}
-                      alt={upload.name}
-                      className="h-full w-full object-cover blur-[2px] opacity-60 scale-105"
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-gray-200 animate-pulse" />
-                  )}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/30 backdrop-blur-[1px] p-1 text-center">
-                    <Loader2 className="h-4 w-4 animate-spin text-white" />
-                    <span className="text-[10px] font-semibold text-white">
-                      {upload.progress > 0 && upload.progress < 100
-                        ? `${upload.progress}%`
-                        : "..."}
-                    </span>
                   </div>
-                </div>
-              ))}
-
-              {/* Add media square tile */}
-              <button
-                type="button"
-                disabled={isUploading}
-                onClick={() => {
-                  if (fileInputRef.current) {
-                    fileInputRef.current.click();
-                  }
-                }}
-                className="flex h-28 w-28 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-transparent hover:bg-gray-50/50 transition-colors cursor-pointer text-gray-400 hover:text-gray-700 disabled:opacity-50"
-              >
-                <ImageIcon className="h-6 w-6 stroke-[1.5] mb-1.5" />
-                <span className="text-xs font-medium">Add media</span>
-              </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 2. Caption Textarea Area */}
           <div>
