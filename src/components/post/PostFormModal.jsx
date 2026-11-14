@@ -16,6 +16,7 @@ import {
   Clock,
   CheckCircle2,
   Layers,
+  MoreHorizontal,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { uploadToR2, submitModerationAppeal } from "@/lib/upload";
@@ -528,41 +529,72 @@ export default function PostFormModal({
                 </button>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              {/* Horizontal Scrollable Carousel like reference image */}
+              <div className="flex items-center gap-3.5 overflow-x-auto pb-2 pt-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {images.map((img, idx) => (
                   <div
                     key={img.id}
-                    className="group relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-2xs animate-in fade-in duration-200"
+                    className="group relative h-64 w-48 shrink-0 overflow-hidden rounded-3xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={img.url}
                       alt={img.name}
-                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     />
 
-                    {idx === 0 && (
-                      <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-center">
-                        <span className="text-[10px] font-bold text-white tracking-wider uppercase">
-                          COVER
-                        </span>
-                      </div>
-                    )}
+                    {/* Gradient overlay at bottom for controls */}
+                    <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none" />
 
+                    {/* Top Right: Remove (X) Button */}
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(img.id)}
-                      className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white shadow-xs hover:bg-black transition-all cursor-pointer"
+                      className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/90 transition-all cursor-pointer shadow-sm"
+                      title="ลบรูปภาพ"
                     >
-                      <X className="h-3 w-3 stroke-[2.5]" />
+                      <X className="h-4 w-4 stroke-[2.5]" />
                     </button>
+
+                    {/* Bottom Bar: Action Pill & More Button */}
+                    <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (idx !== 0) {
+                            setImages((prev) => {
+                              const copy = [...prev];
+                              const [selected] = copy.splice(idx, 1);
+                              copy.unshift(selected);
+                              return copy;
+                            });
+                          }
+                        }}
+                        className={`rounded-full px-3.5 py-1.5 text-xs font-semibold backdrop-blur-md transition-all shadow-sm cursor-pointer ${
+                          idx === 0
+                            ? "bg-white/95 text-black hover:bg-white"
+                            : "bg-black/60 hover:bg-black/80 text-white"
+                        }`}
+                      >
+                        {idx === 0 ? "หน้าปก" : "ตั้งเป็นปก"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(img.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white hover:bg-black/80 transition-colors shadow-sm cursor-pointer"
+                        title="ตัวเลือกเพิ่มเติม"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
 
                 {uploadingFiles.map((upload) => (
                   <div
                     key={upload.tempId}
-                    className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-2xs animate-in fade-in duration-200"
+                    className="relative h-64 w-48 shrink-0 overflow-hidden rounded-3xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
                   >
                     {upload.previewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -572,14 +604,14 @@ export default function PostFormModal({
                         className="h-full w-full object-cover blur-[2px] opacity-60 scale-105"
                       />
                     ) : (
-                      <div className="h-full w-full bg-gray-200 animate-pulse" />
+                      <div className="h-full w-full bg-neutral-800 animate-pulse" />
                     )}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/30 backdrop-blur-[1px] p-1 text-center">
-                      <Loader2 className="h-4 w-4 animate-spin text-white" />
-                      <span className="text-[10px] font-semibold text-white">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/40 backdrop-blur-[1px] p-2 text-center">
+                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                      <span className="text-xs font-semibold text-white">
                         {upload.progress > 0 && upload.progress < 100
                           ? `${upload.progress}%`
-                          : "..."}
+                          : "Uploading..."}
                       </span>
                     </div>
                   </div>
