@@ -1,16 +1,18 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Upload, Loader2, Pencil, Plus, Star } from 'lucide-react';
+import { X, Upload, Loader2, Pencil, Plus, Star, ChevronRight, Layers } from 'lucide-react';
 import { uploadToR2 } from '@/lib/upload';
 import { useUpdateShowcaseMutation } from '@/services/showcase';
+import LinkServiceModal from './LinkServiceModal';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'];
 
 export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const [selectedService, setSelectedService] = useState(null);
+  const [isLinkServiceOpen, setIsLinkServiceOpen] = useState(false);
   const [mediaItems, setMediaItems] = useState([]); // Array of { id, url, file, isNew }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -24,8 +26,18 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
     if (showcase && isOpen) {
       setTitle(showcase.title || '');
       setDescription(showcase.description || '');
-      const tags = Array.isArray(showcase.tags) ? showcase.tags : [];
-      setTagsInput(tags.map((t) => `#${t}`).join(' '));
+      if (showcase.service) {
+        setSelectedService(showcase.service);
+      } else if (showcase.serviceId || showcase.service_id) {
+        setSelectedService({
+          id: showcase.serviceId || showcase.service_id,
+          title: showcase.serviceTitle || showcase.service_title || 'Linked Service',
+          price: showcase.servicePrice,
+          priceText: showcase.servicePriceText,
+        });
+      } else {
+        setSelectedService(null);
+      }
 
       let existingUrls = [];
       const rawMedia = showcase.mediaUrls || showcase.media_urls;
@@ -172,12 +184,6 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
       setUploadProgress(100);
       setUploadStatusText('กำลังบันทึกข้อมูลผลงาน...');
 
-      // 2. แปลง tags
-      const tags = tagsInput
-        .split(/[,\s]+/)
-        .map((t) => t.trim().replace(/^#/, ''))
-        .filter(Boolean);
-
       // 3. บันทึกข้อมูลที่แก้ไข
       await updateMutation.mutateAsync({
         id: showcase.id,
@@ -189,7 +195,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
         media_type: 'image',
         coverUrl: finalUrls[0],
         cover_url: finalUrls[0],
-        tags,
+        serviceId: selectedService?.id || null,
       });
 
       // ปิด modal
@@ -365,18 +371,26 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
             />
           </div>
 
-          {/* Tags Input */}
+          {/* Link to service Row */}
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">
-              แท็ก (Tags) <span className="text-gray-400 font-normal">(เว้นวรรคเพื่อแยกแท็ก เช่น #illustration #2d)</span>
-            </label>
-            <input
-              type="text"
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="#art #illustration #design"
-              className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-base text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
-            />
+            <button
+              type="button"
+              onClick={() => setIsLinkServiceOpen(true)}
+              className="flex w-full items-center justify-between py-2.5 px-1 hover:bg-gray-50/80 rounded-xl transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5 text-gray-800">
+                <Layers className="h-4 w-4 text-gray-600" />
+                <span className="text-xs sm:text-sm font-semibold text-gray-900">Link to service</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-gray-400 group-hover:text-gray-700 transition-colors">
+                {selectedService ? (
+                  <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg max-w-[180px] truncate">
+                    {selectedService.title}
+                  </span>
+                ) : null}
+                <ChevronRight className="h-4 w-4" />
+              </div>
+            </button>
           </div>
 
           {/* Progress Bar (ถ้ากำลังอัปโหลด) */}
@@ -423,6 +437,16 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
           </div>
         </form>
       </div>
+
+      {/* Link to Service Modal */}
+      {isLinkServiceOpen && (
+        <LinkServiceModal
+          isOpen={isLinkServiceOpen}
+          onClose={() => setIsLinkServiceOpen(false)}
+          selectedServiceId={selectedService?.id || null}
+          onSelectService={(srv) => setSelectedService(srv)}
+        />
+      )}
     </div>
   );
 }
