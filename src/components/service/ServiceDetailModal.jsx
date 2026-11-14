@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import {
   X,
   Heart,
@@ -21,19 +21,24 @@ import {
   ExternalLink,
   MoreHorizontal,
   Globe,
-} from 'lucide-react';
+  Tag,
+  ChevronDown,
+} from "lucide-react";
 import {
   useToggleServiceLikeMutation,
   useDeleteServiceMutation,
   useRenewServiceMutation,
   useToggleServiceStatusMutation,
-} from '@/services/service';
-import { useMeQuery } from '@/services/auth';
-import { useUserProfileQuery } from '@/services/user';
-import { getPlatformInfo, formatPlatformUrl } from '@/components/profile/SocialLinksModal';
-import useBodyScrollLock from '@/hooks/useBodyScrollLock';
-import useEmblaCarousel from 'embla-carousel-react';
-import EditServiceModal from './EditServiceModal';
+} from "@/services/service";
+import { useMeQuery } from "@/services/auth";
+import { useUserProfileQuery } from "@/services/user";
+import {
+  getPlatformInfo,
+  formatPlatformUrl,
+} from "@/components/profile/SocialLinksModal";
+import useBodyScrollLock from "@/hooks/useBodyScrollLock";
+import useEmblaCarousel from "embla-carousel-react";
+import EditServiceModal from "./EditServiceModal";
 
 export default function ServiceDetailModal({
   isOpen,
@@ -51,6 +56,7 @@ export default function ServiceDetailModal({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isContactsExpanded, setIsContactsExpanded] = useState(false);
   const menuRef = useRef(null);
 
   const { data: meData } = useMeQuery();
@@ -82,12 +88,12 @@ export default function ServiceDetailModal({
       setActiveImageIdx(emblaApi.selectedScrollSnap());
     };
 
-    emblaApi.on('select', onSelect);
-    emblaApi.on('reInit', onSelect);
+    emblaApi.on("select", onSelect);
+    emblaApi.on("reInit", onSelect);
 
     return () => {
-      emblaApi.off('select', onSelect);
-      emblaApi.off('reInit', onSelect);
+      emblaApi.off("select", onSelect);
+      emblaApi.off("reInit", onSelect);
     };
   }, [emblaApi]);
 
@@ -98,8 +104,8 @@ export default function ServiceDetailModal({
         setShowMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   if (!isOpen || !service) return null;
@@ -108,10 +114,11 @@ export default function ServiceDetailModal({
 
   const author = {
     id: service.userId,
-    name: authorProfile?.name || service.author?.name || 'Creator',
-    username: authorProfile?.username || service.author?.username || 'user',
+    name: authorProfile?.name || service.author?.name || "Creator",
+    username: authorProfile?.username || service.author?.username || "user",
     avatar: authorProfile?.avatar || service.author?.avatar || null,
-    socialLinks: authorProfile?.socialLinks || service.author?.socialLinks || {},
+    socialLinks:
+      authorProfile?.socialLinks || service.author?.socialLinks || {},
     website: authorProfile?.website || service.author?.website || null,
   };
 
@@ -140,19 +147,22 @@ export default function ServiceDetailModal({
     isOwnerProp !== undefined
       ? Boolean(isOwnerProp)
       : Boolean(
-          (currentUser?.id && Number(currentUser.id) === Number(service.userId)) ||
+          (currentUser?.id &&
+            Number(currentUser.id) === Number(service.userId)) ||
           (currentUser?.username &&
             author.username &&
-            currentUser.username.toLowerCase() === author.username.toLowerCase())
+            currentUser.username.toLowerCase() ===
+              author.username.toLowerCase()),
         );
 
-  const images = Array.isArray(service.images) && service.images.length > 0
-    ? service.images
-    : service.coverUrl
-    ? [service.coverUrl]
-    : [];
+  const images =
+    Array.isArray(service.images) && service.images.length > 0
+      ? service.images
+      : service.coverUrl
+        ? [service.coverUrl]
+        : [];
 
-  const status = service.status || 'active';
+  const status = service.status || "active";
   const isExpired = Boolean(service.isExpired);
   const daysLeft = service.daysLeft ?? 0;
   const isLiked = Boolean(service.isLiked);
@@ -160,7 +170,7 @@ export default function ServiceDetailModal({
   const viewsCount = service.viewsCount ?? service.views_count ?? 0;
 
   const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = `${window.location.origin}/${author.username}?tab=services&service=${service.id}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
@@ -169,7 +179,7 @@ export default function ServiceDetailModal({
   };
 
   const handleShare = async () => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = `${window.location.origin}/${author.username}?tab=services&service=${service.id}`;
       if (navigator.share) {
         try {
@@ -192,7 +202,7 @@ export default function ServiceDetailModal({
   };
 
   const handleRenew = () => {
-    if (confirm('ต้องการต่ออายุโพสต์นี้อีก 30 วัน (1 เดือน) หรือไม่?')) {
+    if (confirm("ต้องการต่ออายุโพสต์นี้อีก 30 วัน (1 เดือน) หรือไม่?")) {
       renewMutation.mutate(service.id);
     }
   };
@@ -202,7 +212,7 @@ export default function ServiceDetailModal({
   };
 
   const handleDelete = () => {
-    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์รับงานนี้?')) {
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบโพสต์รับงานนี้?")) {
       deleteMutation.mutate(service.id, {
         onSuccess: () => {
           if (onDeleted) onDeleted(service.id);
@@ -235,7 +245,10 @@ export default function ServiceDetailModal({
 
           {/* Mobile-only Top Right: Owner Options Dropdown */}
           {isOwner && (
-            <div className="absolute top-4 right-4 z-40 md:hidden" ref={menuRef}>
+            <div
+              className="absolute top-4 right-4 z-40 md:hidden"
+              ref={menuRef}
+            >
               <button
                 type="button"
                 onClick={() => setShowMenu((prev) => !prev)}
@@ -270,7 +283,9 @@ export default function ServiceDetailModal({
                     className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <Power className="h-3.5 w-3.5" />
-                    <span>{status === 'paused' ? 'เปิดรับงาน' : 'พักรับงาน'}</span>
+                    <span>
+                      {status === "paused" ? "เปิดรับงาน" : "พักรับงาน"}
+                    </span>
                   </button>
 
                   <button
@@ -354,7 +369,7 @@ export default function ServiceDetailModal({
           {/* 2. RIGHT SIDE: Service Details & Actions Panel */}
           <div className="w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col bg-white border-t md:border-t-0 md:border-l border-gray-100 md:overflow-hidden">
             {/* Top Bar with Expiry & Actions (Desktop only) */}
-            <div className="hidden md:flex items-center justify-end px-5 py-3 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-10">
+            <div className="hidden md:flex items-center justify-end px-5 py-3 sticky top-0 bg-white/95 backdrop-blur-md z-10">
               {/* Owner Options Menu */}
               {isOwner && (
                 <div className="relative" ref={menuRef}>
@@ -364,7 +379,7 @@ export default function ServiceDetailModal({
                     className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
                     title="ตัวเลือกเพิ่มเติม"
                   >
-                    <MoreHorizontal className="h-4 w-4" />
+                    <MoreHorizontal className="h-6 w-6" />
                   </button>
 
                   {showMenu && (
@@ -392,7 +407,9 @@ export default function ServiceDetailModal({
                         className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                       >
                         <Power className="h-3.5 w-3.5" />
-                        <span>{status === 'paused' ? 'เปิดรับงาน' : 'พักรับงาน'}</span>
+                        <span>
+                          {status === "paused" ? "เปิดรับงาน" : "พักรับงาน"}
+                        </span>
                       </button>
 
                       <button
@@ -438,12 +455,16 @@ export default function ServiceDetailModal({
                       onClick={() => emblaApi?.scrollTo(idx)}
                       className={`relative h-14 w-14 shrink-0 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                         idx === activeImageIdx
-                          ? 'border-black ring-2 ring-black/10'
-                          : 'border-transparent opacity-60 hover:opacity-100'
+                          ? "border-black ring-2 ring-black/10"
+                          : "border-transparent opacity-60 hover:opacity-100"
                       }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img} alt="" className="h-full w-full object-cover" />
+                      <img
+                        src={img}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -463,7 +484,11 @@ export default function ServiceDetailModal({
                       <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 border border-white shadow-2xs shrink-0">
                         {author.avatar ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={author.avatar} alt={author.name} className="h-full w-full object-cover" />
+                          <img
+                            src={author.avatar}
+                            alt={author.name}
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-400">
                             <User className="h-5 w-5" />
@@ -474,7 +499,9 @@ export default function ServiceDetailModal({
                         <h4 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:underline truncate">
                           {author.name}
                         </h4>
-                        <p className="text-[11px] text-gray-500 truncate">@{author.username}</p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          @{author.username}
+                        </p>
                       </div>
                     </Link>
 
@@ -490,7 +517,9 @@ export default function ServiceDetailModal({
 
                   {/* Middle: Prices (2-column grid or single price) */}
                   {(() => {
-                    const hasStartPrice = service.startPrice !== undefined && service.startPrice !== null;
+                    const hasStartPrice =
+                      service.startPrice !== undefined &&
+                      service.startPrice !== null;
                     const hasEndPrice =
                       service.endPrice !== undefined &&
                       service.endPrice !== null &&
@@ -507,7 +536,9 @@ export default function ServiceDetailModal({
                               <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
                                 ฿{Number(service.startPrice).toLocaleString()}
                               </span>
-                              <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                              <span className="text-xs text-gray-400 shrink-0">
+                                / งาน
+                              </span>
                             </div>
                           </div>
 
@@ -519,7 +550,9 @@ export default function ServiceDetailModal({
                               <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
                                 ฿{Number(service.endPrice).toLocaleString()}
                               </span>
-                              <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                              <span className="text-xs text-gray-400 shrink-0">
+                                / งาน
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -528,7 +561,10 @@ export default function ServiceDetailModal({
 
                     const displayPrice = hasStartPrice
                       ? `฿${Number(service.startPrice).toLocaleString()}`
-                      : service.priceText || (service.price ? `฿${Number(service.price).toLocaleString()}` : null);
+                      : service.priceText ||
+                        (service.price
+                          ? `฿${Number(service.price).toLocaleString()}`
+                          : null);
 
                     if (!displayPrice) return null;
 
@@ -547,57 +583,107 @@ export default function ServiceDetailModal({
                     );
                   })()}
 
-                  {/* Bottom: Links (Social Links / Contact Channels) */}
+                  {/* Bottom: Links (Social Links / Contact Channels with Collapse/Expand) */}
                   {effectiveLinksList.length > 0 && (
-                    <div className="pt-2.5 border-t border-gray-200/60 flex items-center gap-2 flex-wrap">
-                      <span className="text-[11px] font-semibold text-gray-500 mr-1 flex items-center gap-1">
-                        <Globe className="h-3 w-3 text-gray-400" />
-                        <span>ช่องทางติดต่อ / ลิงก์:</span>
-                      </span>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {effectiveLinksList.map(({ platform, val }) => {
-                          const info = getPlatformInfo(platform);
-                          const href = formatPlatformUrl(platform, val);
-                          return (
-                            <a
-                              key={platform}
-                              href={href}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:text-black shadow-2xs transition-all"
-                              title={`${info.name}: ${val}`}
-                            >
-                              <span className="h-3.5 w-3.5 flex items-center justify-center shrink-0">
-                                {info.icon}
-                              </span>
-                              <span>{info.name}</span>
-                            </a>
-                          );
-                        })}
+                    <div className="pt-2.5 border-t border-gray-200/60">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        {/* Toggle Collapse / Expand Button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setIsContactsExpanded((prev) => !prev);
+                          }}
+                          className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-colors cursor-pointer select-none"
+                          title={isContactsExpanded ? "ย่อช่องทางติดต่อ" : "ขยายช่องทางติดต่อ"}
+                        >
+                          <Globe className="h-3.5 w-3.5 text-gray-400" />
+                          <span>ช่องทางติดต่อ / ลิงก์:</span>
+                          <ChevronDown
+                            className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${
+                              isContactsExpanded ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+
+                        {/* Collapsed state (isContactsExpanded === false): แสดงแค่ Icons เรียงกัน */}
+                        {!isContactsExpanded && (
+                          <div className="flex items-center gap-1.5 flex-wrap animate-in fade-in duration-150">
+                            {effectiveLinksList.map(({ platform, val }) => {
+                              const info = getPlatformInfo(platform);
+                              const href = formatPlatformUrl(platform, val);
+                              return (
+                                <a
+                                  key={platform}
+                                  href={href}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 hover:text-black shadow-2xs transition-all"
+                                  title={`${info.name}: ${val}`}
+                                >
+                                  <span className="h-3.5 w-3.5 flex items-center justify-center shrink-0">
+                                    {info.icon}
+                                  </span>
+                                </a>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
+
+                      {/* Expanded state (isContactsExpanded === true): ขยายออกมาเป็น Icon + Name social + Value */}
+                      {isContactsExpanded && (
+                        <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-in fade-in duration-200">
+                          {effectiveLinksList.map(({ platform, val }) => {
+                            const info = getPlatformInfo(platform);
+                            const href = formatPlatformUrl(platform, val);
+                            return (
+                              <a
+                                key={platform}
+                                href={href}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-black hover:border-gray-300 shadow-2xs transition-all"
+                                title={`${info.name}: ${val}`}
+                              >
+                                <span className="h-3.5 w-3.5 flex items-center justify-center shrink-0">
+                                  {info.icon}
+                                </span>
+                                <span className="font-semibold text-gray-900">{info.name}</span>
+                                {val && val !== info.name && (
+                                  <span className="text-gray-400 font-normal truncate max-w-[140px]">
+                                    ({val})
+                                  </span>
+                                )}
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {/* Title Header */}
-                <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
-                  {service.title}
-                </h1>
-
                 {/* Tags */}
                 {Array.isArray(service.tags) && service.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {service.tags.map((tag, idx) => (
                       <span
                         key={idx}
-                        className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
+                        className="rounded-md flex items-center gap-1 bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
                       >
-                        #{tag}
+                        {/* <Tag className="w-3 h-3"/> */}
+                        {tag}
                       </span>
                     ))}
                   </div>
                 )}
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
+                  {service.title}
+                </h1>
               </div>
 
               {/* Description */}
@@ -614,19 +700,21 @@ export default function ServiceDetailModal({
             </div>
 
             {/* Bottom Actions: Like, Views & Share */}
-            <div className="p-4 sm:p-5 border-t border-gray-100 bg-white/95 backdrop-blur-md flex items-center justify-between gap-2">
+            <div className="p-4 sm:p-5 bg-white/55 backdrop-blur-md flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleToggleLike}
                   className={`inline-flex items-center gap-1.5 rounded-2xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer shadow-2xs ${
                     isLiked
-                      ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                      : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200'
+                      ? "bg-rose-50 text-rose-600 border border-rose-200"
+                      : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
                   }`}
                 >
-                  <Heart className={`h-4 w-4 ${isLiked ? 'fill-rose-500 text-rose-500' : ''}`} />
-                  <span>{likesCount > 0 ? likesCount : 'ถูกใจ'}</span>
+                  <Heart
+                    className={`h-4 w-4 ${isLiked ? "fill-rose-500 text-rose-500" : ""}`}
+                  />
+                  <span>{likesCount > 0 ? likesCount : "ถูกใจ"}</span>
                 </button>
 
                 <div
@@ -638,34 +726,14 @@ export default function ServiceDetailModal({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-gray-50 border border-gray-200 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      <span className="text-emerald-600 font-semibold">คัดลอกแล้ว</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5 text-gray-500" />
-                      <span>คัดลอก</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-colors cursor-pointer"
-                >
-                  <Share2 className="h-3.5 w-3.5" />
-                  <span>แชร์</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="inline-flex items-center gap-1.5 rounded-2xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-colors cursor-pointer"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                <span>แชร์</span>
+              </button>
             </div>
           </div>
         </div>
