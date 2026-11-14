@@ -19,6 +19,7 @@ import {
 import React, { useState, useRef, useEffect } from "react";
 import { uploadToR2, submitModerationAppeal } from "@/lib/upload";
 import { useSuggestedUsersQuery } from "@/services/user";
+import { useMeQuery } from "@/services/auth";
 
 export default function PostFormModal({
   isOpen = true,
@@ -28,6 +29,14 @@ export default function PostFormModal({
   mode,
   initialPost = null,
 }) {
+  const { data: meData } = useMeQuery();
+  const currentUser = meData?.user;
+  const usernameDisplay = currentUser?.username
+    ? `@${currentUser.username}`
+    : initialPost?.author?.username
+    ? `@${initialPost.author.username}`
+    : "Post";
+
   const isUpdateMode = isEdit || mode === "update";
   const [content, setContent] = useState("");
   const [images, setImages] = useState([]);
@@ -453,11 +462,11 @@ export default function PostFormModal({
           isDragging ? "ring-2 ring-blue-500 scale-[1.01]" : ""
         }`}
       >
-        {/* Header: Post > New post / Update post & Close button (Sticky Top) */}
+        {/* Header: @username > New post / Update post & Close button (Sticky Top) */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100 shrink-0 bg-white">
           <div className="flex items-center gap-2">
-            <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600">
-              Post
+            <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+              {usernameDisplay}
             </span>
             <span className="text-xs text-gray-400">
               <ChevronRight className="h-3.5 w-3.5" />
