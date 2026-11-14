@@ -173,7 +173,7 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
           >
             <ChevronLeft className="h-5 w-5 stroke-[2.5]" />
           </button>
-          <span className="text-sm sm:text-base font-bold text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.7)] tracking-tight select-none">
+          <span className="text-sm sm:text-base font-bold text-white drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.7)] tracking-tight select-none truncate max-w-[130px] xs:max-w-[180px] sm:max-w-none">
             {user?.username ? `@${user.username}` : ""}
           </span>
         </div>
@@ -189,12 +189,14 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
           onError={() => setBannerSrc("/empty/no-image.png")}
         />
 
-        {/* Change Banner Button (เมื่อ hover ที่ Banner) */}
+        {/* Change Banner Button (แสดงตลอดเวลาใน mobile และแสดงเมื่อ hover ใน desktop) */}
         {isSelf && (
           <button
             type="button"
             onClick={() => setIsEditProfileOpen(true)}
-            className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70 cursor-pointer"
+            className="absolute top-4 right-4 z-20 flex items-center gap-1.5 rounded-full bg-black/50 hover:bg-black/70 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white backdrop-blur-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-95 cursor-pointer shadow-sm"
+            aria-label="Edit cover banner"
+            title="Edit Cover"
           >
             <Camera className="h-3.5 w-3.5" />
             <span>Edit Cover</span>
