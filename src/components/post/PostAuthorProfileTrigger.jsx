@@ -14,7 +14,7 @@ import UserAvatar from '@/components/common/UserAvatar';
  * - Toggle (Click/Tap) ที่รูปโปรไฟล์ -> แสดง Modal Profile
  * - คลิกที่ชื่อผู้ใช้ -> ลิงก์ตรงไปยังหน้า /[username]
  */
-export default function PostAuthorProfileTrigger({ author }) {
+export default function PostAuthorProfileTrigger({ author, showName = true, avatarSize = "md" }) {
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const hoverTimerRef = useRef(null);
@@ -54,7 +54,7 @@ export default function PostAuthorProfileTrigger({ author }) {
   const username = author?.username ? `/${author.username}` : '#';
 
   return (
-    <div className="relative inline-flex items-center gap-2.5">
+    <div className={`relative inline-flex items-center ${showName ? 'gap-2.5' : ''}`}>
       {/* 1. Avatar Button (Click = Toggle Modal Profile, Hover = Mini Popup Profile) */}
       <div
         className="relative"
@@ -70,7 +70,7 @@ export default function PostAuthorProfileTrigger({ author }) {
           <UserAvatar
             src={author?.avatar}
             alt={author?.name || 'User'}
-            size="md"
+            size={avatarSize}
           />
         </button>
 
@@ -88,17 +88,19 @@ export default function PostAuthorProfileTrigger({ author }) {
       </div>
 
       {/* 2. Author Name Linked to /[username] (Hovering also triggers mini popup) */}
-      <div
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <Link
-          href={username}
-          className="font-semibold text-gray-900 text-sm hover:underline"
+      {showName && (
+        <div
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
-          {author?.name || 'User'}
-        </Link>
-      </div>
+          <Link
+            href={username}
+            className="font-semibold text-gray-900 text-sm hover:underline"
+          >
+            {author?.name || 'User'}
+          </Link>
+        </div>
+      )}
 
       {/* 3. Modal Profile (เมื่อ Toggle / Click ที่รูปโปรไฟล์) */}
       <ProfileModal

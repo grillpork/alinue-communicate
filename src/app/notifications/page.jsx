@@ -229,7 +229,7 @@ export default function NotificationsPage() {
                     onClick={(e) => e.stopPropagation()}
                     className="relative"
                   >
-                    <PostAuthorProfileTrigger author={notif.actor} />
+                    <PostAuthorProfileTrigger author={notif.actor} showName={false} />
                   </div>
 
                   {/* Icon Badge Overlapping bottom right of avatar */}
@@ -260,9 +260,13 @@ export default function NotificationsPage() {
                 {/* Middle: Content Description & Snippets */}
                 <div className="flex-1 min-w-0 pr-1">
                   <div className="text-xs sm:text-sm text-gray-800 leading-snug">
-                    <span className="font-bold text-gray-900 hover:underline mr-1.5">
+                    <Link
+                      href={`/${notif.actor?.username || ''}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-bold text-gray-900 hover:underline mr-1.5"
+                    >
                       {notif.actor.name}
-                    </span>
+                    </Link>
 
                     {notif.type === 'like' && (
                       <span className="text-gray-600">liked your post</span>
