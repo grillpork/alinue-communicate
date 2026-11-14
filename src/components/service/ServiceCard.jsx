@@ -186,11 +186,7 @@ export default function ServiceCard({
               <span className="rounded-full bg-amber-500/90 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-semibold text-white">
                 พักรับงาน
               </span>
-            ) : (
-              <span className="rounded-full bg-emerald-600/90 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-2xs">
-                เปิดรับงาน
-              </span>
-            )}
+            ) : null}
           </div>
 
           {/* Top Right: Countdown / Image Count Pill */}

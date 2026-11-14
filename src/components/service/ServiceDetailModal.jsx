@@ -154,16 +154,11 @@ export default function ServiceDetailModal({
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                   <span>พักรับงานชั่วคราว</span>
                 </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 text-xs font-semibold">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <span>เปิดรับงาน</span>
-                </span>
-              )}
+              ) : null}
 
               {!isExpired && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 px-2.5 py-1 text-[11px] font-medium">
-                  <Clock className="h-3 w-3 text-blue-600" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-700 border border-gray-200/60 px-2.5 py-1 text-xs font-medium">
+                  <Clock className="h-3.5 w-3.5 text-gray-500" />
                   <span>เหลืออีก {daysLeft} วัน</span>
                 </span>
               )}
@@ -184,7 +179,7 @@ export default function ServiceDetailModal({
             {/* Image Gallery */}
             {images.length > 0 && (
               <div className="space-y-2">
-                <div className="relative aspect-video sm:aspect-16/10 w-full rounded-2xl overflow-hidden bg-gray-900 border border-gray-100 shadow-2xs flex items-center justify-center">
+                <div className="relative aspect-video sm:aspect-16/10 w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200/60 shadow-2xs flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={images[activeImageIdx]}
