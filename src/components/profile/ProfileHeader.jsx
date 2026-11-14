@@ -21,7 +21,10 @@ import {
 } from "lucide-react";
 import EditProfileModal from "./EditProfileModal";
 import NoteFormModal from "./NoteFormModal";
-import SocialLinksModal, { getPlatformInfo, formatPlatformUrl } from "./SocialLinksModal";
+import SocialLinksModal, {
+  getPlatformInfo,
+  formatPlatformUrl,
+} from "./SocialLinksModal";
 import Image from "next/image";
 import UserAvatar from "@/components/common/UserAvatar";
 import { useUpdateProfileMutation } from "@/services/user";
@@ -91,7 +94,9 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
   const [noteText, setNoteText] = useState(user?.note || "");
   const [copied, setCopied] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
-  const [bannerSrc, setBannerSrc] = useState(user?.banner || "/empty/no-image.png");
+  const [bannerSrc, setBannerSrc] = useState(
+    user?.banner || "/empty/no-image.png",
+  );
 
   const updateProfileMutation = useUpdateProfileMutation();
 
@@ -144,7 +149,10 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
       }
       resultLines.push(line);
       chars += line.length + 1;
-      if (i === maxLines - 1 && (lines.length > maxLines || chars < bioText.length)) {
+      if (
+        i === maxLines - 1 &&
+        (lines.length > maxLines || chars < bioText.length)
+      ) {
         if (!resultLines[i].endsWith("...")) {
           resultLines[i] = resultLines[i] + "...";
         }
@@ -209,7 +217,9 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
           src={bannerSrc}
           alt="Profile cover banner"
           className="h-full w-full object-cover object-center"
-          unoptimized={bannerSrc?.endsWith('.gif') || bannerSrc?.includes('.gif')}
+          unoptimized={
+            bannerSrc?.endsWith(".gif") || bannerSrc?.includes(".gif")
+          }
           priority
           onError={() => setBannerSrc("/empty/no-image.png")}
         />
@@ -219,12 +229,12 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
           <button
             type="button"
             onClick={() => setIsEditProfileOpen(true)}
-            className="absolute top-4 right-4 z-20 flex items-center gap-1.5 rounded-full bg-black/50 hover:bg-black/70 px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs font-semibold text-white backdrop-blur-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-95 cursor-pointer shadow-sm"
+            className="absolute top-4 right-4 z-20 flex items-center gap-1.5 rounded-full bg-black/50 hover:bg-black/70 p-2.5 text-[11px] sm:text-xs font-semibold text-white backdrop-blur-md opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all active:scale-95 cursor-pointer shadow-sm"
             aria-label="Edit cover banner"
             title="Edit Cover"
           >
             <Camera className="h-3.5 w-3.5" />
-            <span>Edit Cover</span>
+            <span className="hidden md:block">Edit Cover</span>
           </button>
         )}
       </div>
@@ -249,7 +259,9 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
                   title={isSelf ? "คลิกเพื่อแก้ไขโน้ต" : ""}
                 >
                   <span className="text-[11px] sm:text-xs font-normal text-gray-700 max-w-[150px] sm:max-w-[200px] truncate">
-                    {noteText || user?.note || (isSelf ? "+ แชร์โน้ต" : "Tell there what you think.")}
+                    {noteText ||
+                      user?.note ||
+                      (isSelf ? "+ แชร์โน้ต" : "Tell there what you think.")}
                   </span>
 
                   {/* Speech bubble tail dots pointing down to the avatar */}

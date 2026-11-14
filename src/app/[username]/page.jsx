@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import Link from "next/link";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   Grid,
   Heart,
@@ -13,46 +13,51 @@ import {
   Plus,
   Bookmark,
   LayoutList,
-} from 'lucide-react';
-import ProfileHeader from '@/components/profile/ProfileHeader';
-import PostCard from '@/components/post/PostCard';
-import ShowcaseCard from '@/components/showcase/ShowcaseCard';
-import ShowcaseModal from '@/components/showcase/ShowcaseModal';
-import CreateShowcaseModal from '@/components/showcase/CreateShowcaseModal';
-import ServiceCard from '@/components/service/ServiceCard';
-import ServiceDetailModal from '@/components/service/ServiceDetailModal';
-import CreateServiceModal from '@/components/service/CreateServiceModal';
-import { useMeQuery } from '@/services/auth';
+} from "lucide-react";
+import ProfileHeader from "@/components/profile/ProfileHeader";
+import PostCard from "@/components/post/PostCard";
+import ShowcaseCard from "@/components/showcase/ShowcaseCard";
+import ShowcaseModal from "@/components/showcase/ShowcaseModal";
+import CreateShowcaseModal from "@/components/showcase/CreateShowcaseModal";
+import ServiceCard from "@/components/service/ServiceCard";
+import ServiceDetailModal from "@/components/service/ServiceDetailModal";
+import CreateServiceModal from "@/components/service/CreateServiceModal";
+import { useMeQuery } from "@/services/auth";
 import {
   useUserProfileQuery,
   useUserPostsQuery,
   useUserLikedPostsQuery,
   useUpdateProfileMutation,
-} from '@/services/user';
-import { useShowcasesQuery } from '@/services/showcase';
-import { useServicesQuery } from '@/services/service';
-import { useBookmarks } from '@/services/bookmark';
+} from "@/services/user";
+import { useShowcasesQuery } from "@/services/showcase";
+import { useServicesQuery } from "@/services/service";
+import { useBookmarks } from "@/services/bookmark";
 
 function UserProfileContent() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const showcaseParamId = searchParams?.get('showcase');
-  const serviceParamId = searchParams?.get('service');
-  const tabParam = searchParams?.get('tab');
+  const showcaseParamId = searchParams?.get("showcase");
+  const serviceParamId = searchParams?.get("service");
+  const tabParam = searchParams?.get("tab");
   const [urlSelectedShowcase, setUrlSelectedShowcase] = useState(null);
   const [urlSelectedService, setUrlSelectedService] = useState(null);
 
   const rawUsername = params?.username;
   const username =
-    typeof rawUsername === 'string'
-      ? decodeURIComponent(rawUsername).replace(/^@/, '')
-      : '';
+    typeof rawUsername === "string"
+      ? decodeURIComponent(rawUsername).replace(/^@/, "")
+      : "";
 
-  const [activeTab, setActiveTab] = useState(tabParam || 'showcases');
+  const [activeTab, setActiveTab] = useState(tabParam || "showcases");
   const { bookmarks: bookmarkedPosts } = useBookmarks();
 
   useEffect(() => {
-    if (tabParam && ['showcases', 'services', 'posts', 'likes', 'bookmarks'].includes(tabParam)) {
+    if (
+      tabParam &&
+      ["showcases", "services", "posts", "likes", "bookmarks"].includes(
+        tabParam,
+      )
+    ) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -82,31 +87,29 @@ function UserProfileContent() {
     profile?.id || username,
     {
       enabled: Boolean(profile?.id || username),
-    }
+    },
   );
 
   const posts = postsData?.posts || [];
 
   // 4. ดึงโพสต์ที่ผู้ใช้นี้กด Like
-  const { data: likedPostsData, isLoading: isLikedPostsLoading } = useUserLikedPostsQuery(
-    profile?.id || username,
-    {
+  const { data: likedPostsData, isLoading: isLikedPostsLoading } =
+    useUserLikedPostsQuery(profile?.id || username, {
       enabled: Boolean(profile?.id || username),
-    }
-  );
+    });
   const likedPosts = likedPostsData?.posts || [];
 
   // 5. ดึงผลงาน Showcase ของผู้ใช้นี้
-  const { data: showcasesData, isLoading: isShowcasesLoading } = useShowcasesQuery(
-    { username },
-    { enabled: Boolean(username) }
-  );
+  const { data: showcasesData, isLoading: isShowcasesLoading } =
+    useShowcasesQuery({ username }, { enabled: Boolean(username) });
   const showcases = showcasesData?.showcases || [];
 
   // ตรวจสอบว่ามี ?showcase=:id ใน URL หรือไม่ เพื่อเปิด Modal ทันที
   useEffect(() => {
     if (showcaseParamId && showcases.length > 0) {
-      const found = showcases.find((s) => String(s.id) === String(showcaseParamId));
+      const found = showcases.find(
+        (s) => String(s.id) === String(showcaseParamId),
+      );
       if (found) {
         setUrlSelectedShowcase(found);
       }
@@ -115,15 +118,17 @@ function UserProfileContent() {
 
   // 6. ดึงบริการ/โพสต์รับงาน Service ของผู้ใช้นี้
   const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
-    { username, status: isSelf ? 'all' : 'active' },
-    { enabled: Boolean(username) }
+    { username, status: isSelf ? "all" : "active" },
+    { enabled: Boolean(username) },
   );
   const services = servicesData?.services || [];
 
   // ตรวจสอบว่ามี ?service=:id ใน URL หรือไม่ เพื่อเปิด Modal ทันที
   useEffect(() => {
     if (serviceParamId && services.length > 0) {
-      const found = services.find((s) => String(s.id) === String(serviceParamId));
+      const found = services.find(
+        (s) => String(s.id) === String(serviceParamId),
+      );
       if (found) {
         setUrlSelectedService(found);
       }
@@ -143,7 +148,9 @@ function UserProfileContent() {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-gray-400">
         <Loader2 className="h-8 w-8 animate-spin text-gray-600 mb-3" />
-        <p className="text-xs font-medium">Loading @{username}&apos;s profile...</p>
+        <p className="text-xs font-medium">
+          Loading @{username}&apos;s profile...
+        </p>
       </div>
     );
   }
@@ -174,17 +181,15 @@ function UserProfileContent() {
     id: profile.id,
     name: profile.name || profile.displayName || profile.username,
     username: profile.username,
-    bio: profile.bio || '',
-    website: profile.website || '',
+    bio: profile.bio || "",
+    website: profile.website || "",
     socialLinks: profile.socialLinks || {},
-    location: profile.location || '',
-    note: profile.note || 'Tell there what you think.',
+    location: profile.location || "",
+    note: profile.note || "Tell there what you think.",
     isVerified: Boolean(profile.isVerified ?? true),
     joinedDate: profile.joinedDate,
     avatar: profile.avatar || profile.avatarUrl || null,
-    banner:
-      profile.banner ||
-      '/empty/no-image.png',
+    banner: profile.banner || "/empty/no-image.png",
     stats: profile.stats || {
       posts: posts.length,
       followers: 0,
@@ -208,20 +213,34 @@ function UserProfileContent() {
       <div className="sticky top-[53px] lg:top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-100 px-2 sm:px-0 transition-all">
         <div className="flex">
           {[
-            { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
             {
-              id: 'services',
-              label: 'Services',
-              icon: LayoutList,
-              count: services.length > 0 ? services.length : (isSelf ? 0 : undefined),
+              id: "showcases",
+              label: "Showcase",
+              icon: Briefcase,
+              count: showcases.length,
             },
-            { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
-            { id: 'likes', label: 'Likes', icon: Heart, count: likedPosts.length > 0 ? likedPosts.length : undefined },
             {
-              id: 'bookmarks',
-              label: 'Bookmark',
+              id: "services",
+              label: "Services",
+              icon: LayoutList,
+              count:
+                services.length > 0 ? services.length : isSelf ? 0 : undefined,
+            },
+            { id: "posts", label: "Posts", icon: Grid, count: posts.length },
+            {
+              id: "likes",
+              label: "Likes",
+              icon: Heart,
+              count: likedPosts.length > 0 ? likedPosts.length : undefined,
+            },
+            {
+              id: "bookmarks",
+              label: "Bookmark",
               icon: Bookmark,
-              count: isSelf && bookmarkedPosts.length > 0 ? bookmarkedPosts.length : undefined,
+              count:
+                isSelf && bookmarkedPosts.length > 0
+                  ? bookmarkedPosts.length
+                  : undefined,
             },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -235,13 +254,13 @@ function UserProfileContent() {
                 aria-label={tab.label}
                 className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
                   isActive
-                    ? 'border-gray-900 text-gray-900'
-                    : 'border-transparent text-gray-400 hover:text-gray-600'
+                    ? "border-gray-900 text-gray-900"
+                    : "border-transparent text-gray-400 hover:text-gray-600"
                 }`}
               >
                 <Icon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">{tab.label}</span>
-                {typeof tab.count === 'number' && (
+                {typeof tab.count === "number" && (
                   <span className="hidden sm:inline text-[11px] text-gray-400">
                     ({tab.count})
                   </span>
@@ -255,7 +274,7 @@ function UserProfileContent() {
       {/* 3. Tab Content */}
       <div className="mt-4 px-2 sm:px-0">
         {/* Tab: Showcase */}
-        {activeTab === 'showcases' && (
+        {activeTab === "showcases" && (
           <div>
             {isShowcasesLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
@@ -272,8 +291,10 @@ function UserProfileContent() {
                       isOwner={
                         isSelf ||
                         (currentUser &&
-                          (Number(currentUser.id) === Number(sc.userId || sc.author?.id) ||
-                            currentUser.username?.toLowerCase() === sc.author?.username?.toLowerCase()))
+                          (Number(currentUser.id) ===
+                            Number(sc.userId || sc.author?.id) ||
+                            currentUser.username?.toLowerCase() ===
+                              sc.author?.username?.toLowerCase()))
                       }
                     />
                   </div>
@@ -289,7 +310,7 @@ function UserProfileContent() {
                 </p>
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
                   {isSelf
-                    ? 'เริ่มอัปโหลดรูปภาพหรือคลิปผลงานของคุณเพื่อให้คอมมูนิตี้เข้ามากด Like และชื่นชมได้เลย!'
+                    ? "เริ่มอัปโหลดรูปภาพหรือคลิปผลงานของคุณเพื่อให้คอมมูนิตี้เข้ามากด Like และชื่นชมได้เลย!"
                     : `@${username} ยังไม่ได้โพสต์ผลงาน Showcase`}
                 </p>
                 {isSelf && (
@@ -308,25 +329,25 @@ function UserProfileContent() {
         )}
 
         {/* Tab: Services */}
-        {activeTab === 'services' && (
+        {activeTab === "services" && (
           <div>
             {isSelf && (
               <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                    บริการและประกาศรับงาน (Services)
+                    บริการและประกาศรับงาน
                   </h3>
                   <p className="text-[11px] text-gray-500 mt-0.5">
-                    โพสต์รับงานมีอายุ 30 วัน (1 เดือน) และสามารถต่ออายุได้ตลอดเวลา
+                    โพสต์รับงานมีอายุ 30 วัน (1 เดือน)
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsServiceModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-black px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-black  p-3.5   sm:py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  <span>โพสต์รับงาน</span>
+                  <span className="hidden sm:block">โพสต์รับงาน</span>
                 </button>
               </div>
             )}
@@ -357,7 +378,7 @@ function UserProfileContent() {
                 </p>
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
                   {isSelf
-                    ? 'เปิดรับงาน คอมมิชชัน หรือบริการสร้างสรรค์ผลงานของคุณ พร้อมตัวอย่างงานและราคาเริ่มต้น'
+                    ? "เปิดรับงาน คอมมิชชัน หรือบริการสร้างสรรค์ผลงานของคุณ พร้อมตัวอย่างงานและราคาเริ่มต้น"
                     : `@${username} ยังไม่ได้เปิดรับงานในขณะนี้`}
                 </p>
                 {isSelf && (
@@ -376,7 +397,7 @@ function UserProfileContent() {
         )}
 
         {/* Tab: Posts */}
-        {activeTab === 'posts' && (
+        {activeTab === "posts" && (
           <div>
             {isPostsLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
@@ -398,7 +419,7 @@ function UserProfileContent() {
         )}
 
         {/* Tab: Likes */}
-        {activeTab === 'likes' && (
+        {activeTab === "likes" && (
           <div>
             {isLikedPostsLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
@@ -421,7 +442,7 @@ function UserProfileContent() {
                 </p>
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
                   {isSelf
-                    ? 'เมื่อคุณกดถูกใจโพสต์ โพสต์เหล่านั้นจะมาแสดงอยู่ที่นี่'
+                    ? "เมื่อคุณกดถูกใจโพสต์ โพสต์เหล่านั้นจะมาแสดงอยู่ที่นี่"
                     : `@${username} ยังไม่ได้กดถูกใจโพสต์ใดๆ`}
                 </p>
               </div>
@@ -430,7 +451,7 @@ function UserProfileContent() {
         )}
 
         {/* Tab: Bookmark */}
-        {activeTab === 'bookmarks' && (
+        {activeTab === "bookmarks" && (
           <div>
             {isSelf ? (
               bookmarkedPosts.length > 0 ? (
@@ -448,7 +469,8 @@ function UserProfileContent() {
                     ยังไม่มีโพสต์ที่บันทึกไว้ในบุ๊กมาร์ก
                   </p>
                   <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                    กดไอคอน Bookmark บนโพสต์ที่คุณสนใจ เพื่อเก็บไว้ดูย้อนหลังได้ทุกเมื่อ
+                    กดไอคอน Bookmark บนโพสต์ที่คุณสนใจ
+                    เพื่อเก็บไว้ดูย้อนหลังได้ทุกเมื่อ
                   </p>
                 </div>
               )
@@ -461,7 +483,8 @@ function UserProfileContent() {
                   รายการบุ๊กมาร์กเป็นข้อมูลส่วนตัว
                 </p>
                 <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                  เฉพาะเจ้าของบัญชี @{username} เท่านั้นที่สามารถดูโพสต์ที่บันทึกไว้ได้
+                  เฉพาะเจ้าของบัญชี @{username}{" "}
+                  เท่านั้นที่สามารถดูโพสต์ที่บันทึกไว้ได้
                 </p>
               </div>
             )}
@@ -485,8 +508,13 @@ function UserProfileContent() {
           isOwner={
             isSelf ||
             (currentUser &&
-              (Number(currentUser.id) === Number(urlSelectedShowcase?.userId || urlSelectedShowcase?.author?.id) ||
-                currentUser.username?.toLowerCase() === urlSelectedShowcase?.author?.username?.toLowerCase()))
+              (Number(currentUser.id) ===
+                Number(
+                  urlSelectedShowcase?.userId ||
+                    urlSelectedShowcase?.author?.id,
+                ) ||
+                currentUser.username?.toLowerCase() ===
+                  urlSelectedShowcase?.author?.username?.toLowerCase()))
           }
         />
       )}
@@ -507,8 +535,12 @@ function UserProfileContent() {
           isOwner={
             isSelf ||
             (currentUser &&
-              (Number(currentUser.id) === Number(urlSelectedService?.userId || urlSelectedService?.author?.id) ||
-                currentUser.username?.toLowerCase() === urlSelectedService?.author?.username?.toLowerCase()))
+              (Number(currentUser.id) ===
+                Number(
+                  urlSelectedService?.userId || urlSelectedService?.author?.id,
+                ) ||
+                currentUser.username?.toLowerCase() ===
+                  urlSelectedService?.author?.username?.toLowerCase()))
           }
         />
       )}
