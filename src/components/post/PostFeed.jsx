@@ -15,7 +15,6 @@ import {
 import PostCard from './PostCard';
 import PostFormModal from './PostFormModal';
 import PostDetailModal from './PostDetailModal';
-import StoriesBar from '@/components/story/StoriesBar';
 import EmptyState from '@/components/shared/EmptyState';
 import { useMeQuery } from '@/services/auth';
 import {
@@ -89,9 +88,6 @@ export default function PostFeed() {
 
   return (
     <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-0 pt-2 sm:pt-4 pb-12">
-      {/* 0. Instagram-style Stories Rail Bar */}
-      <StoriesBar />
-
       {/* 1. Top Post Input Trigger (แสดง User จริง หรือปุ่มชวนเข้าสู่ระบบ พร้อม Icon บาร์ Image, GIF, Video สไตล์ Threads) */}
       <div className="px-3 sm:px-4 mb-4">
         <div

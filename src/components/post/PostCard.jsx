@@ -17,6 +17,7 @@ import {
   Loader2,
   FolderKanban,
   Check,
+  Bookmark,
 } from 'lucide-react';
 import {
   useToggleLikeMutation,
@@ -25,6 +26,7 @@ import {
   useDeleteCommentMutation,
 } from '@/services/post';
 import { useMeQuery } from '@/services/auth';
+import { useBookmarks } from '@/services/bookmark';
 import { formatRelativeTime, formatFullDateTime } from '@/lib/date';
 import PostDetailModal from './PostDetailModal';
 import SharePostModal from './SharePostModal';
@@ -209,6 +211,8 @@ export default function PostCard({
   const [commentsCount, setCommentsCount] = useState(post.commentsCount ?? 0);
   const [isContentExpanded, setIsContentExpanded] = useState(false);
   const menuRef = useRef(null);
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const bookmarked = isBookmarked(post?.id);
 
   const contentText = post.content || '';
   const isLongContent = useMemo(() => {
@@ -414,47 +418,69 @@ export default function PostCard({
         onImageClick={onImageClick || (() => setIsDetailModalOpen(true))}
       />
 
-      {/* Footer Actions: Heart, Comment, Share */}
-      <div className="mt-3 flex items-center gap-5 text-xs text-gray-600 px-3.5 sm:px-4">
-        {/* Like */}
+      {/* Footer Actions: Heart, Comment, Share, Bookmark */}
+      <div className="mt-3 flex items-center justify-between text-xs text-gray-600 px-3.5 sm:px-4">
+        <div className="flex items-center gap-5">
+          {/* Like */}
+          <button
+            type="button"
+            onClick={handleLike}
+            className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+              isLiked ? 'text-red-500 font-semibold' : 'hover:text-gray-900'
+            }`}
+          >
+            <Heart
+              className={`h-4 w-4 transition-transform active:scale-125 ${
+                isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'
+              }`}
+            />
+            <span>{likesCount}</span>
+          </button>
+
+          {/* Comment */}
+          <button
+            type="button"
+            onClick={() => setShowComments((prev) => !prev)}
+            className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
+              showComments ? 'text-black font-semibold' : 'hover:text-gray-900'
+            }`}
+          >
+            <MessageCircle
+              className={`h-4 w-4 ${showComments ? 'stroke-[2.5px]' : ''}`}
+            />
+            <span>{commentsCount}</span>
+          </button>
+
+          {/* Share Button (Paper plane) */}
+          <button
+            type="button"
+            onClick={() => setIsShareModalOpen(true)}
+            className="flex items-center gap-1.5 text-gray-500 hover:text-black transition-colors cursor-pointer group"
+            title="แชร์โพสต์นี้"
+          >
+            <Send className="h-4 w-4 transition-transform group-hover:scale-110" />
+            <span className="font-medium">{sharesCount}</span>
+          </button>
+        </div>
+
+        {/* Bookmark */}
         <button
           type="button"
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 transition-colors ${
-            isLiked ? 'text-red-500 font-semibold' : 'hover:text-gray-900'
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleBookmark(post);
+          }}
+          className={`flex items-center transition-colors cursor-pointer p-1 rounded-md hover:bg-gray-100 ${
+            bookmarked ? 'text-gray-900 font-semibold' : 'text-gray-400 hover:text-gray-900'
           }`}
+          title={bookmarked ? 'ลบออกจากบุ๊กมาร์ก' : 'บันทึกในบุ๊กมาร์ก'}
+          aria-label="Bookmark"
         >
-          <Heart
+          <Bookmark
             className={`h-4 w-4 transition-transform active:scale-125 ${
-              isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'
+              bookmarked ? 'fill-gray-900 text-gray-900' : ''
             }`}
           />
-          <span>{likesCount}</span>
-        </button>
-
-        {/* Comment */}
-        <button
-          type="button"
-          onClick={() => setShowComments((prev) => !prev)}
-          className={`flex items-center gap-1.5 transition-colors ${
-            showComments ? 'text-black font-semibold' : 'hover:text-gray-900'
-          }`}
-        >
-          <MessageCircle
-            className={`h-4 w-4 ${showComments ? 'stroke-[2.5px]' : ''}`}
-          />
-          <span>{commentsCount}</span>
-        </button>
-
-        {/* Share Button (Paper plane) */}
-        <button
-          type="button"
-          onClick={() => setIsShareModalOpen(true)}
-          className="flex items-center gap-1.5 text-gray-500 hover:text-black transition-colors cursor-pointer group"
-          title="แชร์โพสต์นี้"
-        >
-          <Send className="h-4 w-4 transition-transform group-hover:scale-110" />
-          <span className="font-medium">{sharesCount}</span>
         </button>
       </div>
 

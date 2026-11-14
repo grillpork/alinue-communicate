@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
   ChevronDown,
   Check,
+  Bookmark,
 } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostCard from '@/components/post/PostCard';
@@ -27,11 +28,13 @@ import {
   useUpdateProfileMutation,
 } from '@/services/user';
 import { useShowcasesQuery } from '@/services/showcase';
+import { useBookmarks } from '@/services/bookmark';
 
 function UserProfileContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const showcaseParamId = searchParams?.get('showcase');
+  const tabParam = searchParams?.get('tab');
   const [urlSelectedShowcase, setUrlSelectedShowcase] = useState(null);
 
   const rawUsername = params?.username;
@@ -40,7 +43,14 @@ function UserProfileContent() {
       ? decodeURIComponent(rawUsername).replace(/^@/, '')
       : '';
 
-  const [activeTab, setActiveTab] = useState('showcases');
+  const [activeTab, setActiveTab] = useState(tabParam || 'showcases');
+  const { bookmarks: bookmarkedPosts } = useBookmarks();
+
+  useEffect(() => {
+    if (tabParam && ['showcases', 'posts', 'likes', 'bookmarks'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
   const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
   const [showcaseFilter, setShowcaseFilter] = useState('all'); // 'all' | 'popular' | 'image' | 'video'
   const [showFilterMenu, setShowFilterMenu] = useState(false);
@@ -196,6 +206,12 @@ function UserProfileContent() {
           { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
           { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
           { id: 'likes', label: 'Likes', icon: Heart },
+          {
+            id: 'bookmarks',
+            label: 'Bookmark',
+            icon: Bookmark,
+            count: isSelf && bookmarkedPosts.length > 0 ? bookmarkedPosts.length : undefined,
+          },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -406,6 +422,45 @@ function UserProfileContent() {
         {activeTab === 'likes' && (
           <div className="py-16 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-3xl mt-4">
             No liked posts yet.
+          </div>
+        )}
+
+        {/* Tab: Bookmark */}
+        {activeTab === 'bookmarks' && (
+          <div>
+            {isSelf ? (
+              bookmarkedPosts.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {bookmarkedPosts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+                </div>
+              ) : (
+                <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-4 p-6">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
+                    <Bookmark className="h-6 w-6" />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-700">
+                    ยังไม่มีโพสต์ที่บันทึกไว้ในบุ๊กมาร์ก
+                  </p>
+                  <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
+                    กดไอคอน Bookmark บนโพสต์ที่คุณสนใจ เพื่อเก็บไว้ดูย้อนหลังได้ทุกเมื่อ
+                  </p>
+                </div>
+              )
+            ) : (
+              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-4 p-6">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
+                  <Bookmark className="h-6 w-6" />
+                </div>
+                <p className="text-xs font-semibold text-gray-700">
+                  รายการบุ๊กมาร์กเป็นข้อมูลส่วนตัว
+                </p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
+                  เฉพาะเจ้าของบัญชี @{username} เท่านั้นที่สามารถดูโพสต์ที่บันทึกไว้ได้
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

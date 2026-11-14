@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import {
   Briefcase,
   Search,
@@ -20,6 +20,8 @@ import { useUnreadNotificationCountQuery } from '@/services/notification';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams?.get('tab');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -69,16 +71,16 @@ export default function Sidebar() {
     },
     {
       label: 'Bookmarks',
-      href: '#bookmarks',
+      href: user?.username ? `/${user.username}?tab=bookmarks` : '/sign-in',
       icon: Bookmark,
       badge: null,
-      active: pathname === '/bookmarks',
+      active: Boolean(user?.username && pathname === `/${user.username}` && currentTab === 'bookmarks'),
     },
     {
       label: 'Profile',
       href: user?.username ? `/${user.username}` : '/sign-in',
       icon: User,
-      active: Boolean(user?.username && pathname === `/${user.username}`),
+      active: Boolean(user?.username && pathname === `/${user.username}` && currentTab !== 'bookmarks'),
     },
     {
       label: 'Settings',

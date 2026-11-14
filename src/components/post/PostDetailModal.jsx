@@ -18,7 +18,9 @@ import {
   ChevronDown,
   Check,
   FolderKanban,
+  Bookmark,
 } from 'lucide-react';
+import { useBookmarks } from '@/services/bookmark';
 import {
   useCommentsQuery,
   useAddCommentMutation,
@@ -78,6 +80,8 @@ export default function PostDetailModal({
   const [likedComments, setLikedComments] = useState({});
   const sortMenuRef = useRef(null);
   const commentsEndRef = useRef(null);
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const bookmarked = isBookmarked(post?.id);
 
   useEffect(() => {
     if (typeof post?.sharesCount === 'number') {
@@ -350,6 +354,22 @@ export default function PostDetailModal({
                 >
                   <Send className="h-4 w-4 transition-transform group-hover:scale-110" />
                   <span>{sharesCount}</span>
+                </button>
+
+                {/* Bookmark */}
+                <button
+                  type="button"
+                  onClick={() => toggleBookmark(post)}
+                  className={`flex items-center gap-1.5 transition-colors cursor-pointer group ${
+                    bookmarked ? 'text-gray-900 font-semibold' : 'text-gray-500 hover:text-gray-900'
+                  }`}
+                  title={bookmarked ? 'ลบออกจากบุ๊กมาร์ก' : 'บันทึกโพสต์'}
+                >
+                  <Bookmark
+                    className={`h-4 w-4 transition-transform group-hover:scale-110 ${
+                      bookmarked ? 'fill-gray-900 text-gray-900' : ''
+                    }`}
+                  />
                 </button>
               </div>
             </div>

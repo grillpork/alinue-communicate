@@ -66,13 +66,13 @@ const Navbar = () => {
               </button>
 
               {/* Bookmark Icon */}
-              <button
-                type="button"
+              <Link
+                href={user?.username ? `/${user.username}?tab=bookmarks` : '/sign-in'}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
                 aria-label="Bookmarks"
               >
                 <Bookmark className="h-4 w-4" />
-              </button>
+              </Link>
 
               {/* User Dropdown (Avatar only) */}
               <div className="ml-1">
