@@ -484,11 +484,19 @@ export default function PostFormModal({
           isDragging ? "ring-2 ring-blue-500 scale-[1.01]" : ""
         }`}
       >
-        {/* Header: Add post & Close button */}
+        {/* Header: @username > New post / Update post & Close button */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0 bg-white">
-          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
-            {isUpdateMode ? "Edit post" : "Add post"}
-          </h2>
+          <div className="flex items-center gap-2">
+            <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
+              {usernameDisplay}
+            </span>
+            <span className="text-xs text-gray-400">
+              <ChevronRight className="h-3.5 w-3.5" />
+            </span>
+            <h3 className="text-sm font-semibold text-gray-800">
+              {isUpdateMode ? "Update post" : "New post"}
+            </h3>
+          </div>
 
           <button
             type="button"
