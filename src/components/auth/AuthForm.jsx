@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
-import { useSignInMutation, useSignUpMutation, authService } from '@/services/auth';
+import { useSignInMutation, useSignUpMutation, authService, useMeQuery } from '@/services/auth';
+import { getAuthToken } from '@/lib/api';
 
 /**
  * Reusable AuthForm Component
@@ -16,6 +17,17 @@ import { useSignInMutation, useSignUpMutation, authService } from '@/services/au
 export default function AuthForm({ type = 'sign-in', onSubmit }) {
   const router = useRouter();
   const isSignIn = type === 'sign-in';
+
+  // ตรวจสอบสถานะการ Login: หากมี session/token อยู่แล้วให้ redirect ไปหน้าแรกทันที
+  const { data: meData, isLoading: isMeLoading } = useMeQuery();
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = getAuthToken();
+      if (token || meData?.user) {
+        router.replace('/');
+      }
+    }
+  }, [meData, router]);
 
   const [formData, setFormData] = useState({
     name: '',

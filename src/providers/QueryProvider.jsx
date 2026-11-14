@@ -24,11 +24,20 @@ function OAuthTokenSync() {
       url.searchParams.delete('token');
       url.searchParams.delete('auth_token');
       url.searchParams.delete('auth_success');
+      url.searchParams.delete('user');
       window.history.replaceState({}, '', url.pathname + (url.search || ''));
 
       // สั่งดึงข้อมูล Profile ของผู้ใช้ใหม่ทันที
       queryClient.invalidateQueries({ queryKey: authKeys.me() });
       queryClient.refetchQueries({ queryKey: authKeys.me() });
+
+      // หากอยู่ที่หน้า sign-in หรือ sign-up ให้ redirect ไปหน้าแรกทันที
+      if (
+        window.location.pathname === '/sign-in' ||
+        window.location.pathname === '/sign-up'
+      ) {
+        window.location.href = '/';
+      }
     }
   }, [queryClient]);
 
