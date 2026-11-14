@@ -21,8 +21,10 @@ import {
 } from "lucide-react";
 import EditProfileModal from "./EditProfileModal";
 import NoteFormModal from "./NoteFormModal";
+import SocialLinksModal, { getPlatformInfo, formatPlatformUrl } from "./SocialLinksModal";
 import Image from "next/image";
 import UserAvatar from "@/components/common/UserAvatar";
+import { useUpdateProfileMutation } from "@/services/user";
 
 /**
  * ฟอร์แมตตัวเลขสถิติ (เช่น 30k, 4.2 k, 1.1m, 200k) ตาม UI ตัวอย่าง
@@ -85,10 +87,33 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [noteText, setNoteText] = useState(user?.note || "");
   const [copied, setCopied] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
   const [bannerSrc, setBannerSrc] = useState(user?.banner || "/empty/no-image.png");
+
+  const updateProfileMutation = useUpdateProfileMutation();
+
+  const effectiveSocialLinks = useMemo(() => {
+    const links = { ...(user?.socialLinks || {}) };
+    if (!links.facebook && user?.facebook) links.facebook = user.facebook;
+    if (!links.instagram && user?.instagram) links.instagram = user.instagram;
+    if (!links.website && user?.website) links.website = user.website;
+    return links;
+  }, [user?.socialLinks, user?.facebook, user?.instagram, user?.website]);
+
+  const [socialLinks, setSocialLinks] = useState(effectiveSocialLinks);
+
+  useEffect(() => {
+    setSocialLinks(effectiveSocialLinks);
+  }, [effectiveSocialLinks]);
+
+  const handleSaveSocialLinks = async (newLinks) => {
+    setSocialLinks(newLinks);
+    await updateProfileMutation.mutateAsync({ socialLinks: newLinks });
+    setIsLinksModalOpen(false);
+  };
 
   useEffect(() => {
     setBannerSrc(user?.banner || "/empty/no-image.png");
@@ -276,54 +301,45 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
                 @{user?.username}
               </p>
 
-              {/* Social Media Links Row: Overlapping Dashed Circles (Facebook / Instagram / +) */}
+              {/* Social Media Links Row: Overlapping Dashed Circles */}
               <div className="mt-3 flex items-center -space-x-2.5">
-                {/* Facebook */}
-                <a
-                  href={user?.facebook || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="relative z-0 flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-white text-gray-500 shadow-2xs transition-all hover:z-30 hover:scale-110 hover:border-gray-400 hover:text-blue-600"
-                  aria-label="Facebook Profile"
-                  title="Facebook"
-                >
-                  <svg
-                    className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                  </svg>
-                </a>
-
-                {/* Instagram */}
-                <a
-                  href={user?.instagram || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="relative z-10 flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-white text-gray-500 shadow-2xs transition-all hover:z-30 hover:scale-110 hover:border-gray-400 hover:text-pink-600"
-                  aria-label="Instagram Profile"
-                  title="Instagram"
-                >
-                  <svg
-                    className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-none stroke-current stroke-2"
-                    viewBox="0 0 24 24"
-                  >
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                  </svg>
-                </a>
+                {/* Dynamic Social Links */}
+                {Object.entries(socialLinks || {})
+                  .filter(([_, val]) => Boolean(val))
+                  .map(([platform, val], idx) => {
+                    const info = getPlatformInfo(platform);
+                    const href = formatPlatformUrl(platform, val);
+                    return (
+                      <a
+                        key={platform}
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ zIndex: idx }}
+                        className="relative flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-white text-gray-700 shadow-2xs transition-all hover:z-30 hover:scale-110 hover:border-gray-500"
+                        aria-label={info.name}
+                        title={info.name}
+                      >
+                        <div className="flex items-center justify-center h-4 w-4">
+                          {info.icon}
+                        </div>
+                      </a>
+                    );
+                  })}
 
                 {/* Add Link Button (+) */}
-                <button
-                  type="button"
-                  onClick={() => isSelf && setIsEditProfileOpen(true)}
-                  className="relative z-20 flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-white text-black shadow-2xs transition-all hover:z-30 hover:scale-110 hover:border-gray-500 cursor-pointer"
-                  title={isSelf ? "Add social links" : "Social links"}
-                  aria-label="Add link"
-                >
-                  <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5 stroke-[2.8]" />
-                </button>
+                {isSelf && (
+                  <button
+                    type="button"
+                    onClick={() => setIsLinksModalOpen(true)}
+                    style={{ zIndex: Object.keys(socialLinks || {}).length }}
+                    className="relative flex h-8 w-8 sm:h-8.5 sm:w-8.5 items-center justify-center rounded-full border-2 border-dashed border-gray-300 bg-white text-black shadow-2xs transition-all hover:z-30 hover:scale-110 hover:border-gray-500 cursor-pointer"
+                    title="Add or edit links"
+                    aria-label="Add links"
+                  >
+                    <Plus className="h-4 w-4 sm:h-4.5 sm:w-4.5 stroke-[2.8]" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -489,6 +505,15 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
         initialNote={user?.note || ""}
         user={user}
         onSave={handleSaveNote}
+      />
+
+      {/* Social Links Modal */}
+      <SocialLinksModal
+        isOpen={isLinksModalOpen}
+        onClose={() => setIsLinksModalOpen(false)}
+        initialLinks={socialLinks}
+        onSave={handleSaveSocialLinks}
+        isSaving={updateProfileMutation.isPending}
       />
     </div>
   );

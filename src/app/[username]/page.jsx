@@ -151,6 +151,7 @@ function UserProfileContent() {
     username: profile.username,
     bio: profile.bio || '',
     website: profile.website || '',
+    socialLinks: profile.socialLinks || {},
     location: profile.location || '',
     note: profile.note || 'Tell there what you think.',
     isVerified: Boolean(profile.isVerified ?? true),
