@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import useEmblaCarousel from 'embla-carousel-react';
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import Link from "next/link";
+import useEmblaCarousel from "embla-carousel-react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,23 +20,23 @@ import {
   Bookmark,
   Share2,
   Flag,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   useToggleLikeMutation,
   useCommentsQuery,
   useAddCommentMutation,
   useDeleteCommentMutation,
-} from '@/services/post';
-import { useMeQuery } from '@/services/auth';
-import { useBookmarks } from '@/services/bookmark';
-import { formatRelativeTime, formatFullDateTime } from '@/lib/date';
-import PostDetailModal from './PostDetailModal';
-import SharePostModal from './SharePostModal';
-import CommentPortfolioCard from './CommentPortfolioCard';
-import CommentActionsMenu from './CommentActionsMenu';
-import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
-import UserAvatar from '@/components/common/UserAvatar';
-import LinkedServiceCard from '@/components/common/LinkedServiceCard';
+} from "@/services/post";
+import { useMeQuery } from "@/services/auth";
+import { useBookmarks } from "@/services/bookmark";
+import { formatRelativeTime, formatFullDateTime } from "@/lib/date";
+import PostDetailModal from "./PostDetailModal";
+import SharePostModal from "./SharePostModal";
+import CommentPortfolioCard from "./CommentPortfolioCard";
+import CommentActionsMenu from "./CommentActionsMenu";
+import PostAuthorProfileTrigger from "./PostAuthorProfileTrigger";
+import UserAvatar from "@/components/common/UserAvatar";
+import LinkedServiceCard from "@/components/common/LinkedServiceCard";
 
 /**
  * แปลงข้อความที่มี #hashtag หรือ @user ให้เป็นสีฟ้า
@@ -47,7 +47,7 @@ function renderPostText(text) {
   const parts = text.split(regex);
 
   return parts.map((part, index) => {
-    if (part.startsWith('#') || part.startsWith('@')) {
+    if (part.startsWith("#") || part.startsWith("@")) {
       return (
         <span
           key={index}
@@ -67,8 +67,8 @@ function renderPostText(text) {
 function PostImagesCarousel({ images, onImageClick }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
-    align: 'start',
-    containScroll: 'trimSnaps',
+    align: "start",
+    containScroll: "trimSnaps",
     duration: 25,
   });
   const [canScrollPrev, setCanScrollPrev] = useState(false);
@@ -82,15 +82,15 @@ function PostImagesCarousel({ images, onImageClick }) {
       setCanScrollNext(emblaApi.canScrollNext());
     };
 
-    emblaApi.on('select', syncEmbla);
-    emblaApi.on('reInit', syncEmbla);
+    emblaApi.on("select", syncEmbla);
+    emblaApi.on("reInit", syncEmbla);
 
     const rafId = requestAnimationFrame(syncEmbla);
 
     return () => {
       cancelAnimationFrame(rafId);
-      emblaApi.off('select', syncEmbla);
-      emblaApi.off('reInit', syncEmbla);
+      emblaApi.off("select", syncEmbla);
+      emblaApi.off("reInit", syncEmbla);
     };
   }, [emblaApi]);
 
@@ -108,13 +108,13 @@ function PostImagesCarousel({ images, onImageClick }) {
   const normalizedImages = (images || [])
     .map((img, idx) => {
       if (!img) return null;
-      if (typeof img === 'string') {
-        return { id: String(idx), url: img, name: 'Post image' };
+      if (typeof img === "string") {
+        return { id: String(idx), url: img, name: "Post image" };
       }
       return {
         id: img.id || String(idx),
-        url: img.url || '',
-        name: img.name || 'Post image',
+        url: img.url || "",
+        name: img.name || "Post image",
       };
     })
     .filter((img) => Boolean(img?.url));
@@ -133,7 +133,7 @@ function PostImagesCarousel({ images, onImageClick }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={singleImage.url}
-            alt={singleImage.name || 'Post image'}
+            alt={singleImage.name || "Post image"}
             className="block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
           />
         </div>
@@ -210,7 +210,7 @@ export default function PostCard({
   const [copied, setCopied] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
   const [attachPortfolio, setAttachPortfolio] = useState(false);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount ?? 0);
   const [isContentExpanded, setIsContentExpanded] = useState(false);
@@ -218,9 +218,9 @@ export default function PostCard({
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(post?.id);
 
-  const contentText = post.content || '';
+  const contentText = post.content || "";
   const isLongContent = useMemo(() => {
-    const lines = contentText.split('\n');
+    const lines = contentText.split("\n");
     return lines.length > 5 || contentText.length > 260;
   }, [contentText]);
 
@@ -228,7 +228,7 @@ export default function PostCard({
     if (!isLongContent || isContentExpanded) {
       return contentText;
     }
-    const lines = contentText.split('\n');
+    const lines = contentText.split("\n");
     const maxLines = 4;
     const maxChars = 240;
     let resultLines = [];
@@ -238,44 +238,44 @@ export default function PostCard({
       const line = lines[i];
       if (chars + line.length > maxChars) {
         const remaining = Math.max(0, maxChars - chars);
-        resultLines.push(line.slice(0, remaining).trimEnd() + '...');
-        return resultLines.join('\n');
+        resultLines.push(line.slice(0, remaining).trimEnd() + "...");
+        return resultLines.join("\n");
       }
       resultLines.push(line);
       chars += line.length + 1;
     }
-    return resultLines.join('\n');
+    return resultLines.join("\n");
   }, [contentText, isLongContent, isContentExpanded]);
 
   useEffect(() => {
-    if (typeof post.commentsCount === 'number') {
+    if (typeof post.commentsCount === "number") {
       setCommentsCount(post.commentsCount);
     }
   }, [post.commentsCount]);
 
   useEffect(() => {
-    if (typeof post.sharesCount === 'number') {
+    if (typeof post.sharesCount === "number") {
       setSharesCount(post.sharesCount);
     }
   }, [post.sharesCount]);
 
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
-  const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || '';
+  const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || "";
   const isOwner = Boolean(
     currentUser?.id &&
-      (post?.userId === currentUser.id || post?.author?.id === currentUser.id)
+    (post?.userId === currentUser.id || post?.author?.id === currentUser.id),
   );
 
   const { data: commentsData, isLoading: isLoadingComments } = useCommentsQuery(
     post.id,
-    { enabled: showComments }
+    { enabled: showComments },
   );
   const comments = commentsData?.comments || [];
 
   const addCommentMutation = useAddCommentMutation({
     onSuccess: () => {
-      setCommentText('');
+      setCommentText("");
       setAttachPortfolio(false);
       setCommentsCount((prev) => prev + 1);
     },
@@ -304,8 +304,8 @@ export default function PostCard({
         setShowMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const toggleLikeMutation = useToggleLikeMutation();
@@ -314,7 +314,7 @@ export default function PostCard({
     const nextState = !isLiked;
     setIsLiked(nextState);
     setLikesCount((prev) => {
-      const current = typeof prev === 'number' ? prev : parseInt(prev, 10) || 0;
+      const current = typeof prev === "number" ? prev : parseInt(prev, 10) || 0;
       return nextState ? current + 1 : Math.max(0, current - 1);
     });
     toggleLikeMutation.mutate(post.id);
@@ -322,8 +322,10 @@ export default function PostCard({
   };
 
   const handleCopyLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(`${window.location.origin}/#post-${post.id}`);
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(
+        `${window.location.origin}/#post-${post.id}`,
+      );
       setCopied(true);
       setTimeout(() => {
         setCopied(false);
@@ -361,6 +363,30 @@ export default function PostCard({
 
           {showMenu && (
             <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false);
+                  setIsShareModalOpen(true);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Share2 className="h-3.5 w-3.5 text-gray-500" />
+                <span>Share</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false);
+                  alert("ส่งรายงานโพสต์นี้ให้ผู้ดูแลระบบตรวจสอบแล้ว");
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Flag className="h-3.5 w-3.5 text-gray-400" />
+                <span>Report</span>
+              </button>
+
               {isOwner ? (
                 <>
                   <button
@@ -388,30 +414,6 @@ export default function PostCard({
                   </button>
                 </>
               ) : null}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMenu(false);
-                  setIsShareModalOpen(true);
-                }}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <Share2 className="h-3.5 w-3.5 text-gray-500" />
-                <span>Share</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMenu(false);
-                  alert('ส่งรายงานโพสต์นี้ให้ผู้ดูแลระบบตรวจสอบแล้ว');
-                }}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <Flag className="h-3.5 w-3.5 text-gray-400" />
-                <span>Report</span>
-              </button>
             </div>
           )}
         </div>
@@ -427,7 +429,7 @@ export default function PostCard({
               onClick={() => setIsContentExpanded((prev) => !prev)}
               className="mt-1 block text-xs sm:text-[13px] font-semibold text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
             >
-              {isContentExpanded ? 'ดูน้อยลง' : 'ดูเพิ่มเติม'}
+              {isContentExpanded ? "ดูน้อยลง" : "ดูเพิ่มเติม"}
             </button>
           )}
         </div>
@@ -458,12 +460,12 @@ export default function PostCard({
             type="button"
             onClick={handleLike}
             className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
-              isLiked ? 'text-red-500 font-semibold' : 'hover:text-gray-900'
+              isLiked ? "text-red-500 font-semibold" : "hover:text-gray-900"
             }`}
           >
             <Heart
               className={`h-4 w-4 transition-transform active:scale-125 ${
-                isLiked ? 'fill-red-500 text-red-500' : 'text-gray-500'
+                isLiked ? "fill-red-500 text-red-500" : "text-gray-500"
               }`}
             />
             <span>{likesCount}</span>
@@ -474,11 +476,11 @@ export default function PostCard({
             type="button"
             onClick={() => setShowComments((prev) => !prev)}
             className={`flex items-center gap-1.5 transition-colors cursor-pointer ${
-              showComments ? 'text-black font-semibold' : 'hover:text-gray-900'
+              showComments ? "text-black font-semibold" : "hover:text-gray-900"
             }`}
           >
             <MessageCircle
-              className={`h-4 w-4 ${showComments ? 'stroke-[2.5px]' : ''}`}
+              className={`h-4 w-4 ${showComments ? "stroke-[2.5px]" : ""}`}
             />
             <span>{commentsCount}</span>
           </button>
@@ -503,14 +505,16 @@ export default function PostCard({
             toggleBookmark(post);
           }}
           className={`flex items-center transition-colors cursor-pointer p-1 rounded-md hover:bg-gray-100 ${
-            bookmarked ? 'text-gray-900 font-semibold' : 'text-gray-400 hover:text-gray-900'
+            bookmarked
+              ? "text-gray-900 font-semibold"
+              : "text-gray-400 hover:text-gray-900"
           }`}
-          title={bookmarked ? 'ลบออกจากบุ๊กมาร์ก' : 'บันทึกในบุ๊กมาร์ก'}
+          title={bookmarked ? "ลบออกจากบุ๊กมาร์ก" : "บันทึกในบุ๊กมาร์ก"}
           aria-label="Bookmark"
         >
           <Bookmark
             className={`h-4 w-4 transition-transform active:scale-125 ${
-              bookmarked ? 'fill-gray-900 text-gray-900' : ''
+              bookmarked ? "fill-gray-900 text-gray-900" : ""
             }`}
           />
         </button>
@@ -522,7 +526,9 @@ export default function PostCard({
           {/* View in Full Modal Button */}
           {commentsCount > 0 && (
             <div className="flex items-center justify-between pb-1 text-xs">
-              <span className="text-gray-500 font-medium">ความคิดเห็น ({commentsCount})</span>
+              <span className="text-gray-500 font-medium">
+                ความคิดเห็น ({commentsCount})
+              </span>
               <button
                 type="button"
                 onClick={() => setIsDetailModalOpen(true)}
@@ -549,8 +555,8 @@ export default function PostCard({
                   type="text"
                   placeholder={
                     currentUser
-                      ? 'เขียนความคิดเห็น...'
-                      : 'เข้าสู่ระบบเพื่อแสดงความคิดเห็น'
+                      ? "เขียนความคิดเห็น..."
+                      : "เข้าสู่ระบบเพื่อแสดงความคิดเห็น"
                   }
                   value={commentText}
                   disabled={!currentUser || addCommentMutation.isPending}
@@ -570,8 +576,8 @@ export default function PostCard({
                       aria-label="แนบ Portfolio"
                       className={`flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full transition-all cursor-pointer ${
                         attachPortfolio
-                          ? 'bg-black text-white shadow-xs'
-                          : 'text-gray-400 hover:text-gray-700 hover:bg-gray-200/70'
+                          ? "bg-black text-white shadow-xs"
+                          : "text-gray-400 hover:text-gray-700 hover:bg-gray-200/70"
                       }`}
                     >
                       <FolderKanban className="h-4 w-4" />
@@ -580,7 +586,9 @@ export default function PostCard({
                   <button
                     type="submit"
                     disabled={
-                      !commentText.trim() || addCommentMutation.isPending || !currentUser
+                      !commentText.trim() ||
+                      addCommentMutation.isPending ||
+                      !currentUser
                     }
                     className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 transition-all cursor-pointer disabled:cursor-not-allowed shadow-2xs"
                     aria-label="Send comment"
@@ -627,13 +635,13 @@ export default function PostCard({
                         href={
                           comment.user?.username
                             ? `/${comment.user.username}`
-                            : '#'
+                            : "#"
                         }
                         className="shrink-0"
                       >
                         <UserAvatar
                           src={commentAvatar}
-                          alt={comment.user?.name || 'User'}
+                          alt={comment.user?.name || "User"}
                           size="md"
                           className="ring-1 ring-gray-100"
                         />
@@ -662,11 +670,11 @@ export default function PostCard({
                             href={
                               comment.user?.username
                                 ? `/${comment.user.username}`
-                                : '#'
+                                : "#"
                             }
                             className="font-bold text-sm sm:text-base text-gray-900 hover:underline truncate"
                           >
-                            {comment.user?.name || 'User'}
+                            {comment.user?.name || "User"}
                           </Link>
                           <span className="text-gray-300 text-xs">•</span>
                           <span
@@ -695,7 +703,9 @@ export default function PostCard({
 
                       {/* Attached Portfolio / Showcase Card (สไตล์ UI ตัวอย่าง) */}
                       {comment.portfolioAttachment && (
-                        <CommentPortfolioCard data={comment.portfolioAttachment} />
+                        <CommentPortfolioCard
+                          data={comment.portfolioAttachment}
+                        />
                       )}
                     </div>
                   </div>
