@@ -534,13 +534,13 @@ export default function PostFormModal({
                 {images.map((img, idx) => (
                   <div
                     key={img.id}
-                    className="group relative h-64 w-48 shrink-0 overflow-hidden rounded-3xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
+                    className="group relative h-64 w-auto min-w-[140px] max-w-[340px] shrink-0 overflow-hidden rounded-3xl bg-neutral-900 shadow-md animate-in fade-in duration-200"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={img.url}
                       alt={img.name}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="h-full w-auto max-w-[340px] object-cover transition-transform duration-300 group-hover:scale-105"
                     />
 
                     {/* Gradient overlay at bottom for controls */}
