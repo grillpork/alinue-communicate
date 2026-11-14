@@ -361,7 +361,7 @@ export default function PostDetailModal({
         )}
         {/* 1. LEFT SIDE: Media Carousel (Image View with Embla Carousel) */}
         {hasImages && (
-          <div className="relative shrink-0 md:flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden h-[540px] sm:h-[560px] md:h-full min-h-[420px] sm:min-h-[560px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
+          <div className="relative shrink-0 md:flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden h-[420px] sm:h-[560px] md:h-full min-h-[420px] sm:min-h-[560px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
             {/* Embla Viewport */}
             <div
               ref={emblaRef}
