@@ -265,7 +265,7 @@ export default function ServiceDetailModal({
             {/* Image Gallery */}
             {images.length > 0 && (
               <div className="space-y-2">
-                <div className="relative aspect-video sm:aspect-16/10 w-full rounded-2xl overflow-hidden bg-gray-100 border border-gray-200/60 shadow-2xs flex items-center justify-center">
+                <div className="relative aspect-video sm:aspect-16/10 w-full rounded-2xl overflow-hidden bg-white border border-gray-200/80 shadow-2xs flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={images[activeImageIdx]}

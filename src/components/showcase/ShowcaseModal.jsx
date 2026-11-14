@@ -238,7 +238,7 @@ export default function ShowcaseModal({
         </button>
 
         {/* 1. LEFT SIDE: Media Lightbox Viewer */}
-        <div className="relative flex-1 bg-black/95 flex flex-col items-center justify-center select-none overflow-hidden min-h-[300px] sm:min-h-[420px] md:min-h-full">
+        <div className="relative flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden min-h-[300px] sm:min-h-[420px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100">
           {/* Active Media Container */}
           <div className="relative flex h-full w-full items-center justify-center p-2 sm:p-6">
             {isVideo ? (
@@ -289,7 +289,7 @@ export default function ShowcaseModal({
                 <button
                   type="button"
                   onClick={() => setActiveMediaIndex((prev) => prev - 1)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/85 text-gray-800 shadow-lg hover:bg-white transition-all active:scale-95 cursor-pointer"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md border border-gray-200/80 hover:bg-white hover:scale-105 transition-all active:scale-95 cursor-pointer"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="h-5 w-5" />
@@ -299,7 +299,7 @@ export default function ShowcaseModal({
                 <button
                   type="button"
                   onClick={() => setActiveMediaIndex((prev) => prev + 1)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/85 text-gray-800 shadow-lg hover:bg-white transition-all active:scale-95 cursor-pointer"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-gray-800 shadow-md border border-gray-200/80 hover:bg-white hover:scale-105 transition-all active:scale-95 cursor-pointer"
                   aria-label="Next image"
                 >
                   <ChevronRight className="h-5 w-5" />
