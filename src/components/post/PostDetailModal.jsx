@@ -94,7 +94,8 @@ export default function PostDetailModal({
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [likedComments, setLikedComments] = useState({});
   const sortMenuRef = useRef(null);
-  const menuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const desktopMenuRef = useRef(null);
   const commentsEndRef = useRef(null);
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(post?.id);
@@ -110,7 +111,12 @@ export default function PostDetailModal({
   const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || "";
   const isOwner = Boolean(
     currentUser?.id &&
-    (post?.userId === currentUser.id || post?.author?.id === currentUser.id),
+      (Number(post?.userId) === Number(currentUser.id) ||
+        Number(post?.author?.id) === Number(currentUser.id) ||
+        (currentUser?.username &&
+          post?.author?.username &&
+          currentUser.username.toLowerCase() ===
+            post.author.username.toLowerCase())),
   );
 
   // ดึงความคิดเห็นจาก Backend เมื่อเปิด Modal
@@ -189,7 +195,11 @@ export default function PostDetailModal({
       if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
         setShowSortMenu(false);
       }
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      const clickedMobile =
+        mobileMenuRef.current && mobileMenuRef.current.contains(e.target);
+      const clickedDesktop =
+        desktopMenuRef.current && desktopMenuRef.current.contains(e.target);
+      if (!clickedMobile && !clickedDesktop) {
         setShowMenu(false);
       }
     };
@@ -244,6 +254,71 @@ export default function PostDetailModal({
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
+  const renderDropdownMenu = () => (
+    <div className="absolute right-0 top-full mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(false);
+          setIsShareModalOpen(true);
+        }}
+        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        <Share2 className="h-3.5 w-3.5 text-gray-500" />
+        <span>แชร์โพสต์</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(false);
+          alert("ส่งรายงานโพสต์นี้ให้ผู้ดูแลระบบตรวจสอบแล้ว");
+        }}
+        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        <Flag className="h-3.5 w-3.5 text-gray-400" />
+        <span>รายงานโพสต์</span>
+      </button>
+
+      {isOwner && (
+        <>
+          <div className="my-1 border-t border-gray-100" />
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              if (onEdit) onEdit(post);
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <Pencil className="h-3.5 w-3.5 text-gray-500" />
+            <span>แก้ไขโพสต์</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              if (onDelete) {
+                onDelete(post.id);
+                onClose();
+              }
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+            <span>ลบโพสต์</span>
+          </button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <div
       onClick={onClose}
@@ -256,6 +331,34 @@ export default function PostDetailModal({
           hasImages ? "md:max-w-6xl" : "md:max-w-2xl"
         }`}
       >
+        {/* Floating Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 left-4 z-40 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
+          aria-label="Close modal"
+        >
+          <X className="h-4.5 w-4.5" />
+        </button>
+
+        {/* Mobile-only Top Right: Options Dropdown on Image */}
+        {hasImages && (
+          <div
+            className="absolute top-4 right-4 z-40 md:hidden"
+            ref={mobileMenuRef}
+          >
+            <button
+              type="button"
+              onClick={() => setShowMenu((prev) => !prev)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
+              title="ตัวเลือกเพิ่มเติม"
+            >
+              <MoreHorizontal className="h-4.5 w-4.5" />
+            </button>
+
+            {showMenu && renderDropdownMenu()}
+          </div>
+        )}
         {/* 1. LEFT SIDE: Media Carousel (Image View with Embla Carousel) */}
         {hasImages && (
           <div className="relative flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden min-h-[280px] sm:min-h-[380px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
@@ -353,7 +456,10 @@ export default function PostDetailModal({
                   </span>
                 </div>
 
-                <div ref={menuRef} className="relative">
+                <div
+                  ref={desktopMenuRef}
+                  className={`relative ${hasImages ? "hidden md:block" : ""}`}
+                >
                   <button
                     type="button"
                     onClick={() => setShowMenu((prev) => !prev)}
@@ -363,64 +469,7 @@ export default function PostDetailModal({
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
 
-                  {showMenu && (
-                    <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMenu(false);
-                          setIsShareModalOpen(true);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                      >
-                        <Share2 className="h-3.5 w-3.5 text-gray-500" />
-                        <span>Share</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowMenu(false);
-                          alert("ส่งรายงานโพสต์นี้ให้ผู้ดูแลระบบตรวจสอบแล้ว");
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
-                      >
-                        <Flag className="h-3.5 w-3.5 text-gray-400" />
-                        <span>Report</span>
-                      </button>
-
-                      {isOwner ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowMenu(false);
-                              if (onEdit) onEdit(post);
-                            }}
-                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                          >
-                            <Pencil className="h-3.5 w-3.5 text-gray-500" />
-                            <span>Edit</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setShowMenu(false);
-                              if (onDelete) {
-                                onDelete(post.id);
-                                onClose();
-                              }
-                            }}
-                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                            <span>Delete</span>
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                  )}
+                  {showMenu && renderDropdownMenu()}
                 </div>
               </div>
 

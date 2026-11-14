@@ -610,7 +610,11 @@ export default function ServiceDetailModal({
                             setIsContactsExpanded((prev) => !prev);
                           }}
                           className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-gray-600 hover:text-gray-900 transition-colors cursor-pointer select-none"
-                          title={isContactsExpanded ? "ย่อช่องทางติดต่อ" : "ขยายช่องทางติดต่อ"}
+                          title={
+                            isContactsExpanded
+                              ? "ย่อช่องทางติดต่อ"
+                              : "ขยายช่องทางติดต่อ"
+                          }
                         >
                           <Globe className="h-3.5 w-3.5 text-gray-400" />
                           <span>ช่องทางติดต่อ / ลิงก์:</span>
@@ -666,7 +670,9 @@ export default function ServiceDetailModal({
                                 <span className="h-3.5 w-3.5 flex items-center justify-center shrink-0">
                                   {info.icon}
                                 </span>
-                                <span className="font-semibold text-gray-900">{info.name}</span>
+                                <span className="font-semibold text-gray-900">
+                                  {info.name}
+                                </span>
                                 {val && val !== info.name && (
                                   <span className="text-gray-400 font-normal truncate max-w-[140px]">
                                     ({val})
