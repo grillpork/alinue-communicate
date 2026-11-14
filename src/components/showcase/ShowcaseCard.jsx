@@ -15,16 +15,20 @@ import {
   Pencil,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
+import { useMeQuery } from '@/services/auth';
 import ShowcaseModal from './ShowcaseModal';
 import EditShowcaseModal from './EditShowcaseModal';
 
-export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
+export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwner: isOwnerProp }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const menuRef = useRef(null);
+
+  const { data: meData } = useMeQuery();
+  const loggedInUser = meData?.user;
 
   const toggleLikeMutation = useToggleShowcaseLikeMutation();
   const deleteMutation = useDeleteShowcaseMutation();
@@ -35,8 +39,16 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
     username: showcase.author_username || showcase.authorUsername || 'user',
     avatar: showcase.author_avatar || showcase.author_avatar_url || showcase.authorAvatar || null,
   };
-  const ownerId = showcase.userId || showcase.user_id || author.id;
-  const isOwner = Boolean(currentUserId && ownerId && Number(currentUserId) === Number(ownerId));
+  const ownerId = showcase.userId || showcase.user_id || author?.id;
+  const effectiveUserId = currentUserId || loggedInUser?.id;
+  const authorUsername = author?.username || showcase.authorUsername || showcase.author_username;
+
+  const isOwner = isOwnerProp !== undefined
+    ? Boolean(isOwnerProp)
+    : Boolean(
+        (effectiveUserId && ownerId && Number(effectiveUserId) === Number(ownerId)) ||
+        (loggedInUser?.username && authorUsername && loggedInUser.username.toLowerCase() === authorUsername.toLowerCase())
+      );
   const isLiked = Boolean(showcase.is_liked);
   const likesCount = showcase.likes_count || 0;
 
@@ -346,7 +358,8 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted }) {
         showcase={showcase}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        currentUserId={currentUserId}
+        currentUserId={effectiveUserId}
+        isOwner={isOwner}
         onDeleted={onDeleted}
       />
 

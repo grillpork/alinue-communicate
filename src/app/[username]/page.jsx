@@ -364,6 +364,12 @@ function UserProfileContent() {
                     <ShowcaseCard
                       showcase={sc}
                       currentUserId={currentUser?.id}
+                      isOwner={
+                        isSelf ||
+                        (currentUser &&
+                          (Number(currentUser.id) === Number(sc.userId || sc.author?.id) ||
+                            currentUser.username?.toLowerCase() === sc.author?.username?.toLowerCase()))
+                      }
                     />
                   </div>
                 ))}
@@ -478,6 +484,12 @@ function UserProfileContent() {
           isOpen={Boolean(urlSelectedShowcase)}
           onClose={() => setUrlSelectedShowcase(null)}
           currentUserId={currentUser?.id}
+          isOwner={
+            isSelf ||
+            (currentUser &&
+              (Number(currentUser.id) === Number(urlSelectedShowcase?.userId || urlSelectedShowcase?.author?.id) ||
+                currentUser.username?.toLowerCase() === urlSelectedShowcase?.author?.username?.toLowerCase()))
+          }
         />
       )}
     </div>

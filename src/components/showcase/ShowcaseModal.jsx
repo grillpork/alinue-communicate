@@ -21,6 +21,7 @@ import {
   Pencil,
 } from 'lucide-react';
 import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
+import { useMeQuery } from '@/services/auth';
 import { formatRelativeTime } from '@/lib/date';
 import EditShowcaseModal from './EditShowcaseModal';
 
@@ -72,6 +73,7 @@ export default function ShowcaseModal({
   isOpen,
   onClose,
   currentUserId,
+  isOwner: isOwnerProp,
   onDeleted,
 }) {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
@@ -137,17 +139,25 @@ export default function ShowcaseModal({
     showcase.mediaType === 'video' ||
     /\.(mp4|webm|mov|ogg)$/i.test(currentMedia);
 
+  const { data: meData } = useMeQuery();
+  const loggedInUser = meData?.user;
+
   const author = showcase.author || {
-    id: showcase.user_id,
+    id: showcase.userId || showcase.user_id,
     name: showcase.author_name || showcase.author_username || 'Creator',
     username: showcase.author_username || 'user',
     avatar: showcase.author_avatar || showcase.author_avatar_url || null,
   };
 
-  const isOwner = Boolean(
-    currentUserId &&
-      (Number(currentUserId) === Number(showcase.userId || showcase.user_id || author.id))
-  );
+  const effectiveUserId = currentUserId || loggedInUser?.id;
+  const authorUsername = author?.username || showcase.authorUsername || showcase.author_username;
+
+  const isOwner = isOwnerProp !== undefined
+    ? Boolean(isOwnerProp)
+    : Boolean(
+        (effectiveUserId && (Number(effectiveUserId) === Number(showcase.userId || showcase.user_id || author.id))) ||
+        (loggedInUser?.username && authorUsername && loggedInUser.username.toLowerCase() === authorUsername.toLowerCase())
+      );
 
   const tags = Array.isArray(showcase.tags)
     ? showcase.tags
