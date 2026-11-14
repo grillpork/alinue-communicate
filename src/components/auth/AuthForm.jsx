@@ -84,8 +84,21 @@ export default function AuthForm({ type = 'sign-in', onSubmit }) {
     }
   };
 
-  const handleGoogleLogin = () => {
-    window.location.href = authService.getGoogleAuthUrl();
+  const handleGoogleLogin = async () => {
+    try {
+      const apiUrl = authService.getGoogleAuthUrl();
+      const res = await fetch(apiUrl, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        window.location.href = apiUrl;
+      }
+    } catch {
+      window.location.href = authService.getGoogleAuthUrl();
+    }
   };
 
   return (
