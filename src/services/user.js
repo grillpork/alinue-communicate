@@ -37,6 +37,11 @@ export const userService = {
     return fetchApi(`/api/users/${userId}/posts`);
   },
 
+  // ดึงโพสต์ที่ User นั้นกด Like
+  getUserLikedPosts: async (userId) => {
+    return fetchApi(`/api/users/${userId}/likes`);
+  },
+
   // ค้นหาดีไซเนอร์ / ผู้ใช้งานตามชื่อหรือ username
   searchUsers: async (q) => {
     return fetchApi(`/api/users/search?q=${encodeURIComponent(q)}`);
@@ -51,6 +56,7 @@ export const userKeys = {
   suggested: () => [...userKeys.all, 'suggested'],
   profile: (username) => [...userKeys.all, 'profile', username],
   posts: (userId) => [...userKeys.all, 'posts', userId],
+  likes: (userId) => [...userKeys.all, 'likes', userId],
   search: (q) => [...userKeys.all, 'search', q],
 };
 
@@ -90,6 +96,18 @@ export function useUserPostsQuery(userId, options = {}) {
   return useQuery({
     queryKey: userKeys.posts(userId),
     queryFn: () => userService.getUserPosts(userId),
+    enabled: Boolean(userId),
+    ...options,
+  });
+}
+
+/**
+ * Hook ดึงโพสต์ที่ผู้ใช้นี้กด Like
+ */
+export function useUserLikedPostsQuery(userId, options = {}) {
+  return useQuery({
+    queryKey: userKeys.likes(userId),
+    queryFn: () => userService.getUserLikedPosts(userId),
     enabled: Boolean(userId),
     ...options,
   });

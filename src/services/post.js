@@ -158,6 +158,7 @@ export function useToggleLikeMutation(options = {}) {
     onSuccess: (data, variables, context) => {
       // Invalidate เพื่อให้สถานะ Like และตัวเลข Count ตรงกัน
       queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }

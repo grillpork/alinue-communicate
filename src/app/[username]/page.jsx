@@ -25,6 +25,7 @@ import { useMeQuery } from '@/services/auth';
 import {
   useUserProfileQuery,
   useUserPostsQuery,
+  useUserLikedPostsQuery,
   useUpdateProfileMutation,
 } from '@/services/user';
 import { useShowcasesQuery } from '@/services/showcase';
@@ -94,7 +95,16 @@ function UserProfileContent() {
 
   const posts = postsData?.posts || [];
 
-  // 4. ดึงผลงาน Showcase ของผู้ใช้นี้
+  // 4. ดึงโพสต์ที่ผู้ใช้นี้กด Like
+  const { data: likedPostsData, isLoading: isLikedPostsLoading } = useUserLikedPostsQuery(
+    profile?.id || username,
+    {
+      enabled: Boolean(profile?.id || username),
+    }
+  );
+  const likedPosts = likedPostsData?.posts || [];
+
+  // 5. ดึงผลงาน Showcase ของผู้ใช้นี้
   const { data: showcasesData, isLoading: isShowcasesLoading } = useShowcasesQuery(
     { username },
     { enabled: Boolean(username) }
@@ -206,7 +216,7 @@ function UserProfileContent() {
           {[
             { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
             { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
-            { id: 'likes', label: 'Likes', icon: Heart },
+            { id: 'likes', label: 'Likes', icon: Heart, count: likedPosts.length > 0 ? likedPosts.length : undefined },
             {
               id: 'bookmarks',
               label: 'Bookmark',
@@ -432,8 +442,33 @@ function UserProfileContent() {
 
         {/* Tab: Likes */}
         {activeTab === 'likes' && (
-          <div className="py-16 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-3xl mt-4">
-            No liked posts yet.
+          <div>
+            {isLikedPostsLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                <p className="text-xs">กำลังโหลดโพสต์ที่ถูกใจ...</p>
+              </div>
+            ) : likedPosts.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+                {likedPosts.map((post) => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-4 p-6">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
+                  <Heart className="h-6 w-6" />
+                </div>
+                <p className="text-xs font-semibold text-gray-700">
+                  ยังไม่มีโพสต์ที่ถูกใจ
+                </p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
+                  {isSelf
+                    ? 'เมื่อคุณกดถูกใจโพสต์ โพสต์เหล่านั้นจะมาแสดงอยู่ที่นี่'
+                    : `@${username} ยังไม่ได้กดถูกใจโพสต์ใดๆ`}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
