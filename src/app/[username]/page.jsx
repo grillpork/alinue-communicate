@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import PostCard from "@/components/post/PostCard";
+import PostFormModal from "@/components/post/PostFormModal";
 import ShowcaseCard from "@/components/showcase/ShowcaseCard";
 import ShowcaseModal from "@/components/showcase/ShowcaseModal";
 import CreateShowcaseModal from "@/components/showcase/CreateShowcaseModal";
@@ -29,6 +30,7 @@ import {
   useUserLikedPostsQuery,
   useUpdateProfileMutation,
 } from "@/services/user";
+import { useCreatePostMutation } from "@/services/post";
 import { useShowcasesQuery } from "@/services/showcase";
 import { useServicesQuery } from "@/services/service";
 import { useBookmarks } from "@/services/bookmark";
@@ -63,10 +65,28 @@ function UserProfileContent() {
   }, [tabParam]);
   const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
   // 1. ดึงข้อมูลผู้ใช้ปัจจุบันที่ Login อยู่
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
+  const createPostMutation = useCreatePostMutation();
+
+  const handleCreatePost = async (data) => {
+    try {
+      const imageList = (data.images || []).map((img) =>
+        typeof img === "string" ? img : img.url,
+      );
+      await createPostMutation.mutateAsync({
+        content: data.content,
+        images: imageList,
+      });
+      setIsPostModalOpen(false);
+    } catch (err) {
+      console.error("Failed to create post:", err);
+      throw err;
+    }
+  };
 
   // 2. ดึงข้อมูลโปรไฟล์ของ [username] จาก Neon DB
   const {
@@ -276,6 +296,27 @@ function UserProfileContent() {
         {/* Tab: Showcase */}
         {activeTab === "showcases" && (
           <div>
+            {isSelf && (
+              <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-gray-900">
+                    ผลงาน (Showcase)
+                  </h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    แกลเลอรีภาพและวิดีโอผลงาน
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsShowcaseModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-black p-3.5 sm:py-2 sm:px-4 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span className="hidden sm:block">เพิ่มผลงาน</span>
+                </button>
+              </div>
+            )}
+
             {isShowcasesLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
@@ -399,6 +440,27 @@ function UserProfileContent() {
         {/* Tab: Posts */}
         {activeTab === "posts" && (
           <div>
+            {isSelf && (
+              <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-gray-900">
+                    โพสต์และอัปเดต (Posts)
+                  </h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    แชร์เรื่องราวและพูดคุย
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPostModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-black p-3.5 sm:py-2 sm:px-4 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span className="hidden sm:block">สร้างโพสต์</span>
+                </button>
+              </div>
+            )}
+
             {isPostsLoading ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-400">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
@@ -496,6 +558,13 @@ function UserProfileContent() {
       <CreateShowcaseModal
         isOpen={isShowcaseModalOpen}
         onClose={() => setIsShowcaseModalOpen(false)}
+      />
+
+      {/* 4.1 Create Post Modal */}
+      <PostFormModal
+        isOpen={isPostModalOpen}
+        onClose={() => setIsPostModalOpen(false)}
+        onSubmit={handleCreatePost}
       />
 
       {/* 5. URL Showcase Modal (เมื่อมี ?showcase=:id) */}
