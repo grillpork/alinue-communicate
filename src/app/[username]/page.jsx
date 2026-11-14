@@ -221,16 +221,20 @@ function UserProfileContent() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
+                title={tab.label}
+                aria-label={tab.label}
                 className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
                   isActive
                     ? 'border-gray-900 text-gray-900'
                     : 'border-transparent text-gray-400 hover:text-gray-600'
                 }`}
               >
-                <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
+                <Icon className="h-4.5 w-4.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
                 {typeof tab.count === 'number' && (
-                  <span className="text-[11px] text-gray-400">({tab.count})</span>
+                  <span className="hidden sm:inline text-[11px] text-gray-400">
+                    ({tab.count})
+                  </span>
                 )}
               </button>
             );
