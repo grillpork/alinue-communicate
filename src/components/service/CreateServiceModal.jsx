@@ -5,7 +5,7 @@ import {
   X,
   Upload,
   Loader2,
-  Sparkles,
+  LayoutList,
   Plus,
   Clock,
   Coins,
@@ -239,7 +239,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
         <div className="flex items-center justify-between pb-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-black text-white">
-              <Sparkles className="h-4 w-4" />
+              <LayoutList className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-gray-900">
@@ -538,7 +538,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <LayoutList className="h-3.5 w-3.5" />
                   <span>โพสต์รับงาน</span>
                 </>
               )}

@@ -14,7 +14,7 @@ import {
   LogOut,
   MoreHorizontal,
   Loader2,
-  Sparkles,
+  LayoutList,
 } from 'lucide-react';
 import { useMeQuery, useSignOutMutation } from '@/services/auth';
 import { useUnreadNotificationCountQuery } from '@/services/notification';
@@ -73,7 +73,7 @@ export default function Sidebar() {
     {
       label: 'Services',
       href: user?.username ? `/${user.username}?tab=services` : '/search',
-      icon: Sparkles,
+      icon: LayoutList,
       badge: null,
       active: Boolean(user?.username && pathname === `/${user.username}` && currentTab === 'services'),
     },

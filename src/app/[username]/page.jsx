@@ -12,7 +12,7 @@ import {
   Briefcase,
   Plus,
   Bookmark,
-  Sparkles,
+  LayoutList,
 } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostCard from '@/components/post/PostCard';
@@ -212,7 +212,7 @@ function UserProfileContent() {
             {
               id: 'services',
               label: 'Services',
-              icon: Sparkles,
+              icon: LayoutList,
               count: services.length > 0 ? services.length : (isSelf ? 0 : undefined),
             },
             { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
@@ -350,7 +350,7 @@ function UserProfileContent() {
             ) : (
               <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-2 p-6">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                  <Sparkles className="h-6 w-6" />
+                  <LayoutList className="h-6 w-6" />
                 </div>
                 <p className="text-xs font-semibold text-gray-700">
                   ยังไม่มีบริการหรือประกาศรับงาน

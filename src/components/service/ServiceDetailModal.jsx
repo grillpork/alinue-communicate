@@ -15,7 +15,6 @@ import {
   Trash2,
   RotateCw,
   Power,
-  Sparkles,
   User,
   Copy,
   ExternalLink,

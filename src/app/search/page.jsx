@@ -17,7 +17,7 @@ import {
   Loader2,
   ChevronRight,
   TrendingUp,
-  Sparkles,
+  LayoutList,
 } from 'lucide-react';
 import { useSearchUsersQuery } from '@/services/user';
 import { usePostsQuery } from '@/services/post';
@@ -372,7 +372,7 @@ export default function SearchPage() {
               {(activeTab === 'all' || activeTab === 'services') && matchedServices.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5 px-1 text-xs font-bold text-gray-900">
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    <LayoutList className="h-3.5 w-3.5 text-gray-900" />
                     <span>บริการรับงาน / Commissions ({matchedServices.length})</span>
                   </div>
 
