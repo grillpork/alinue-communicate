@@ -21,9 +21,10 @@ const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'ima
 export default function CreateServiceModal({ isOpen, onClose }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState('');
-  const [priceText, setPriceText] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const [images, setImages] = useState([]); // Array of { id, file, previewUrl }
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -45,6 +46,37 @@ export default function CreateServiceModal({ isOpen, onClose }) {
   }, [images]);
 
   if (!isOpen) return null;
+
+  const handleAddTag = (val) => {
+    const raw = (val || tagInput).trim();
+    if (!raw) return;
+    const clean = raw.replace(/^#/, '').trim();
+    if (!clean) return;
+    if (tags.length >= 10) {
+      setError('สามารถใส่แท็กได้สูงสุดไม่เกิน 10 แท็ก');
+      return;
+    }
+    if (tags.includes(clean.toLowerCase())) {
+      setTagInput('');
+      return;
+    }
+    setTags((prev) => [...prev, clean.toLowerCase()]);
+    setTagInput('');
+    setError('');
+  };
+
+  const handleKeyDownTag = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      handleAddTag();
+    } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      setTags((prev) => prev.slice(0, prev.length - 1));
+    }
+  };
+
+  const handleRemoveTag = (idxToRemove) => {
+    setTags((prev) => prev.filter((_, idx) => idx !== idxToRemove));
+  };
 
   const handleFilesSelect = (e) => {
     const files = Array.from(e.target.files || []);
@@ -110,9 +142,10 @@ export default function CreateServiceModal({ isOpen, onClose }) {
     if (isUploading) return;
     setTitle('');
     setDescription('');
-    setPrice('');
-    setPriceText('');
-    setTagsInput('');
+    setMinPrice('');
+    setMaxPrice('');
+    setTags([]);
+    setTagInput('');
     setImages([]);
     setError('');
     onClose();
@@ -150,21 +183,41 @@ export default function CreateServiceModal({ isOpen, onClose }) {
       setUploadProgress(100);
       setUploadStatusText('กำลังสร้างโพสต์รับงาน...');
 
-      // 2. จัดการ Tags
-      const tags = tagsInput
-        .split(/[,\s]+/)
-        .map((t) => t.trim().replace(/^#/, ''))
-        .filter(Boolean);
+      // 2. จัดการ Tags (รวม tag ที่กำลังพิมพ์อยู่ถ้ามี)
+      let finalTags = [...tags];
+      const pendingTag = tagInput.trim().replace(/^#/, '');
+      if (pendingTag && finalTags.length < 10 && !finalTags.includes(pendingTag.toLowerCase())) {
+        finalTags.push(pendingTag.toLowerCase());
+      }
 
-      // 3. ส่งข้อมูลไปยัง Backend API
+      // 3. คำนวณราคาเริ่มต้นและราคาสูงสุด
+      const parsedMin = minPrice !== '' && !isNaN(Number(minPrice)) ? Number(minPrice) : null;
+      const parsedMax = maxPrice !== '' && !isNaN(Number(maxPrice)) ? Number(maxPrice) : null;
+
+      let computedPrice = parsedMin !== null ? parsedMin : parsedMax;
+      let computedPriceText = null;
+
+      if (parsedMin !== null && parsedMax !== null) {
+        if (parsedMin === parsedMax) {
+          computedPriceText = `${parsedMin.toLocaleString()}`;
+        } else {
+          computedPriceText = `${parsedMin.toLocaleString()} - ${parsedMax.toLocaleString()}`;
+        }
+      } else if (parsedMin !== null) {
+        computedPriceText = `${parsedMin.toLocaleString()}`;
+      } else if (parsedMax !== null) {
+        computedPriceText = `สูงสุด ${parsedMax.toLocaleString()}`;
+      }
+
+      // 4. ส่งข้อมูลไปยัง Backend API
       await createMutation.mutateAsync({
         title: title.trim(),
         description: description.trim() || '',
-        price: price ? parseFloat(price) : null,
-        priceText: priceText.trim() || (price ? `฿${price}` : null),
+        price: computedPrice,
+        priceText: computedPriceText,
         images: uploadedUrls,
         coverUrl: uploadedUrls[0] || null,
-        tags,
+        tags: finalTags,
         durationDays: 30, // อายุ 1 เดือน
       });
 
@@ -241,11 +294,11 @@ export default function CreateServiceModal({ isOpen, onClose }) {
             />
           </div>
 
-          {/* Price & Price Text */}
+          {/* Price Range: Min & Max */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-                ราคาเริ่มต้น (ตัวเลข)
+                ราคาเริ่มต้น
               </label>
               <div className="relative">
                 <Coins className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
@@ -253,8 +306,8 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                   type="number"
                   min="0"
                   step="any"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  value={minPrice}
+                  onChange={(e) => setMinPrice(e.target.value)}
                   placeholder="เช่น 500"
                   className="w-full pl-9 pr-3 rounded-2xl border border-gray-200 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
                   disabled={isUploading}
@@ -263,16 +316,21 @@ export default function CreateServiceModal({ isOpen, onClose }) {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-                ข้อความแสดงราคา (Price Text)
+                ราคาสูงสุด
               </label>
-              <input
-                type="text"
-                value={priceText}
-                onChange={(e) => setPriceText(e.target.value)}
-                placeholder="เช่น 500 - 1,500 THB หรือ ตามตกลง"
-                className="w-full rounded-2xl border border-gray-200 px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
-                disabled={isUploading}
-              />
+              <div className="relative">
+                <Coins className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={maxPrice}
+                  onChange={(e) => setMaxPrice(e.target.value)}
+                  placeholder="เช่น 3000"
+                  className="w-full pl-9 pr-3 rounded-2xl border border-gray-200 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+                  disabled={isUploading}
+                />
+              </div>
             </div>
           </div>
 
@@ -392,20 +450,51 @@ export default function CreateServiceModal({ isOpen, onClose }) {
 
           {/* Tags */}
           <div>
-            <label className="block text-xs font-semibold text-gray-800 mb-1.5">
-              แท็ก (Tags)
-            </label>
-            <div className="relative">
-              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-              <input
-                type="text"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="เช่น #illustration #commission #chibi (เว้นวรรคเพื่อแยก)"
-                className="w-full pl-9 pr-3 rounded-2xl border border-gray-200 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
-                disabled={isUploading}
-              />
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-gray-800">
+                แท็ก (Tags)
+              </label>
+              <span className={`text-[11px] ${tags.length >= 10 ? 'text-amber-600 font-semibold' : 'text-gray-400'}`}>
+                {tags.length}/10 แท็ก
+              </span>
             </div>
+
+            <div className="w-full rounded-2xl border border-gray-200 p-2 focus-within:border-black transition-colors bg-white flex flex-wrap items-center gap-1.5 min-h-[46px]">
+              {tags.map((t, idx) => (
+                <span
+                  key={idx}
+                  className="inline-flex items-center gap-1 rounded-xl bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800"
+                >
+                  <span>#{t}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTag(idx)}
+                    disabled={isUploading}
+                    className="text-gray-400 hover:text-red-500 rounded-full p-0.5 transition-colors cursor-pointer"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+
+              {tags.length < 10 && (
+                <div className="flex-1 min-w-[140px] flex items-center gap-1.5 px-1">
+                  <Tag className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleKeyDownTag}
+                    placeholder={tags.length === 0 ? "พิมพ์แท็กแล้วกด Enter..." : "พิมพ์แท็กเพิ่ม..."}
+                    className="w-full text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-hidden bg-transparent"
+                    disabled={isUploading}
+                  />
+                </div>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-400 mt-1">
+              พิมพ์ชื่อแท็กแล้วกด Enter เพื่อเพิ่ม (ใส่ได้สูงสุดไม่เกิน 10 แท็ก)
+            </p>
           </div>
 
           {/* Upload Progress */}
