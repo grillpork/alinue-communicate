@@ -229,7 +229,7 @@ export default function NotificationsPage() {
                     onClick={(e) => e.stopPropagation()}
                     className="relative"
                   >
-                    <PostAuthorProfileTrigger author={notif.actor} showName={false} />
+                    <PostAuthorProfileTrigger author={notif.actor} showName={false} showFollowButton={false} />
                   </div>
 
                   {/* Icon Badge Overlapping bottom right of avatar */}

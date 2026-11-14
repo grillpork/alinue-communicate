@@ -2,10 +2,13 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus } from 'lucide-react';
 import MiniProfilePopup from '@/components/profile/MiniProfilePopup';
 import ProfileModal from '@/components/profile/ProfileModal';
 import UserAvatar from '@/components/common/UserAvatar';
+import { useMeQuery } from '@/services/auth';
+import { useToggleFollowMutation } from '@/services/user';
 
 /**
  * PostAuthorProfileTrigger
@@ -13,11 +16,61 @@ import UserAvatar from '@/components/common/UserAvatar';
  * - Hover ที่รูปโปรไฟล์ -> แสดง Mini Popup Profile
  * - Toggle (Click/Tap) ที่รูปโปรไฟล์ -> แสดง Modal Profile
  * - คลิกที่ชื่อผู้ใช้ -> ลิงก์ตรงไปยังหน้า /[username]
+ * - ปุ่ม (+) Follow ที่มุมล่างขวาของ Avatar สไตล์ Threads
  */
-export default function PostAuthorProfileTrigger({ author, showName = true, avatarSize = "md" }) {
+export default function PostAuthorProfileTrigger({
+  author,
+  showName = true,
+  avatarSize = 'md',
+  showFollowButton = true,
+}) {
+  const router = useRouter();
+  const { data: meData } = useMeQuery();
+  const currentUser = meData?.user;
+
+  const isSelf = Boolean(
+    currentUser &&
+      author &&
+      (currentUser.id === author.id ||
+        (currentUser.username &&
+          author.username &&
+          currentUser.username.toLowerCase() === author.username.toLowerCase()))
+  );
+
+  const [isFollowing, setIsFollowing] = useState(Boolean(author?.isFollowing));
   const [isHoverOpen, setIsHoverOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const hoverTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (author?.isFollowing !== undefined) {
+      setIsFollowing(Boolean(author.isFollowing));
+    }
+  }, [author?.isFollowing]);
+
+  const toggleFollowMutation = useToggleFollowMutation({
+    onSuccess: (data) => {
+      if (data?.isFollowing !== undefined) {
+        setIsFollowing(Boolean(data.isFollowing));
+      }
+    },
+  });
+
+  const handleFollowClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!currentUser) {
+      router.push('/sign-in');
+      return;
+    }
+
+    const targetId = author?.id || author?.username;
+    if (targetId) {
+      setIsFollowing(true);
+      toggleFollowMutation.mutate(targetId);
+    }
+  };
 
   // เคลียร์ Timer เมื่อ unmount
   useEffect(() => {
@@ -73,6 +126,20 @@ export default function PostAuthorProfileTrigger({ author, showName = true, avat
             size={avatarSize}
           />
         </button>
+
+        {/* Threads-style Follow (+) Button Badge */}
+        {showFollowButton && !isSelf && !isFollowing && (
+          <button
+            type="button"
+            onClick={handleFollowClick}
+            disabled={toggleFollowMutation.isPending}
+            aria-label={`Follow ${author?.name || author?.username || 'user'}`}
+            title={`Follow ${author?.name || author?.username || 'user'}`}
+            className="absolute -bottom-0.5 -right-0.5 z-10 flex h-4.5 w-4.5 sm:h-5 sm:w-5 items-center justify-center rounded-full bg-white text-black ring-2 ring-white shadow-2xs hover:scale-115 active:scale-90 transition-transform cursor-pointer focus:outline-none"
+          >
+            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 stroke-[3]" />
+          </button>
+        )}
 
         {/* Mini Hover Profile Popup (เมื่อ Hover บนรูปโปรไฟล์) */}
         <MiniProfilePopup
