@@ -10,7 +10,6 @@ import {
   UserPlus,
   Sparkles,
   CheckCheck,
-  Trash2,
   ExternalLink,
   Loader2,
   Check,
@@ -22,7 +21,6 @@ import {
   useNotificationsQuery,
   useMarkAllAsReadMutation,
   useMarkAsReadMutation,
-  useDeleteNotificationMutation,
 } from '@/services/notification';
 import { useToggleFollowMutation } from '@/services/user';
 import { formatRelativeTime } from '@/lib/date';
@@ -55,7 +53,6 @@ export default function NotificationsPage() {
 
   const markAllMutation = useMarkAllAsReadMutation();
   const markAsReadMutation = useMarkAsReadMutation();
-  const deleteMutation = useDeleteNotificationMutation();
   const toggleFollowMutation = useToggleFollowMutation();
 
   const notifications = notifData?.notifications || [];
@@ -80,12 +77,6 @@ export default function NotificationsPage() {
   const handleFollowBack = (e, actorId) => {
     e.stopPropagation();
     toggleFollowMutation.mutate(actorId);
-  };
-
-  // จัดการลบการแจ้งเตือน
-  const handleDelete = (e, notifId) => {
-    e.stopPropagation();
-    deleteMutation.mutate(notifId);
   };
 
   // ถ้ายังไม่เข้าสู่ระบบ
@@ -212,7 +203,7 @@ export default function NotificationsPage() {
               <div
                 key={notif.id}
                 onClick={() => handleNotificationClick(notif)}
-                className={`group flex items-start gap-3.5 p-4 sm:p-5 transition-colors cursor-pointer relative ${
+                className={`group flex items-center justify-between gap-3.5 p-4 sm:p-5 transition-colors cursor-pointer relative ${
                   isUnread
                     ? 'bg-blue-50/30 hover:bg-blue-50/50'
                     : 'bg-white hover:bg-gray-50/70'
@@ -258,7 +249,7 @@ export default function NotificationsPage() {
                 </div>
 
                 {/* Middle: Content Description & Snippets */}
-                <div className="flex-1 min-w-0 pr-1">
+                <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
                   <div className="text-xs sm:text-sm text-gray-800 leading-snug">
                     <Link
                       href={`/${notif.actor?.username || ''}`}
@@ -352,16 +343,6 @@ export default function NotificationsPage() {
                       />
                     </div>
                   )}
-
-                  {/* Delete Button (ปรากฏเมื่อ Hover บนจอ Desktop) */}
-                  <button
-                    type="button"
-                    onClick={(e) => handleDelete(e, notif.id)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-all"
-                    title="Delete notification"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
                 </div>
               </div>
             );
