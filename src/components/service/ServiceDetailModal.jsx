@@ -417,20 +417,62 @@ export default function ServiceDetailModal({
 
               {/* Price & Title Section */}
               <div className="space-y-3">
-                {/* Clean Modern Price Card like reference image */}
-                {(service.priceText || service.price) && (
-                  <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-3 sm:p-3.5">
-                    <span className="block text-[11px] font-medium text-gray-400">
-                      ราคาเริ่มต้น / ช่วงราคา
-                    </span>
-                    <div className="mt-0.5 flex items-baseline gap-1">
-                      <span className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
-                        {service.priceText || `฿${Number(service.price).toLocaleString()}`}
+                {/* Clean Modern Price Section (Full-width Grid) */}
+                {(() => {
+                  const hasStartPrice = service.startPrice !== undefined && service.startPrice !== null;
+                  const hasEndPrice = service.endPrice !== undefined && service.endPrice !== null && Number(service.endPrice) > Number(service.startPrice);
+
+                  if (hasStartPrice && hasEndPrice) {
+                    return (
+                      <div className="grid grid-cols-2 gap-2.5 rounded-2xl border border-gray-100 bg-gray-50/70 p-3 sm:p-3.5">
+                        <div className="min-w-0">
+                          <span className="block text-[11px] font-medium text-gray-400">
+                            ราคาเริ่มต้น
+                          </span>
+                          <div className="mt-0.5 flex items-baseline gap-1">
+                            <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
+                              ฿{Number(service.startPrice).toLocaleString()}
+                            </span>
+                            <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                          </div>
+                        </div>
+
+                        <div className="min-w-0 border-l border-gray-200/60 pl-3">
+                          <span className="block text-[11px] font-medium text-gray-400">
+                            ราคาสูงสุด
+                          </span>
+                          <div className="mt-0.5 flex items-baseline gap-1">
+                            <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
+                              ฿{Number(service.endPrice).toLocaleString()}
+                            </span>
+                            <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  const displayPrice =
+                    hasStartPrice
+                      ? `฿${Number(service.startPrice).toLocaleString()}`
+                      : service.priceText || (service.price ? `฿${Number(service.price).toLocaleString()}` : null);
+
+                  if (!displayPrice) return null;
+
+                  return (
+                    <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-3 sm:p-3.5">
+                      <span className="block text-[11px] font-medium text-gray-400">
+                        ราคาเริ่มต้น / ค่าบริการ
                       </span>
-                      <span className="text-xs text-gray-400">/ งาน</span>
+                      <div className="mt-0.5 flex items-baseline gap-1">
+                        <span className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+                          {displayPrice}
+                        </span>
+                        <span className="text-xs text-gray-400">/ งาน</span>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Title Header */}
                 <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
