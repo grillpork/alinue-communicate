@@ -416,25 +416,30 @@ export default function ServiceDetailModal({
               )}
 
               {/* Price & Title Section */}
-              <div className="space-y-2">
-                {/* Price (วางบน Title ให้เด่นชัด) */}
+              <div className="space-y-3">
+                {/* Clean Modern Price Card like reference image */}
                 {(service.priceText || service.price) && (
-                  <div className="inline-flex items-baseline gap-1.5 rounded-2xl bg-neutral-900 text-white px-3.5 py-1.5 shadow-xs">
-                    <span className="text-[11px] font-medium text-neutral-300">ราคา</span>
-                    <span className="text-base sm:text-lg font-black tracking-tight text-white">
-                      {service.priceText || `฿${Number(service.price).toLocaleString()}`}
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-3 sm:p-3.5">
+                    <span className="block text-[11px] font-medium text-gray-400">
+                      ราคาเริ่มต้น / ช่วงราคา
                     </span>
+                    <div className="mt-0.5 flex items-baseline gap-1">
+                      <span className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+                        {service.priceText || `฿${Number(service.price).toLocaleString()}`}
+                      </span>
+                      <span className="text-xs text-gray-400">/ งาน</span>
+                    </div>
                   </div>
                 )}
 
                 {/* Title Header */}
-                <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 leading-snug">
+                <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
                   {service.title}
                 </h1>
 
                 {/* Tags */}
                 {Array.isArray(service.tags) && service.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
                     {service.tags.map((tag, idx) => (
                       <span
                         key={idx}
