@@ -305,15 +305,15 @@ export default function SettingsPage() {
           {/* Banner & Avatar Customization Card */}
           <div className="rounded-3xl border border-gray-100 bg-white overflow-hidden shadow-2xs">
             {/* Banner Area */}
-            <div className="relative h-32 sm:h-40 w-full bg-gradient-to-r from-purple-500 via-pink-500 to-indigo-500">
-              {bannerUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={bannerUrl}
-                  alt="Banner preview"
-                  className="h-full w-full object-cover"
-                />
-              )}
+            <div className="relative h-32 sm:h-40 w-full bg-gray-100 overflow-hidden">
+              <img
+                src={bannerUrl || '/empty/no-image.png'}
+                alt="Banner preview"
+                onError={(e) => {
+                  e.currentTarget.src = '/empty/no-image.png';
+                }}
+                className="h-full w-full object-cover"
+              />
 
               {/* Change Banner Button */}
               <input

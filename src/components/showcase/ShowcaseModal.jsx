@@ -267,11 +267,17 @@ export default function ShowcaseModal({
                 src={currentMedia}
                 alt={showcase.title || 'Showcase image'}
                 className="max-h-[78vh] max-w-full rounded-xl object-contain shadow-2xl transition-all"
+                onError={(e) => {
+                  e.currentTarget.src = '/empty/no-image.png';
+                }}
               />
             ) : (
-              <div className="flex flex-col items-center text-gray-500">
-                <Briefcase className="h-10 w-10 stroke-1 mb-2" />
-                <span className="text-xs">ไม่มีรูปภาพแสดงผล</span>
+              <div className="flex flex-col items-center justify-center p-6">
+                <img
+                  src="/empty/no-image.png"
+                  alt="No image"
+                  className="max-h-[60vh] max-w-full rounded-xl object-contain opacity-90"
+                />
               </div>
             )}
           </div>

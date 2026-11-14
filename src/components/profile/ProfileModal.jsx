@@ -120,7 +120,8 @@ export default function ProfileModal({ isOpen, onClose, author }) {
   const displayAvatar = profile?.avatar || author?.avatar;
   const displayBanner =
     profile?.banner ||
-    'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80';
+    author?.banner ||
+    '/empty/no-image.png';
   const displayBio = profile?.bio || author?.bio || '';
   const [isBioExpanded, setIsBioExpanded] = useState(false);
 
@@ -188,6 +189,9 @@ export default function ProfileModal({ isOpen, onClose, author }) {
               src={displayBanner}
               alt="Banner"
               className="h-full w-full object-cover opacity-90"
+              onError={(e) => {
+                e.currentTarget.src = '/empty/no-image.png';
+              }}
             />
           )}
 

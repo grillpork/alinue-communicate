@@ -67,8 +67,11 @@ export default function CommentPortfolioCard({ data }) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={item.coverUrl}
+                src={item.coverUrl || '/empty/no-image.png'}
                 alt={item.title || 'Showcase'}
+                onError={(e) => {
+                  e.currentTarget.src = '/empty/no-image.png';
+                }}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover/img:scale-105"
               />
             </Link>

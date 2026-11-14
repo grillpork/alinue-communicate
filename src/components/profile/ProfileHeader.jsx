@@ -88,6 +88,11 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
   const [noteText, setNoteText] = useState(user?.note || "");
   const [copied, setCopied] = useState(false);
   const [isBioExpanded, setIsBioExpanded] = useState(false);
+  const [bannerSrc, setBannerSrc] = useState(user?.banner || "/empty/no-image.png");
+
+  useEffect(() => {
+    setBannerSrc(user?.banner || "/empty/no-image.png");
+  }, [user?.banner]);
 
   const bioText = user?.bio || "";
   const isLongBio = useMemo(() => {
@@ -173,19 +178,16 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
           </span>
         </div>
 
-        {user?.banner ? (
-          <Image
-            width={1200}
-            height={500}
-            src={user.banner}
-            alt="Profile cover banner"
-            className="h-full w-full object-cover object-center"
-            unoptimized={user.banner?.endsWith('.gif') || user.banner?.includes('.gif')}
-            priority
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400 opacity-90" />
-        )}
+        <Image
+          width={1200}
+          height={500}
+          src={bannerSrc}
+          alt="Profile cover banner"
+          className="h-full w-full object-cover object-center"
+          unoptimized={bannerSrc?.endsWith('.gif') || bannerSrc?.includes('.gif')}
+          priority
+          onError={() => setBannerSrc("/empty/no-image.png")}
+        />
 
         {/* Change Banner Button (เมื่อ hover ที่ Banner) */}
         {isSelf && (

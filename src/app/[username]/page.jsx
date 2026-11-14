@@ -190,7 +190,7 @@ function UserProfileContent() {
     avatar: profile.avatar || profile.avatarUrl || null,
     banner:
       profile.banner ||
-      'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80',
+      '/empty/no-image.png',
     stats: profile.stats || {
       posts: posts.length,
       followers: 0,

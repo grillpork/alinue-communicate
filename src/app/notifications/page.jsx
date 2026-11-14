@@ -345,6 +345,9 @@ export default function NotificationsPage() {
                       <img
                         src={notif.showcase.coverUrl}
                         alt="Showcase media"
+                        onError={(e) => {
+                          e.currentTarget.src = '/empty/no-image.png';
+                        }}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform"
                       />
                     </div>

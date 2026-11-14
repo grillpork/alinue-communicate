@@ -165,10 +165,17 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
             alt={showcase.title}
             className="w-full h-auto max-h-[550px] object-cover transition-transform duration-300 group-hover:scale-[1.015]"
             loading="lazy"
+            onError={(e) => {
+              e.currentTarget.src = '/empty/no-image.png';
+            }}
           />
         ) : (
-          <div className="flex aspect-4/3 w-full items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400">
-            <span className="text-xs font-medium">No Image</span>
+          <div className="flex aspect-4/3 w-full items-center justify-center bg-gray-50 overflow-hidden">
+            <img
+              src="/empty/no-image.png"
+              alt={showcase.title || 'No Image'}
+              className="h-full w-full object-cover"
+            />
           </div>
         )}
 

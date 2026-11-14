@@ -188,16 +188,15 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
           )}
 
           {/* Banner Cover Artwork Area */}
-          <div className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-500 shadow-inner group">
-            {bannerUrl ? (
-              <img
-                src={bannerUrl}
-                alt="Banner preview"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full bg-gradient-to-tr from-pink-300 via-purple-300 to-indigo-400" />
-            )}
+          <div className="relative w-full h-36 sm:h-44 rounded-2xl overflow-hidden bg-gray-100 shadow-inner group">
+            <img
+              src={bannerUrl || '/empty/no-image.png'}
+              alt="Banner preview"
+              onError={(e) => {
+                e.currentTarget.src = '/empty/no-image.png';
+              }}
+              className="h-full w-full object-cover"
+            />
 
             {/* Change Banner Button Overlay */}
             <div
