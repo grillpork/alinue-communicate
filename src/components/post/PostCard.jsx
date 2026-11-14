@@ -18,6 +18,8 @@ import {
   FolderKanban,
   Check,
   Bookmark,
+  Share2,
+  Flag,
 } from 'lucide-react';
 import {
   useToggleLikeMutation,
@@ -260,8 +262,10 @@ export default function PostCard({
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
   const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || '';
-  const currentUserName =
-    currentUser?.displayName || currentUser?.username || currentUser?.name || 'User';
+  const isOwner = Boolean(
+    currentUser?.id &&
+      (post?.userId === currentUser.id || post?.author?.id === currentUser.id)
+  );
 
   const { data: commentsData, isLoading: isLoadingComments } = useCommentsQuery(
     post.id,
@@ -356,43 +360,58 @@ export default function PostCard({
           </button>
 
           {showMenu && (
-            <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30">
+            <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
+              {isOwner ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      if (onEdit) onEdit(post);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                    <span>Edit</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      if (onDelete) onDelete(post.id);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                    <span>Delete</span>
+                  </button>
+                </>
+              ) : null}
+
               <button
                 type="button"
-                onClick={handleCopyLink}
-                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  setShowMenu(false);
+                  setIsShareModalOpen(true);
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
               >
-                <Copy className="h-3.5 w-3.5 text-gray-400" />
-                <span>{copied ? 'Copied Link!' : 'Copy link'}</span>
+                <Share2 className="h-3.5 w-3.5 text-gray-500" />
+                <span>Share</span>
               </button>
 
-              {onEdit && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMenu(false);
-                    onEdit(post);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Pencil className="h-3.5 w-3.5 text-gray-400" />
-                  <span>Edit post</span>
-                </button>
-              )}
-
-              {onDelete && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowMenu(false);
-                    onDelete(post.id);
-                  }}
-                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                  <span>Delete post</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMenu(false);
+                  alert('ส่งรายงานโพสต์นี้ให้ผู้ดูแลระบบตรวจสอบแล้ว');
+                }}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Flag className="h-3.5 w-3.5 text-gray-400" />
+                <span>Report</span>
+              </button>
             </div>
           )}
         </div>
@@ -693,6 +712,8 @@ export default function PostCard({
         isOpen={isDetailModalOpen}
         onClose={() => setIsDetailModalOpen(false)}
         onShareSuccess={(newCount) => setSharesCount(newCount)}
+        onEdit={onEdit}
+        onDelete={onDelete}
       />
 
       {/* Share Post Modal */}

@@ -26,6 +26,14 @@ export const postService = {
     });
   },
 
+  // แก้ไขโพสต์
+  updatePost: async ({ id, ...payload }) => {
+    return fetchApi(`/api/posts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // ลบโพสต์
   deletePost: async (id) => {
     return fetchApi(`/api/posts/${id}`, {
@@ -118,6 +126,25 @@ export function useCreatePostMutation(options = {}) {
     mutationFn: postService.createPost,
     onSuccess: (data, variables, context) => {
       // Invalidate รายการโพสต์ทั้งหมดเพื่อให้ Feed อัปเดตทันที
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
+      }
+    },
+    ...restOptions,
+  });
+}
+
+/**
+ * Hook สำหรับแก้ไขโพสต์
+ */
+export function useUpdatePostMutation(options = {}) {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
+
+  return useMutation({
+    mutationFn: postService.updatePost,
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);

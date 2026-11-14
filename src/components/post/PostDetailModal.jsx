@@ -19,6 +19,9 @@ import {
   Check,
   FolderKanban,
   Bookmark,
+  Pencil,
+  Share2,
+  Flag,
 } from 'lucide-react';
 import { useBookmarks } from '@/services/bookmark';
 import {
@@ -68,6 +71,8 @@ export default function PostDetailModal({
   onClose,
   initialImageIndex = 0,
   onShareSuccess,
+  onEdit,
+  onDelete,
 }) {
   const [activeImageIndex, setActiveImageIndex] = useState(initialImageIndex);
   const [commentText, setCommentText] = useState('');
@@ -77,10 +82,12 @@ export default function PostDetailModal({
   const [commentsCount, setCommentsCount] = useState(post?.commentsCount ?? 0);
   const [sharesCount, setSharesCount] = useState(post?.sharesCount ?? 0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const [sortBy, setSortBy] = useState('latest'); // 'latest' | 'popular'
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [likedComments, setLikedComments] = useState({});
   const sortMenuRef = useRef(null);
+  const menuRef = useRef(null);
   const commentsEndRef = useRef(null);
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(post?.id);
@@ -94,6 +101,10 @@ export default function PostDetailModal({
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
   const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || '';
+  const isOwner = Boolean(
+    currentUser?.id &&
+      (post?.userId === currentUser.id || post?.author?.id === currentUser.id)
+  );
 
   // ดึงความคิดเห็นจาก Backend เมื่อเปิด Modal
   const { data: commentsData, isLoading: isLoadingComments } = useCommentsQuery(
@@ -144,11 +155,14 @@ export default function PostDetailModal({
     }
   }, [isOpen, onClose]);
 
-  // ปิดเมนู sort เมื่อคลิกข้างนอก
+  // ปิดเมนู sort และ options เมื่อคลิกข้างนอก
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
         setShowSortMenu(false);
+      }
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setShowMenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -298,13 +312,75 @@ export default function PostDetailModal({
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                  aria-label="More options"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
+                <div ref={menuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowMenu((prev) => !prev)}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+                    aria-label="More options"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+
+                  {showMenu && (
+                    <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
+                      {isOwner ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowMenu(false);
+                              if (onEdit) onEdit(post);
+                            }}
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                          >
+                            <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowMenu(false);
+                              if (onDelete) {
+                                onDelete(post.id);
+                                onClose();
+                              }
+                            }}
+                            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                            <span>Delete</span>
+                          </button>
+                        </>
+                      ) : null}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false);
+                          setIsShareModalOpen(true);
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <Share2 className="h-3.5 w-3.5 text-gray-500" />
+                        <span>Share</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowMenu(false);
+                          alert('ส่งรายงานโพสต์นี้ให้ผู้ดูแลระบบตรวจสอบแล้ว');
+                        }}
+                        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+                      >
+                        <Flag className="h-3.5 w-3.5 text-gray-400" />
+                        <span>Report</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Post Text */}

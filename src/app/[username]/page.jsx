@@ -30,7 +30,11 @@ import {
   useUserLikedPostsQuery,
   useUpdateProfileMutation,
 } from "@/services/user";
-import { useCreatePostMutation } from "@/services/post";
+import {
+  useCreatePostMutation,
+  useUpdatePostMutation,
+  useDeletePostMutation,
+} from "@/services/post";
 import { useShowcasesQuery } from "@/services/showcase";
 import { useServicesQuery } from "@/services/service";
 import { useBookmarks } from "@/services/bookmark";
@@ -66,28 +70,52 @@ function UserProfileContent() {
   const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
 
   // 1. ดึงข้อมูลผู้ใช้ปัจจุบันที่ Login อยู่
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
   const createPostMutation = useCreatePostMutation();
+  const updatePostMutation = useUpdatePostMutation();
+  const deletePostMutation = useDeletePostMutation();
 
   const handleCreatePost = async (data) => {
     try {
       const imageList = (data.images || []).map((img) =>
         typeof img === "string" ? img : img.url,
       );
-      await createPostMutation.mutateAsync({
-        content: data.content,
-        images: imageList,
-        serviceId: data.serviceId || null,
-        serviceTitle: data.serviceTitle || null,
-      });
-      setIsPostModalOpen(false);
+      if (editingPost) {
+        await updatePostMutation.mutateAsync({
+          id: editingPost.id,
+          content: data.content,
+          images: imageList,
+          serviceId: data.serviceId || null,
+          serviceTitle: data.serviceTitle || null,
+        });
+        setEditingPost(null);
+      } else {
+        await createPostMutation.mutateAsync({
+          content: data.content,
+          images: imageList,
+          serviceId: data.serviceId || null,
+          serviceTitle: data.serviceTitle || null,
+        });
+        setIsPostModalOpen(false);
+      }
     } catch (err) {
-      console.error("Failed to create post:", err);
+      console.error("Failed to submit post:", err);
       throw err;
     }
+  };
+
+  const handleDeletePost = (postId) => {
+    if (confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
+      deletePostMutation.mutate(postId);
+    }
+  };
+
+  const handleEditPost = (post) => {
+    setEditingPost(post);
   };
 
   // 2. ดึงข้อมูลโปรไฟล์ของ [username] จาก Neon DB
@@ -471,7 +499,12 @@ function UserProfileContent() {
             ) : posts.length > 0 ? (
               <div className="divide-y divide-gray-100">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={post} />
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    onEdit={handleEditPost}
+                    onDelete={handleDeletePost}
+                  />
                 ))}
               </div>
             ) : (
@@ -562,10 +595,15 @@ function UserProfileContent() {
         onClose={() => setIsShowcaseModalOpen(false)}
       />
 
-      {/* 4.1 Create Post Modal */}
+      {/* 4.1 Create / Edit Post Modal */}
       <PostFormModal
-        isOpen={isPostModalOpen}
-        onClose={() => setIsPostModalOpen(false)}
+        isOpen={isPostModalOpen || Boolean(editingPost)}
+        isEdit={Boolean(editingPost)}
+        initialPost={editingPost}
+        onClose={() => {
+          setIsPostModalOpen(false);
+          setEditingPost(null);
+        }}
         onSubmit={handleCreatePost}
       />
 

@@ -21,6 +21,7 @@ import {
   usePostsQuery,
   usePostQuery,
   useCreatePostMutation,
+  useUpdatePostMutation,
   useDeletePostMutation,
 } from '@/services/post';
 
@@ -29,6 +30,7 @@ export default function PostFeed() {
   const searchParams = useSearchParams();
   const sharedPostId = searchParams?.get('post');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const [activeSharedPost, setActiveSharedPost] = useState(null);
 
   // ตรวจสอบและดึงข้อมูลโพสต์ที่ถูกแชร์ผ่าน URL query (?post=ID)
@@ -50,6 +52,7 @@ export default function PostFeed() {
   const { data: postsData, isLoading } = usePostsQuery();
 
   const createPostMutation = useCreatePostMutation();
+  const updatePostMutation = useUpdatePostMutation();
   const deletePostMutation = useDeletePostMutation();
 
   const posts = postsData?.posts || [];
@@ -63,29 +66,45 @@ export default function PostFeed() {
     setIsModalOpen(true);
   };
 
-  // สร้างโพสต์ใหม่ลง Neon DB ผ่าน TanStack Query Mutation
+  // สร้างหรือแก้ไขโพสต์ลง Neon DB ผ่าน TanStack Query Mutation
   const handleCreatePost = async (data) => {
     try {
       const imageList = (data.images || []).map((img) =>
         typeof img === 'string' ? img : img.url
       );
 
-      await createPostMutation.mutateAsync({
-        content: data.content,
-        images: imageList,
-        serviceId: data.serviceId || null,
-        serviceTitle: data.serviceTitle || null,
-      });
-
-      setIsModalOpen(false);
+      if (editingPost) {
+        await updatePostMutation.mutateAsync({
+          id: editingPost.id,
+          content: data.content,
+          images: imageList,
+          serviceId: data.serviceId || null,
+          serviceTitle: data.serviceTitle || null,
+        });
+        setEditingPost(null);
+      } else {
+        await createPostMutation.mutateAsync({
+          content: data.content,
+          images: imageList,
+          serviceId: data.serviceId || null,
+          serviceTitle: data.serviceTitle || null,
+        });
+        setIsModalOpen(false);
+      }
     } catch (err) {
-      console.error('Failed to create post:', err);
+      console.error('Failed to submit post:', err);
       throw err;
     }
   };
 
   const handleDeletePost = (postId) => {
-    deletePostMutation.mutate(postId);
+    if (confirm('คุณต้องการลบโพสต์นี้ใช่หรือไม่?')) {
+      deletePostMutation.mutate(postId);
+    }
+  };
+
+  const handleEditPost = (post) => {
+    setEditingPost(post);
   };
 
   return (
@@ -246,6 +265,7 @@ export default function PostFeed() {
             <PostCard
               key={post.id}
               post={post}
+              onEdit={handleEditPost}
               onDelete={handleDeletePost}
             />
           ))
@@ -254,8 +274,13 @@ export default function PostFeed() {
 
       {/* Modal สร้างโพสต์ (PostFormModal) */}
       <PostFormModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isModalOpen || Boolean(editingPost)}
+        isEdit={Boolean(editingPost)}
+        initialPost={editingPost}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingPost(null);
+        }}
         onSubmit={handleCreatePost}
       />
 
