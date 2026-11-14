@@ -22,6 +22,7 @@ import {
 import EditProfileModal from "./EditProfileModal";
 import NoteFormModal from "./NoteFormModal";
 import Image from "next/image";
+import UserAvatar from "@/components/common/UserAvatar";
 
 /**
  * ฟอร์แมตตัวเลขสถิติ (เช่น 30k, 4.2 k, 1.1m, 200k) ตาม UI ตัวอย่าง
@@ -154,21 +155,13 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
                 </button>
               </div>
 
-              {/* Avatar Circle (ขนาดพอดีสมดุล: h-24 w-24 sm:h-28 sm:w-28) */}
-              <div className="h-25 w-25 sm:h-30 sm:w-30 rounded-full ring-2 ring-white shadow-lg bg-gray-100 overflow-hidden flex items-center justify-center">
-                {user?.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.avatar}
-                    alt={user.name || user.username}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-gradient-to-tr from-amber-200 to-orange-300 flex items-center justify-center text-gray-700 text-2xl font-bold">
-                    {(user?.name || user?.username || "U")[0].toUpperCase()}
-                  </div>
-                )}
-              </div>
+              {/* Avatar Circle */}
+              <UserAvatar
+                src={user?.avatar}
+                alt={user?.name || user?.username}
+                size="3xl"
+                className="ring-2 ring-white shadow-lg"
+              />
 
               {/* Edit Avatar Button (ไอคอนดินสอด้านขวาล่างของรูป) */}
               {isSelf && (

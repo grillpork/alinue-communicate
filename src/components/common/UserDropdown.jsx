@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { User, Settings, LogOut } from 'lucide-react';
+import UserAvatar from '@/components/common/UserAvatar';
 
 export default function UserDropdown({ user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,18 +31,12 @@ export default function UserDropdown({ user, onLogout }) {
         className="flex items-center rounded-full p-0.5 hover:ring-2 hover:ring-gray-200 transition-all focus:outline-none cursor-pointer"
         aria-label="User menu"
       >
-        <div className="h-8 w-8 rounded-full ring-2 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-          {user.avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={user.avatar}
-              alt={user.name || 'User'}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <User className="h-4 w-4 text-gray-400" />
-          )}
-        </div>
+        <UserAvatar
+          src={user.avatar}
+          alt={user.name || 'User'}
+          size="sm"
+          className="ring-2 ring-gray-100"
+        />
       </button>
 
       {/* Dropdown Menu */}

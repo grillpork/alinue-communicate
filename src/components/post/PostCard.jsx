@@ -33,6 +33,7 @@ import SharePostModal from './SharePostModal';
 import CommentPortfolioCard from './CommentPortfolioCard';
 import CommentActionsMenu from './CommentActionsMenu';
 import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
+import UserAvatar from '@/components/common/UserAvatar';
 
 /**
  * แปลงข้อความที่มี #hashtag หรือ @user ให้เป็นสีฟ้า
@@ -604,18 +605,12 @@ export default function PostCard({
                         }
                         className="shrink-0"
                       >
-                        <div className="h-10 w-10 rounded-full ring-1 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center">
-                          {commentAvatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={commentAvatar}
-                              alt={comment.user?.name || 'User'}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <User className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
+                        <UserAvatar
+                          src={commentAvatar}
+                          alt={comment.user?.name || 'User'}
+                          size="md"
+                          className="ring-1 ring-gray-100"
+                        />
                       </Link>
                       {comment.portfolioAttachment && (
                         <div className="relative w-full h-[125px]">

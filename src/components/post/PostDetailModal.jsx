@@ -33,6 +33,7 @@ import CommentPortfolioCard from './CommentPortfolioCard';
 import PostAuthorProfileTrigger from './PostAuthorProfileTrigger';
 import CommentActionsMenu from './CommentActionsMenu';
 import SharePostModal from './SharePostModal';
+import UserAvatar from '@/components/common/UserAvatar';
 
 /**
  * ฟังก์ชันแปลง Hashtag และ Mention เป็นตัวหนังสือสีฟ้า
@@ -458,18 +459,12 @@ export default function PostDetailModal({
                           }
                           className="shrink-0"
                         >
-                          <div className="h-10 w-10 rounded-full ring-1 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center">
-                            {authorAvatar ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={authorAvatar}
-                                alt={comment.user?.name || 'User'}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <User className="h-5 w-5 text-gray-400" />
-                            )}
-                          </div>
+                          <UserAvatar
+                            src={authorAvatar}
+                            alt={comment.user?.name || 'User'}
+                            size="md"
+                            className="ring-1 ring-gray-100"
+                          />
                         </Link>
                         {comment.portfolioAttachment && (
                           <div className="relative w-full h-[125px]">

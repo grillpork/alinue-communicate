@@ -22,6 +22,7 @@ import { useSearchUsersQuery } from '@/services/user';
 import { usePostsQuery } from '@/services/post';
 import { formatRelativeTime } from '@/lib/date';
 import PostDetailModal from '@/components/post/PostDetailModal';
+import UserAvatar from '@/components/common/UserAvatar';
 
 const DEFAULT_HISTORY = [
   'Anime chibi',
@@ -363,18 +364,12 @@ export default function SearchPage() {
                         className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer"
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-full bg-gray-100 overflow-hidden ring-1 ring-gray-200 shrink-0 flex items-center justify-center">
-                            {user.avatar ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={user.avatar}
-                                alt={user.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <User className="h-5 w-5 text-gray-400" />
-                            )}
-                          </div>
+                          <UserAvatar
+                            src={user.avatar}
+                            alt={user.name}
+                            size="md"
+                            className="ring-1 ring-gray-200"
+                          />
                           <div className="min-w-0">
                             <p className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-black">
                               {user.name}

@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowUpRight, User } from 'lucide-react';
+import UserAvatar from '@/components/common/UserAvatar';
 
 /**
  * CommentPortfolioCard - การ์ดแนบ Profile & Showcase (Portfolio) ใต้ความคิดเห็น
@@ -21,18 +22,12 @@ export default function CommentPortfolioCard({ data }) {
           href={`/${data.username || ''}`}
           className="flex items-center gap-2.5 min-w-0 flex-1 group/author"
         >
-          <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full ring-2 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-            {data.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={data.avatar}
-                alt={data.name || data.username}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <User className="h-4.5 w-4.5 text-gray-400" />
-            )}
-          </div>
+          <UserAvatar
+            src={data.avatar}
+            alt={data.name || data.username}
+            size="md"
+            className="ring-2 ring-gray-100"
+          />
           <div className="min-w-0 flex-1">
             <h4 className="text-[14px] sm:text-[15px] font-bold text-gray-900 group-hover/author:underline truncate leading-snug">
               {data.name || data.username}

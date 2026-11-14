@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useSuggestedUsersQuery, useSearchUsersQuery } from '@/services/user';
 import { formatRelativeTime } from '@/lib/date';
+import UserAvatar from '@/components/common/UserAvatar';
 
 const TRENDING_TAGS = [
   'UIUX',
@@ -112,18 +113,12 @@ export default function SearchPopup({
                     className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-gray-100 overflow-hidden ring-1 ring-gray-200 shrink-0 flex items-center justify-center">
-                        {creator.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={creator.avatar}
-                            alt={creator.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-4 w-4 text-gray-400" />
-                        )}
-                      </div>
+                      <UserAvatar
+                        src={creator.avatar}
+                        alt={creator.name}
+                        size="md"
+                        className="ring-1 ring-gray-200"
+                      />
                       <div className="min-w-0">
                         <p className="text-xs font-bold text-gray-900 truncate group-hover:text-black">
                           {creator.name}
@@ -170,18 +165,12 @@ export default function SearchPopup({
                     className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="h-10 w-10 rounded-full bg-gray-100 overflow-hidden ring-1 ring-gray-200 shrink-0 flex items-center justify-center">
-                        {user.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={user.avatar}
-                            alt={user.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <User className="h-5 w-5 text-gray-400" />
-                        )}
-                      </div>
+                      <UserAvatar
+                        src={user.avatar}
+                        alt={user.name}
+                        size="md"
+                        className="ring-1 ring-gray-200"
+                      />
                       <div className="min-w-0">
                         <p className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-black">
                           {user.name}

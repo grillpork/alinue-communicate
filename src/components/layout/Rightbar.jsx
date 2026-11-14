@@ -15,6 +15,7 @@ import {
   useSuggestedUsersQuery,
   useToggleFollowMutation,
 } from "@/services/user";
+import UserAvatar from "@/components/common/UserAvatar";
 
 const TRENDING_TAGS = [
   { tag: "DesignSystems", category: "UI/UX Design", posts: "2.4k" },
@@ -131,18 +132,14 @@ export default function Rightbar() {
                   <div className="flex items-center gap-2.5 min-w-0">
                     <Link
                       href={`/${creator.username}`}
-                      className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full ring-2 ring-gray-100 bg-gray-100 flex items-center justify-center hover:opacity-90 transition-opacity"
+                      className="shrink-0 hover:opacity-90 transition-opacity"
                     >
-                      {creator.avatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={creator.avatar}
-                          alt={creator.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-4 w-4 text-gray-400" />
-                      )}
+                      <UserAvatar
+                        src={creator.avatar}
+                        alt={creator.name}
+                        size="md"
+                        className="ring-2 ring-gray-100"
+                      />
                     </Link>
                     <div className="min-w-0 flex-1">
                       <Link
