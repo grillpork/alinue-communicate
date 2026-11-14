@@ -111,12 +111,12 @@ export default function PostDetailModal({
   const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || "";
   const isOwner = Boolean(
     currentUser?.id &&
-      (Number(post?.userId) === Number(currentUser.id) ||
-        Number(post?.author?.id) === Number(currentUser.id) ||
-        (currentUser?.username &&
-          post?.author?.username &&
-          currentUser.username.toLowerCase() ===
-            post.author.username.toLowerCase())),
+    (Number(post?.userId) === Number(currentUser.id) ||
+      Number(post?.author?.id) === Number(currentUser.id) ||
+      (currentUser?.username &&
+        post?.author?.username &&
+        currentUser.username.toLowerCase() ===
+          post.author.username.toLowerCase())),
   );
 
   // ดึงความคิดเห็นจาก Backend เมื่อเปิด Modal
@@ -361,7 +361,7 @@ export default function PostDetailModal({
         )}
         {/* 1. LEFT SIDE: Media Carousel (Image View with Embla Carousel) */}
         {hasImages && (
-          <div className="relative shrink-0 md:flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden h-[420px] sm:h-[560px] md:h-full min-h-[420px] sm:min-h-[560px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
+          <div className="relative shrink-0 md:flex-1 bg-gray-50 flex items-center justify-center select-none overflow-hidden h-[540px] sm:h-[560px] md:h-full min-h-[420px] sm:min-h-[560px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
             {/* Embla Viewport */}
             <div
               ref={emblaRef}
@@ -386,7 +386,7 @@ export default function PostDetailModal({
             </div>
 
             {/* Prev Arrow */}
-            {images.length > 1 && activeImageIndex > 0 && (
+            {/* {images.length > 1 && activeImageIndex > 0 && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -398,10 +398,10 @@ export default function PostDetailModal({
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-            )}
+            )} */}
 
             {/* Next Arrow */}
-            {images.length > 1 && activeImageIndex < images.length - 1 && (
+            {/* {images.length > 1 && activeImageIndex < images.length - 1 && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -413,7 +413,7 @@ export default function PostDetailModal({
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
-            )}
+            )} */}
 
             {/* Dots Indicator */}
             {images.length > 1 && (
