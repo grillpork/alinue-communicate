@@ -385,23 +385,7 @@ export default function ShowcaseModal({
                 <span className="text-[11px] font-semibold text-white/90">
                   {activeMediaIndex + 1} / {mediaList.length}
                 </span>
-                <div className="mx-1 h-2.5 w-px bg-white/20" />
-                <div className="flex items-center gap-1">
-                  {mediaList.map((_, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        emblaApi?.scrollTo(idx);
-                      }}
-                      className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                        idx === activeMediaIndex ? 'w-5 bg-white' : 'w-1.5 bg-white/40 hover:bg-white/70'
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
-                </div>
+            
               </div>
             </>
           )}

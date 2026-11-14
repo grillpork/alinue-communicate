@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
   Heart,
   Check,
@@ -13,14 +13,21 @@ import {
   Share2,
   Flag,
   Pencil,
-  Layers,
-} from 'lucide-react';
-import { useToggleShowcaseLikeMutation, useDeleteShowcaseMutation } from '@/services/showcase';
-import { useMeQuery } from '@/services/auth';
-import ShowcaseModal from './ShowcaseModal';
-import EditShowcaseModal from './EditShowcaseModal';
+} from "lucide-react";
+import {
+  useToggleShowcaseLikeMutation,
+  useDeleteShowcaseMutation,
+} from "@/services/showcase";
+import { useMeQuery } from "@/services/auth";
+import ShowcaseModal from "./ShowcaseModal";
+import EditShowcaseModal from "./EditShowcaseModal";
 
-export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwner: isOwnerProp }) {
+export default function ShowcaseCard({
+  showcase,
+  currentUserId,
+  onDeleted,
+  isOwner: isOwnerProp,
+}) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -36,20 +43,35 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
 
   const author = showcase.author || {
     id: showcase.userId || showcase.user_id,
-    name: showcase.author_name || showcase.author_username || showcase.authorName || 'Creator',
-    username: showcase.author_username || showcase.authorUsername || 'user',
-    avatar: showcase.author_avatar || showcase.author_avatar_url || showcase.authorAvatar || null,
+    name:
+      showcase.author_name ||
+      showcase.author_username ||
+      showcase.authorName ||
+      "Creator",
+    username: showcase.author_username || showcase.authorUsername || "user",
+    avatar:
+      showcase.author_avatar ||
+      showcase.author_avatar_url ||
+      showcase.authorAvatar ||
+      null,
   };
   const ownerId = showcase.userId || showcase.user_id || author?.id;
   const effectiveUserId = currentUserId || loggedInUser?.id;
-  const authorUsername = author?.username || showcase.authorUsername || showcase.author_username;
+  const authorUsername =
+    author?.username || showcase.authorUsername || showcase.author_username;
 
-  const isOwner = isOwnerProp !== undefined
-    ? Boolean(isOwnerProp)
-    : Boolean(
-        (effectiveUserId && ownerId && Number(effectiveUserId) === Number(ownerId)) ||
-        (loggedInUser?.username && authorUsername && loggedInUser.username.toLowerCase() === authorUsername.toLowerCase())
-      );
+  const isOwner =
+    isOwnerProp !== undefined
+      ? Boolean(isOwnerProp)
+      : Boolean(
+          (effectiveUserId &&
+            ownerId &&
+            Number(effectiveUserId) === Number(ownerId)) ||
+          (loggedInUser?.username &&
+            authorUsername &&
+            loggedInUser.username.toLowerCase() ===
+              authorUsername.toLowerCase()),
+        );
   const isLiked = Boolean(showcase.is_liked);
   const likesCount = showcase.likes_count || 0;
 
@@ -60,14 +82,14 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
         setShowMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleCopyLink = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
@@ -82,12 +104,12 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
     e.preventDefault();
     e.stopPropagation();
     setShowMenu(false);
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
       if (navigator.share) {
         try {
           await navigator.share({
-            title: showcase.title || 'Showcase ผลงานบน Alinue',
+            title: showcase.title || "Showcase ผลงานบน Alinue",
             text: `ดูผลงาน "${showcase.title}" โดย @${author.username} บน Alinue`,
             url,
           });
@@ -103,14 +125,15 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
   // รายการ media (รองรับทั้ง Array หรือ JSON string)
   const mediaList = Array.isArray(showcase.media_urls || showcase.mediaUrls)
     ? showcase.media_urls || showcase.mediaUrls
-    : typeof (showcase.media_urls || showcase.mediaUrls) === 'string'
-    ? JSON.parse(showcase.media_urls || showcase.mediaUrls || '[]')
-    : [];
+    : typeof (showcase.media_urls || showcase.mediaUrls) === "string"
+      ? JSON.parse(showcase.media_urls || showcase.mediaUrls || "[]")
+      : [];
 
-  const mainMedia = mediaList[0] || showcase.cover_url || showcase.coverUrl || '';
+  const mainMedia =
+    mediaList[0] || showcase.cover_url || showcase.coverUrl || "";
   const isVideo =
-    showcase.media_type === 'video' ||
-    showcase.mediaType === 'video' ||
+    showcase.media_type === "video" ||
+    showcase.mediaType === "video" ||
     /\.(mp4|webm|mov|ogg)$/i.test(mainMedia);
 
   const handleLike = (e) => {
@@ -122,7 +145,7 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
   const handleDelete = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (confirm('คุณต้องการลบผลงาน Showcase นี้ใช่หรือไม่?')) {
+    if (confirm("คุณต้องการลบผลงาน Showcase นี้ใช่หรือไม่?")) {
       deleteMutation.mutate(showcase.id, {
         onSuccess: () => {
           onDeleted?.(showcase.id);
@@ -167,14 +190,14 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
             className="w-full h-auto max-h-[550px] object-cover transition-transform duration-300 group-hover:scale-[1.015]"
             loading="lazy"
             onError={(e) => {
-              e.currentTarget.src = '/empty/no-image.png';
+              e.currentTarget.src = "/empty/no-image.png";
             }}
           />
         ) : (
           <div className="flex aspect-4/3 w-full items-center justify-center bg-gray-50 overflow-hidden">
             <img
               src="/empty/no-image.png"
-              alt={showcase.title || 'No Image'}
+              alt={showcase.title || "No Image"}
               className="h-full w-full object-cover"
             />
           </div>
@@ -228,7 +251,7 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
                 ) : (
                   <Copy className="h-3.5 w-3.5 text-gray-400" />
                 )}
-                <span>{copied ? 'คัดลอกลิงก์แล้ว!' : 'คัดลอกลิงก์'}</span>
+                <span>{copied ? "คัดลอกลิงก์แล้ว!" : "คัดลอกลิงก์"}</span>
               </button>
 
               <button
@@ -271,7 +294,7 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
                   type="button"
                   onClick={() => {
                     setShowMenu(false);
-                    alert('ส่งรายงานผลงานนี้ให้ผู้ดูแลระบบตรวจสอบแล้ว');
+                    alert("ส่งรายงานผลงานนี้ให้ผู้ดูแลระบบตรวจสอบแล้ว");
                   }}
                   className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
@@ -283,37 +306,6 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
           )}
         </div>
 
-        {/* Bottom-Left: Linked service badge */}
-        {showcase.service && (() => {
-          const serviceCover =
-            showcase.service.coverUrl ||
-            showcase.service.cover_url ||
-            (Array.isArray(showcase.service.images) && showcase.service.images[0]) ||
-            (Array.isArray(showcase.service.Images) && showcase.service.Images[0]) ||
-            (typeof showcase.service.images === 'string' && showcase.service.images) ||
-            (typeof showcase.service.Images === 'string' && showcase.service.Images) ||
-            null;
-
-          return (
-            <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 rounded-full bg-black/65 backdrop-blur-md pl-1 pr-2.5 py-1 text-[10px] font-semibold text-white shadow-xs max-w-[170px]">
-              {serviceCover ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={serviceCover}
-                  alt={showcase.service.title || 'Service'}
-                  className="h-4 w-4 rounded-full object-cover shrink-0 ring-1 ring-white/30"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              ) : (
-                <Layers className="h-3 w-3 text-white/90 shrink-0 ml-1" />
-              )}
-              <span className="truncate">{showcase.service.title || 'บริการที่เชื่อมโยง'}</span>
-            </div>
-          );
-        })()}
-
         {/* Bottom-Right: Floating Heart / Like Button */}
         <button
           type="button"
@@ -321,14 +313,14 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
           disabled={toggleLikeMutation.isPending}
           className={`absolute bottom-2.5 right-2.5 flex h-7 w-7 items-center justify-center rounded-full backdrop-blur-md transition-all active:scale-90 cursor-pointer ${
             isLiked
-              ? 'bg-rose-500 text-white shadow-md'
-              : 'bg-black/40 text-white hover:bg-black/60'
+              ? "bg-rose-500 text-white shadow-md"
+              : "bg-black/40 text-white hover:bg-black/60"
           }`}
-          title={isLiked ? 'Unlike' : 'Like'}
+          title={isLiked ? "Unlike" : "Like"}
         >
           <Heart
             className={`h-3.5 w-3.5 ${
-              isLiked ? 'fill-current text-white' : 'text-white'
+              isLiked ? "fill-current text-white" : "text-white"
             }`}
           />
         </button>
@@ -358,7 +350,7 @@ export default function ShowcaseCard({ showcase, currentUserId, onDeleted, isOwn
               />
             ) : (
               <div className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-gray-200 text-[9px] font-bold text-gray-700">
-                {(author.name || author.username || 'U')[0].toUpperCase()}
+                {(author.name || author.username || "U")[0].toUpperCase()}
               </div>
             )}
             <span className="text-[11px] font-medium text-gray-800 truncate">

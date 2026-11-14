@@ -255,15 +255,6 @@ export default function PostDetailModal({
           hasImages ? 'md:max-w-6xl' : 'md:max-w-2xl'
         }`}
       >
-        {/* Floating Close Button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 left-4 z-30 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 hover:bg-white hover:text-black shadow-md border border-gray-200/80 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
-          aria-label="Close modal"
-        >
-          <X className="h-5 w-5" />
-        </button>
 
         {/* 1. LEFT SIDE: Media Carousel (Image View with Embla Carousel) */}
         {hasImages && (
@@ -323,7 +314,7 @@ export default function PostDetailModal({
 
             {/* Dots Indicator */}
             {images.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 shadow-sm border border-gray-200/80 backdrop-blur-xs">
+              <div className="absolute bottom-1 md:bottom-2 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5">
                 {images.map((_, idx) => (
                   <span
                     key={idx}
