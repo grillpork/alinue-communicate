@@ -23,6 +23,7 @@ import {
   Globe,
   Tag,
   ChevronDown,
+  Flag,
 } from "lucide-react";
 import {
   useToggleServiceLikeMutation,
@@ -57,7 +58,8 @@ export default function ServiceDetailModal({
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isContactsExpanded, setIsContactsExpanded] = useState(false);
-  const menuRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const desktopMenuRef = useRef(null);
 
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
@@ -100,7 +102,11 @@ export default function ServiceDetailModal({
   // ปิดเมนูเมื่อคลิกนอกพื้นที่
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) {
+      const clickedMobile =
+        mobileMenuRef.current && mobileMenuRef.current.contains(e.target);
+      const clickedDesktop =
+        desktopMenuRef.current && desktopMenuRef.current.contains(e.target);
+      if (!clickedMobile && !clickedDesktop) {
         setShowMenu(false);
       }
     };
@@ -143,16 +149,30 @@ export default function ServiceDetailModal({
     .filter(([_, val]) => Boolean(val && String(val).trim()))
     .map(([platform, val]) => ({ platform, val: String(val).trim() }));
 
+  const serviceAuthorUsername =
+    service.author?.username ||
+    service.user?.username ||
+    authorProfile?.username ||
+    author.username;
+
+  const serviceAuthorId =
+    service.userId ||
+    service.user_id ||
+    service.author?.id ||
+    service.user?.id ||
+    author.id;
+
   const isOwner =
     isOwnerProp !== undefined
       ? Boolean(isOwnerProp)
       : Boolean(
           (currentUser?.id &&
-            Number(currentUser.id) === Number(service.userId)) ||
+            serviceAuthorId &&
+            Number(currentUser.id) === Number(serviceAuthorId)) ||
           (currentUser?.username &&
-            author.username &&
+            serviceAuthorUsername &&
             currentUser.username.toLowerCase() ===
-              author.username.toLowerCase()),
+              serviceAuthorUsername.toLowerCase()),
         );
 
   const images =
@@ -222,6 +242,118 @@ export default function ServiceDetailModal({
     }
   };
 
+  const renderDropdownMenu = () => (
+    <div className="absolute right-0 top-full mt-1.5 w-48 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-left">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(false);
+          handleCopyLink();
+        }}
+        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        {copied ? (
+          <>
+            <Check className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-emerald-600 font-medium">คัดลอกแล้ว</span>
+          </>
+        ) : (
+          <>
+            <Copy className="h-3.5 w-3.5 text-gray-500" />
+            <span>คัดลอกลิงก์</span>
+          </>
+        )}
+      </button>
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(false);
+          handleShare();
+        }}
+        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        <Share2 className="h-3.5 w-3.5 text-gray-500" />
+        <span>แชร์ประกาศ</span>
+      </button>
+
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowMenu(false);
+          alert("ส่งรายงานประกาศนี้ให้ผู้ดูแลระบบตรวจสอบแล้ว");
+        }}
+        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        <Flag className="h-3.5 w-3.5 text-gray-400" />
+        <span>รายงานประกาศ</span>
+      </button>
+
+      {isOwner && (
+        <>
+          <div className="my-1 border-t border-gray-100" />
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              handleRenew();
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <RotateCw className="h-3.5 w-3.5 text-gray-500" />
+            <span>ต่ออายุอีก 30 วัน</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              handleToggleStatus();
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <Power className="h-3.5 w-3.5 text-gray-500" />
+            <span>
+              {status === "paused" ? "เปิดรับงาน" : "พักรับงานชั่วคราว"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              setIsEditOpen(true);
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <Pencil className="h-3.5 w-3.5 text-gray-500" />
+            <span>แก้ไขประกาศ</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              handleDelete();
+            }}
+            className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+            <span>ลบประกาศ</span>
+          </button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <>
       <div
@@ -243,80 +375,22 @@ export default function ServiceDetailModal({
             <X className="h-4.5 w-4.5" />
           </button>
 
-          {/* Mobile-only Top Right: Owner Options Dropdown */}
-          {isOwner && (
-            <div
-              className="absolute top-4 right-4 z-40 md:hidden"
-              ref={menuRef}
+          {/* Mobile-only Top Right: Options Dropdown */}
+          <div
+            className="absolute top-4 right-4 z-40 md:hidden"
+            ref={mobileMenuRef}
+          >
+            <button
+              type="button"
+              onClick={() => setShowMenu((prev) => !prev)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
+              title="ตัวเลือกเพิ่มเติม"
             >
-              <button
-                type="button"
-                onClick={() => setShowMenu((prev) => !prev)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
-                title="ตัวเลือกเพิ่มเติม"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
+              <MoreHorizontal className="h-4.5 w-4.5" />
+            </button>
 
-              {showMenu && (
-                <div className="absolute right-0 top-full mt-1.5 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      handleRenew();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                  >
-                    <RotateCw className="h-3.5 w-3.5" />
-                    <span>ต่ออายุอีก 30 วัน</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      handleToggleStatus();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                  >
-                    <Power className="h-3.5 w-3.5" />
-                    <span>
-                      {status === "paused" ? "เปิดรับงาน" : "พักรับงาน"}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      setIsEditOpen(true);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    <span>แก้ไขประกาศ</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      handleDelete();
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    <span>ลบโพสต์</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+            {showMenu && renderDropdownMenu()}
+          </div>
 
           {/* 1. LEFT SIDE: Image Viewer with Embla Carousel */}
           <div className="relative shrink-0 md:flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden h-[380px] sm:h-[480px] md:h-full md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
@@ -368,79 +442,20 @@ export default function ServiceDetailModal({
 
           {/* 2. RIGHT SIDE: Service Details & Actions Panel */}
           <div className="w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col bg-white border-t md:border-t-0 md:border-l border-gray-100 md:overflow-hidden">
-            {/* Top Bar with Expiry & Actions (Desktop only) */}
-            <div className="hidden md:flex items-center justify-end px-5 py-3 sticky top-0 bg-white/95 backdrop-blur-md z-10">
-              {/* Owner Options Menu */}
-              {isOwner && (
-                <div className="relative" ref={menuRef}>
-                  <button
-                    type="button"
-                    onClick={() => setShowMenu((prev) => !prev)}
-                    className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
-                    title="ตัวเลือกเพิ่มเติม"
-                  >
-                    <MoreHorizontal className="h-6 w-6" />
-                  </button>
+            {/* Top Bar with Dropdown Options (Desktop only) */}
+            <div className="hidden md:flex items-center justify-end px-5 py-2.5 border-b border-gray-100/70 sticky top-0 bg-white/95 backdrop-blur-md z-10">
+              <div className="relative" ref={desktopMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowMenu((prev) => !prev)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                  title="ตัวเลือกเพิ่มเติม"
+                >
+                  <MoreHorizontal className="h-4.5 w-4.5" />
+                </button>
 
-                  {showMenu && (
-                    <div className="absolute right-0 top-full mt-1 w-44 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-20 animate-in fade-in zoom-in-95 duration-100">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          handleRenew();
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                      >
-                        <RotateCw className="h-3.5 w-3.5" />
-                        <span>ต่ออายุอีก 30 วัน</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          handleToggleStatus();
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                      >
-                        <Power className="h-3.5 w-3.5" />
-                        <span>
-                          {status === "paused" ? "เปิดรับงาน" : "พักรับงาน"}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          setIsEditOpen(true);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                        <span>แก้ไขประกาศ</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(false);
-                          handleDelete();
-                        }}
-                        className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        <span>ลบโพสต์</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                {showMenu && renderDropdownMenu()}
+              </div>
             </div>
 
             {/* Scrollable Content Body (Hidden Scrollbar) */}

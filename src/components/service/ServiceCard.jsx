@@ -53,16 +53,29 @@ export default function ServiceCard({
     avatar: null,
   };
 
+  const serviceAuthorUsername =
+    service.author?.username ||
+    service.user?.username ||
+    author.username;
+
+  const serviceAuthorId =
+    service.userId ||
+    service.user_id ||
+    service.author?.id ||
+    service.user?.id ||
+    author.id;
+
   const isOwner =
     isOwnerProp !== undefined
       ? Boolean(isOwnerProp)
       : Boolean(
           (currentUser?.id &&
-            Number(currentUser.id) === Number(service.userId)) ||
+            serviceAuthorId &&
+            Number(currentUser.id) === Number(serviceAuthorId)) ||
           (currentUser?.username &&
-            author.username &&
+            serviceAuthorUsername &&
             currentUser.username.toLowerCase() ===
-              author.username.toLowerCase()),
+              serviceAuthorUsername.toLowerCase()),
         );
 
   const images =
