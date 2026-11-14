@@ -112,17 +112,18 @@ export function usePostQuery(id, options = {}) {
  */
 export function useCreatePostMutation(options = {}) {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
 
   return useMutation({
     mutationFn: postService.createPost,
     onSuccess: (data, variables, context) => {
       // Invalidate รายการโพสต์ทั้งหมดเพื่อให้ Feed อัปเดตทันที
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      if (options.onSuccess) {
-        options.onSuccess(data, variables, context);
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
       }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -131,16 +132,17 @@ export function useCreatePostMutation(options = {}) {
  */
 export function useDeletePostMutation(options = {}) {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
 
   return useMutation({
     mutationFn: postService.deletePost,
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      if (options.onSuccess) {
-        options.onSuccess(data, variables, context);
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
       }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -149,17 +151,18 @@ export function useDeletePostMutation(options = {}) {
  */
 export function useToggleLikeMutation(options = {}) {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
 
   return useMutation({
     mutationFn: postService.toggleLike,
     onSuccess: (data, variables, context) => {
       // Invalidate เพื่อให้สถานะ Like และตัวเลข Count ตรงกัน
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      if (options.onSuccess) {
-        options.onSuccess(data, variables, context);
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
       }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -180,20 +183,38 @@ export function useCommentsQuery(postId, options = {}) {
  */
 export function useAddCommentMutation(options = {}) {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
 
   return useMutation({
     mutationFn: ({ postId, content, attachPortfolio }) =>
       postService.addComment(postId, content, attachPortfolio),
     onSuccess: (data, variables, context) => {
+      // 1. เพิ่มความคิดเห็นใหม่ลงใน Cache ทันที (Instant UI update ไม่ต้อง Refresh หน้าเว็บ)
+      if (data?.comment) {
+        queryClient.setQueryData(postKeys.comments(variables.postId), (oldData) => {
+          if (!oldData || !Array.isArray(oldData.comments)) {
+            return { success: true, comments: [data.comment] };
+          }
+          const exists = oldData.comments.some((c) => c.id === data.comment.id);
+          if (exists) return oldData;
+          return {
+            ...oldData,
+            comments: [...oldData.comments, data.comment],
+          };
+        });
+      }
+
+      // 2. Invalidate comments และ posts เพื่อ sync ข้อมูลกับ server
       queryClient.invalidateQueries({
         queryKey: postKeys.comments(variables.postId),
       });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      if (options.onSuccess) {
-        options.onSuccess(data, variables, context);
+
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
       }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -202,19 +223,32 @@ export function useAddCommentMutation(options = {}) {
  */
 export function useDeleteCommentMutation(options = {}) {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
 
   return useMutation({
     mutationFn: ({ postId, commentId }) => postService.deleteComment(postId, commentId),
     onSuccess: (data, variables, context) => {
+      // ลบคอมเมนต์ออกจาก Cache ทันที
+      if (variables.commentId) {
+        queryClient.setQueryData(postKeys.comments(variables.postId), (oldData) => {
+          if (!oldData || !Array.isArray(oldData.comments)) return oldData;
+          return {
+            ...oldData,
+            comments: oldData.comments.filter((c) => c.id !== variables.commentId),
+          };
+        });
+      }
+
       queryClient.invalidateQueries({
         queryKey: postKeys.comments(variables.postId),
       });
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      if (options.onSuccess) {
-        options.onSuccess(data, variables, context);
+
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
       }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
@@ -223,17 +257,18 @@ export function useDeleteCommentMutation(options = {}) {
  */
 export function useSharePostMutation(options = {}) {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...restOptions } = options;
 
   return useMutation({
     mutationFn: ({ id, platform }) => postService.sharePost(id, { platform }),
     onSuccess: (data, variables, context) => {
       // อัปเดต cache รายการโพสต์และหน้ารายละเอียด
       queryClient.invalidateQueries({ queryKey: postKeys.all });
-      if (options.onSuccess) {
-        options.onSuccess(data, variables, context);
+      if (customOnSuccess) {
+        customOnSuccess(data, variables, context);
       }
     },
-    ...options,
+    ...restOptions,
   });
 }
 
