@@ -15,11 +15,13 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle2,
+  Layers,
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { uploadToR2, submitModerationAppeal } from "@/lib/upload";
 import { useSuggestedUsersQuery } from "@/services/user";
 import { useMeQuery } from "@/services/auth";
+import LinkServiceModal from "@/components/showcase/LinkServiceModal";
 
 export default function PostFormModal({
   isOpen = true,
@@ -43,6 +45,10 @@ export default function PostFormModal({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Link to service state
+  const [isLinkServiceOpen, setIsLinkServiceOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState(null);
 
   // Files currently in upload queue (for Skeleton loading cards)
   const [uploadingFiles, setUploadingFiles] = useState([]);
@@ -119,6 +125,7 @@ export default function PostFormModal({
   const resetForm = () => {
     setContent("");
     setImages([]);
+    setSelectedService(null);
     setUploadingFiles([]);
     setModerationAlert(null);
     setShowAppealForm(false);
@@ -172,6 +179,16 @@ export default function PostFormModal({
     } else if (initialPost) {
       setContent(initialPost.content || initialPost.caption || "");
       setImages(initialPost.images || initialPost.media_urls || []);
+      if (initialPost.service) {
+        setSelectedService(initialPost.service);
+      } else if (initialPost.serviceId || initialPost.service_id) {
+        setSelectedService({
+          id: initialPost.serviceId || initialPost.service_id,
+          title: initialPost.serviceTitle || initialPost.service_title || 'Linked service',
+        });
+      } else {
+        setSelectedService(null);
+      }
     }
   }, [isOpen, initialPost, isUpdateMode]);
 
@@ -426,7 +443,12 @@ export default function PostFormModal({
     if (onSubmit) {
       try {
         setIsSubmitting(true);
-        await onSubmit({ content, images });
+        await onSubmit({
+          content,
+          images,
+          serviceId: selectedService?.id || null,
+          serviceTitle: selectedService?.title || null,
+        });
         // เคลียร์ข้อมูลฟอร์มทั้งหมดหลังสร้างโพสต์สำเร็จ
         resetForm();
         if (onClose) onClose();
@@ -458,211 +480,265 @@ export default function PostFormModal({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative z-10 w-full max-w-[520px] max-h-[85vh] sm:max-h-[88vh] rounded-3xl bg-white shadow-2xl transition-all duration-200 border border-gray-100 flex flex-col overflow-hidden ${
+        className={`relative z-10 w-full max-w-[540px] max-h-[88vh] rounded-3xl bg-white shadow-2xl transition-all duration-200 border border-gray-100 flex flex-col overflow-hidden ${
           isDragging ? "ring-2 ring-blue-500 scale-[1.01]" : ""
         }`}
       >
-        {/* Header: @username > New post / Update post & Close button (Sticky Top) */}
-        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100 shrink-0 bg-white">
-          <div className="flex items-center gap-2">
-            <span className="rounded-md bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">
-              {usernameDisplay}
-            </span>
-            <span className="text-xs text-gray-400">
-              <ChevronRight className="h-3.5 w-3.5" />
-            </span>
-            <h3 className="text-sm font-semibold text-gray-800">
-              {isUpdateMode ? "Update post" : "New post"}
-            </h3>
-          </div>
+        {/* Header: Add post & Close button */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 shrink-0 bg-white">
+          <h2 className="text-xl font-bold text-gray-900 tracking-tight">
+            {isUpdateMode ? "Edit post" : "Add post"}
+          </h2>
 
           <button
             type="button"
             onClick={handleClose}
             aria-label="Close modal"
-            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors cursor-pointer"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Scrollable Modal Body (Textarea, Autocomplete, Images, Skeleton, Moderation Alerts) */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-3.5 [scrollbar-width:thin] scrollbar-thumb-gray-200">
-          {/* Text Input Area with Tag Suggestions */}
-          <div ref={containerRef} className="relative min-h-[64px]">
-          {/* Backdrop Layer: แสดงข้อความและไฮไลต์ #hashtag เป็นสีฟ้า */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 select-none whitespace-pre-wrap break-words font-sans text-base leading-relaxed text-gray-800"
-          >
-            {renderBackdropText()}
-          </div>
-
-          {/* Textarea Layer: โปร่งใสเพื่อพิมพ์และรับ event แต่ยังคงเห็นเคอร์เซอร์ */}
-          <textarea
-            ref={textareaRef}
-            rows={2}
-            value={content}
-            onChange={handleTextChange}
-            placeholder={!content ? "What have you been working on?" : ""}
-            className="relative z-10 w-full resize-none border-none bg-transparent p-0 font-sans text-base leading-relaxed text-transparent caret-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 whitespace-pre-wrap break-words"
-          />
-
-          {/* Autocomplete Dropdown สำหรับ #tag (Absolute ตรงตำแหน่ง #) */}
-          {suggestionType === "tag" && filteredTags.length > 0 && (
-            <div
-              style={{
-                left: `${popupPos.left}px`,
-                top: `${popupPos.top}px`,
-              }}
-              className="absolute z-30 w-52 rounded-2xl bg-white p-2 shadow-2xl border border-gray-100 transition-all duration-75"
-            >
-              {filteredTags.map((t) => (
-                <button
-                  key={t.name}
-                  type="button"
-                  onClick={() => handleSelectTag(t.name)}
-                  className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
-                >
-                  <span className="truncate">{t.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Autocomplete Dropdown สำหรับ @user (Absolute ตรงตำแหน่ง @) */}
-          {suggestionType === "user" && filteredUsers.length > 0 && (
-            <div
-              style={{
-                left: `${popupPos.left}px`,
-                top: `${popupPos.top}px`,
-              }}
-              className="absolute z-30 w-56 rounded-2xl bg-white p-2 shadow-2xl border border-gray-100 transition-all duration-75"
-            >
-              <div className="px-2.5 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                People
+        {/* Scrollable Modal Body */}
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
+          {/* 1. Media Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-bold text-gray-900">Media</h3>
+                <span className="text-xs text-gray-400 font-medium">
+                  {images.length + uploadingFiles.length} / 20
+                </span>
               </div>
-              {filteredUsers.map((u) => (
-                <button
-                  key={u.username}
-                  type="button"
-                  onClick={() => handleSelectUser(u)}
-                  className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-gray-50 transition-colors"
+
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 px-3.5 py-1.5 text-xs font-semibold text-gray-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <ImageIcon className="h-4 w-4" />
+                <span>Add media</span>
+              </button>
+            </div>
+
+            {/* Media Grid / Thumbnails */}
+            <div className="flex flex-wrap gap-3">
+              {/* Uploaded Images */}
+              {images.map((img, idx) => (
+                <div
+                  key={img.id}
+                  className="group relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-2xs animate-in fade-in duration-200"
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={u.avatar}
-                    alt={u.username}
-                    className="h-6 w-6 rounded-full object-cover shrink-0 border border-gray-100"
+                    src={img.url}
+                    alt={img.name}
+                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                   />
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-semibold text-gray-800 truncate leading-tight">
-                      {u.name}
-                    </span>
-                    <span className="text-[11px] text-blue-500 font-medium truncate leading-tight">
-                      @{u.username}
+
+                  {/* COVER badge on first image */}
+                  {idx === 0 && (
+                    <div className="absolute bottom-0 inset-x-0 bg-black/60 backdrop-blur-xs py-0.5 text-center">
+                      <span className="text-[10px] font-bold text-white tracking-wider uppercase">
+                        COVER
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Remove (✕) Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(img.id)}
+                    className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white shadow-xs hover:bg-black transition-all cursor-pointer"
+                  >
+                    <X className="h-3 w-3 stroke-[2.5]" />
+                  </button>
+                </div>
+              ))}
+
+              {/* Skeleton Cards for files being uploaded */}
+              {uploadingFiles.map((upload) => (
+                <div
+                  key={upload.tempId}
+                  className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-2xs animate-in fade-in duration-200"
+                >
+                  {upload.previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={upload.previewUrl}
+                      alt={upload.name}
+                      className="h-full w-full object-cover blur-[2px] opacity-60 scale-105"
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gray-200 animate-pulse" />
+                  )}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/30 backdrop-blur-[1px] p-1 text-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                    <span className="text-[10px] font-semibold text-white">
+                      {upload.progress > 0 && upload.progress < 100
+                        ? `${upload.progress}%`
+                        : "..."}
                     </span>
                   </div>
-                  {u.role && (
-                    <span className="ml-auto text-[10px] text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 shrink-0">
-                      {u.role}
-                    </span>
-                  )}
-                </button>
+                </div>
               ))}
+
+              {/* Add media square tile */}
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="flex h-28 w-28 shrink-0 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-transparent hover:bg-gray-50/50 transition-colors cursor-pointer text-gray-400 hover:text-gray-700 disabled:opacity-50"
+              >
+                <ImageIcon className="h-6 w-6 stroke-[1.5] mb-1.5" />
+                <span className="text-xs font-medium">Add media</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. Caption Textarea Area */}
+          <div>
+            <div ref={containerRef} className="relative min-h-[90px]">
+              {/* Backdrop Layer: แสดงข้อความและไฮไลต์ #hashtag เป็นสีฟ้า */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 select-none whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-800"
+              >
+                {renderBackdropText()}
+              </div>
+
+              {/* Textarea Layer */}
+              <textarea
+                ref={textareaRef}
+                rows={3}
+                value={content}
+                onChange={handleTextChange}
+                maxLength={2000}
+                placeholder={!content ? "Adding a caption for this post" : ""}
+                className="relative z-10 w-full resize-none border-none bg-transparent p-0 font-sans text-sm leading-relaxed text-transparent caret-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 whitespace-pre-wrap break-words"
+              />
+
+              {/* Autocomplete Dropdown สำหรับ #tag */}
+              {suggestionType === "tag" && filteredTags.length > 0 && (
+                <div
+                  style={{
+                    left: `${popupPos.left}px`,
+                    top: `${popupPos.top}px`,
+                  }}
+                  className="absolute z-30 w-52 rounded-2xl bg-white p-2 shadow-2xl border border-gray-100 transition-all duration-75"
+                >
+                  {filteredTags.map((t) => (
+                    <button
+                      key={t.name}
+                      type="button"
+                      onClick={() => handleSelectTag(t.name)}
+                      className="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-colors"
+                    >
+                      <span className="truncate">{t.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Autocomplete Dropdown สำหรับ @user */}
+              {suggestionType === "user" && filteredUsers.length > 0 && (
+                <div
+                  style={{
+                    left: `${popupPos.left}px`,
+                    top: `${popupPos.top}px`,
+                  }}
+                  className="absolute z-30 w-56 rounded-2xl bg-white p-2 shadow-2xl border border-gray-100 transition-all duration-75"
+                >
+                  <div className="px-2.5 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
+                    People
+                  </div>
+                  {filteredUsers.map((u) => (
+                    <button
+                      key={u.username}
+                      type="button"
+                      onClick={() => handleSelectUser(u)}
+                      className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={u.avatar}
+                        alt={u.username}
+                        className="h-6 w-6 rounded-full object-cover shrink-0 border border-gray-100"
+                      />
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-semibold text-gray-800 truncate leading-tight">
+                          {u.name}
+                        </span>
+                        <span className="text-[11px] text-blue-500 font-medium truncate leading-tight">
+                          @{u.username}
+                        </span>
+                      </div>
+                      {u.role && (
+                        <span className="ml-auto text-[10px] text-gray-400 bg-gray-100 rounded px-1.5 py-0.5 shrink-0">
+                          {u.role}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Character counter (0/2,000) */}
+            <div className="flex justify-end pt-1">
+              <span className="text-xs font-medium text-gray-400">
+                {content.length}/2,000
+              </span>
+            </div>
+          </div>
+
+          {/* 3. Link to service Button Row */}
+          <div className="pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => setIsLinkServiceOpen(true)}
+              className="flex w-full items-center justify-between py-2.5 px-1 hover:bg-gray-50/80 rounded-xl transition-colors cursor-pointer group"
+            >
+              <div className="flex items-center gap-2.5 text-gray-800">
+                <Layers className="h-5 w-5 text-gray-600 stroke-[1.75]" />
+                <span className="text-sm font-medium text-gray-900">
+                  Link to service
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-400 group-hover:text-gray-700 transition-colors">
+                {selectedService ? (
+                  <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg max-w-[200px] truncate">
+                    {selectedService.title}
+                  </span>
+                ) : null}
+                <ChevronRight className="h-4 w-4" />
+              </div>
+            </button>
+          </div>
+
+          {/* Drag Overlay State */}
+          {isDragging && (
+            <div className="my-2 flex items-center justify-center rounded-2xl border-2 border-dashed border-blue-400 bg-blue-50/50 py-6">
+              <div className="relative flex flex-col items-center">
+                <div className="flex h-12 w-10 items-center justify-center rounded-lg bg-gray-200 text-xs font-bold text-gray-600 shadow-xs">
+                  PNG
+                </div>
+                <span className="mt-2 text-xs font-medium text-blue-600">
+                  Drop files here
+                </span>
+              </div>
             </div>
           )}
-        </div>
-
-        {/* Drag Overlay State (เมื่อลากไฟล์มาวาง) */}
-        {isDragging && (
-          <div className="my-3 flex items-center justify-center rounded-2xl border-2 border-dashed border-blue-400 bg-blue-50/50 py-8">
-            <div className="relative flex flex-col items-center">
-              <div className="flex h-14 w-12 items-center justify-center rounded-lg bg-gray-200 text-xs font-bold text-gray-600 shadow-sm">
-                PNG
-              </div>
-              <span className="absolute -right-2 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                +
-              </span>
-              <span className="mt-2 text-xs font-medium text-blue-600">
-                Drop files here
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Image Previews & Skeleton Loading Grid */}
-        {!isDragging && (images.length > 0 || uploadingFiles.length > 0) && (
-          <div className="mt-3 flex gap-3 overflow-x-auto pb-1 select-none">
-            {/* 1. รูปภาพที่อัปโหลดเสร็จแล้ว */}
-            {images.map((img) => (
-              <div
-                key={img.id}
-                className="group relative h-28 w-44 shrink-0 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 shadow-xs animate-in fade-in duration-200"
-              >
-                {/* Image */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.url}
-                  alt={img.name}
-                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                />
-
-                {/* Remove (✕) Button */}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(img.id)}
-                  className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-sm backdrop-blur-xs hover:bg-white hover:text-black transition-all cursor-pointer"
-                >
-                  <X className="h-3 w-3 stroke-[2.5]" />
-                </button>
-              </div>
-            ))}
-
-            {/* 2. Skeleton Loading Cards สำหรับภาพที่กำลังอัปโหลด */}
-            {uploadingFiles.map((upload) => (
-              <div
-                key={upload.tempId}
-                className="relative h-28 w-44 shrink-0 overflow-hidden rounded-2xl border border-gray-200/90 bg-gray-100 shadow-xs animate-in fade-in duration-200"
-              >
-                {/* Local Preview แบบ Blur บางๆ เพื่อให้ User เห็นรูปทันที */}
-                {upload.previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={upload.previewUrl}
-                    alt={upload.name}
-                    className="h-full w-full object-cover blur-[2px] opacity-60 scale-105"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-gray-200 animate-pulse" />
-                )}
-
-                {/* Shimmer Pulse */}
-                <div className="absolute inset-0 bg-white/10 animate-pulse pointer-events-none" />
-
-                {/* Center Loading Status */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/30 backdrop-blur-[1px] p-2 text-center">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-gray-900 shadow-sm">
-                    <Loader2 className="h-4 w-4 animate-spin text-gray-800" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-white drop-shadow-sm">
-                    {upload.progress > 0 && upload.progress < 100
-                      ? `กำลังอัปโหลด ${upload.progress}%`
-                      : "กำลังตรวจสอบ..."}
-                  </span>
-                </div>
-
-                {/* Bottom Progress Bar */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-150"
-                    style={{ width: `${Math.min(100, Math.max(8, upload.progress))}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Moderation Alert Banner (การแจ้งเตือนความปลอดภัยของภาพที่เข้าใจง่ายและสุภาพ) */}
         {moderationAlert && (
@@ -884,6 +960,16 @@ export default function PostFormModal({
           </button>
         </div>
       </div>
+
+      {/* Link to Service Modal */}
+      {isLinkServiceOpen && (
+        <LinkServiceModal
+          isOpen={isLinkServiceOpen}
+          onClose={() => setIsLinkServiceOpen(false)}
+          selectedServiceId={selectedService?.id || null}
+          onSelectService={(srv) => setSelectedService(srv)}
+        />
+      )}
     </div>
   );
 }

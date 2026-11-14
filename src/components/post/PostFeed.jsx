@@ -73,6 +73,8 @@ export default function PostFeed() {
       await createPostMutation.mutateAsync({
         content: data.content,
         images: imageList,
+        serviceId: data.serviceId || null,
+        serviceTitle: data.serviceTitle || null,
       });
 
       setIsModalOpen(false);

@@ -80,6 +80,8 @@ function UserProfileContent() {
       await createPostMutation.mutateAsync({
         content: data.content,
         images: imageList,
+        serviceId: data.serviceId || null,
+        serviceTitle: data.serviceTitle || null,
       });
       setIsPostModalOpen(false);
     } catch (err) {
