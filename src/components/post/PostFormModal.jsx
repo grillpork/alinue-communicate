@@ -37,8 +37,8 @@ export default function PostFormModal({
   const usernameDisplay = currentUser?.username
     ? `@${currentUser.username}`
     : initialPost?.author?.username
-    ? `@${initialPost.author.username}`
-    : "Post";
+      ? `@${initialPost.author.username}`
+      : "Post";
 
   const isUpdateMode = isEdit || mode === "update";
   const [content, setContent] = useState("");
@@ -185,7 +185,10 @@ export default function PostFormModal({
       } else if (initialPost.serviceId || initialPost.service_id) {
         setSelectedService({
           id: initialPost.serviceId || initialPost.service_id,
-          title: initialPost.serviceTitle || initialPost.service_title || 'Linked service',
+          title:
+            initialPost.serviceTitle ||
+            initialPost.service_title ||
+            "Linked service",
         });
       } else {
         setSelectedService(null);
@@ -283,8 +286,8 @@ export default function PostFormModal({
               prev.map((u) =>
                 u.tempId === item.tempId
                   ? { ...u, progress: Math.max(5, percent) }
-                  : u
-              )
+                  : u,
+              ),
             );
           },
         });
@@ -310,7 +313,10 @@ export default function PostFormModal({
               `ระบบระงับการอัปโหลดชั่วคราวเป็นเวลา ${err.remainingMinutes || 15} นาที เนื่องจากตรวจพบภาพที่ไม่สอดคล้องกับมาตรฐานชุมชนซ้ำหลายครั้ง เพื่อความปลอดภัยของทุกคนครับ`,
             reasons: err.reasons || [],
           });
-        } else if (err.isModerationViolation || (err.reasons && err.reasons.length > 0)) {
+        } else if (
+          err.isModerationViolation ||
+          (err.reasons && err.reasons.length > 0)
+        ) {
           setModerationAlert({
             type: "moderation",
             title: "ขออภัย ไม่สามารถใช้รูปภาพนี้ได้",
@@ -328,14 +334,15 @@ export default function PostFormModal({
             type: "error",
             title: "ไม่สามารถอัปโหลดรูปภาพได้",
             message:
-              err.message || "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ กรุณาลองใหม่อีกครั้งครับ",
+              err.message ||
+              "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ กรุณาลองใหม่อีกครั้งครับ",
             reasons: [],
           });
         }
       } finally {
         // ลบ Skeleton Card ของไฟล์นี้ออก และคืน Memory ของ Object URL
         setUploadingFiles((prev) =>
-          prev.filter((u) => u.tempId !== item.tempId)
+          prev.filter((u) => u.tempId !== item.tempId),
         );
         URL.revokeObjectURL(item.previewUrl);
       }
@@ -358,7 +365,10 @@ export default function PostFormModal({
       setShowAppealForm(false);
     } catch (appealErr) {
       console.error("Appeal error:", appealErr);
-      alert(appealErr.message || "ไม่สามารถส่งคำร้องอุทธรณ์ได้ กรุณาลองใหม่อีกครั้ง");
+      alert(
+        appealErr.message ||
+          "ไม่สามารถส่งคำร้องอุทธรณ์ได้ กรุณาลองใหม่อีกครั้ง",
+      );
     } finally {
       setIsAppealing(false);
     }
@@ -458,7 +468,8 @@ export default function PostFormModal({
         setModerationAlert({
           type: "error",
           title: "ไม่สามารถโพสต์ได้",
-          message: err.message || "เกิดข้อผิดพลาดในการสร้างโพสต์ กรุณาลองใหม่อีกครั้ง",
+          message:
+            err.message || "เกิดข้อผิดพลาดในการสร้างโพสต์ กรุณาลองใหม่อีกครั้ง",
         });
       } finally {
         setIsSubmitting(false);
@@ -481,7 +492,7 @@ export default function PostFormModal({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative z-10 w-full max-w-[540px] max-h-[88vh] rounded-3xl bg-white shadow-2xl transition-all duration-200 border border-gray-100 flex flex-col overflow-hidden ${
+        className={`relative z-10 w-full max-w-[540px] max-h-[88vh] rounded-3xl bg-white shadow-2xl transition-all duration-200 flex flex-col overflow-hidden ${
           isDragging ? "ring-2 ring-blue-500 scale-[1.01]" : ""
         }`}
       >
@@ -510,11 +521,11 @@ export default function PostFormModal({
         </div>
 
         {/* Scrollable Modal Body */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden px-6 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden px-0 py-5 [scrollbar-width:thin] scrollbar-thumb-gray-200 space-y-5">
           {/* Previews when images are added */}
           {(images.length > 0 || uploadingFiles.length > 0) && (
             <div>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 px-2">
                 <span className="text-xs text-gray-400 font-medium">
                   {images.length + uploadingFiles.length} / 20
                 </span>
@@ -621,12 +632,12 @@ export default function PostFormModal({
           )}
 
           {/* 2. Caption Textarea Area */}
-          <div>
+          <div className=" px-2.5">
             <div ref={containerRef} className="relative min-h-[90px]">
               {/* Backdrop Layer: แสดงข้อความและไฮไลต์ #hashtag เป็นสีฟ้า */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 select-none whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-gray-800"
+                className="pointer-events-none absolute inset-0 select-none whitespace-pre-wrap break-words font-sans text-base leading-relaxed text-gray-800"
               >
                 {renderBackdropText()}
               </div>
@@ -639,7 +650,7 @@ export default function PostFormModal({
                 onChange={handleTextChange}
                 maxLength={2000}
                 placeholder={!content ? "Adding a caption for this post" : ""}
-                className="relative z-10 w-full resize-none border-none bg-transparent p-0 font-sans text-sm leading-relaxed text-transparent caret-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 whitespace-pre-wrap break-words"
+                className="relative z-10 w-full resize-none border-none bg-transparent p-0 font-sans text-base leading-relaxed text-transparent caret-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 whitespace-pre-wrap break-words"
               />
 
               {/* Autocomplete Dropdown สำหรับ #tag */}
@@ -721,7 +732,7 @@ export default function PostFormModal({
             <button
               type="button"
               onClick={() => setIsLinkServiceOpen(true)}
-              className="flex w-full items-center justify-between py-2.5 px-1 hover:bg-gray-50/80 rounded-xl transition-colors cursor-pointer group"
+              className="flex w-full items-center justify-between py-2 px-1 hover:bg-gray-50/80 rounded-xl transition-colors cursor-pointer group"
             >
               <div className="flex items-center gap-2.5 text-gray-800">
                 <Layers className="h-5 w-5 text-gray-600 stroke-[1.75]" />
@@ -731,9 +742,22 @@ export default function PostFormModal({
               </div>
               <div className="flex items-center gap-2 text-gray-400 group-hover:text-gray-700 transition-colors">
                 {selectedService ? (
-                  <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg max-w-[200px] truncate">
-                    {selectedService.title}
-                  </span>
+                  <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200/80 shadow-2xs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        selectedService.coverUrl ||
+                        (Array.isArray(selectedService.images) && selectedService.images[0]) ||
+                        selectedService.cover_url ||
+                        '/empty/no-image.png'
+                      }
+                      alt={selectedService.title || 'Linked service'}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/empty/no-image.png';
+                      }}
+                    />
+                  </div>
                 ) : null}
                 <ChevronRight className="h-4 w-4" />
               </div>
@@ -754,123 +778,130 @@ export default function PostFormModal({
             </div>
           )}
 
-        {/* Moderation Alert Banner (การแจ้งเตือนความปลอดภัยของภาพที่เข้าใจง่ายและสุภาพ) */}
-        {moderationAlert && (
-          <div className="mt-3 rounded-2xl border border-rose-200/90 bg-rose-50/80 p-3.5 text-xs shadow-xs transition-all animate-in fade-in duration-200">
-            <div className="flex items-start justify-between gap-2.5">
-              <div className="flex items-start gap-2.5">
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-                  {moderationAlert.type === "timeout" ? (
-                    <Clock className="h-4 w-4" />
-                  ) : (
-                    <ShieldAlert className="h-4 w-4" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-sm text-rose-900">
-                    {moderationAlert.title}
-                  </h4>
-                  <p className="mt-1 text-rose-700/90 leading-relaxed text-xs">
-                    {moderationAlert.message}
-                  </p>
+          {/* Moderation Alert Banner (การแจ้งเตือนความปลอดภัยของภาพที่เข้าใจง่ายและสุภาพ) */}
+          {moderationAlert && (
+            <div className="mt-3 rounded-2xl border border-rose-200/90 bg-rose-50/80 p-3.5 text-xs shadow-xs transition-all animate-in fade-in duration-200">
+              <div className="flex items-start justify-between gap-2.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+                    {moderationAlert.type === "timeout" ? (
+                      <Clock className="h-4 w-4" />
+                    ) : (
+                      <ShieldAlert className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-sm text-rose-900">
+                      {moderationAlert.title}
+                    </h4>
+                    <p className="mt-1 text-rose-700/90 leading-relaxed text-xs">
+                      {moderationAlert.message}
+                    </p>
 
-                  {/* Badges เหตุผลที่ตรวจพบ */}
-                  {moderationAlert.reasons && moderationAlert.reasons.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      {moderationAlert.reasons.map((r, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center rounded-lg bg-white/80 px-2 py-0.5 font-medium text-[11px] text-rose-800 border border-rose-200/80 shadow-2xs"
-                        >
-                          {r}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Appeal / Change Image Actions */}
-                  {moderationAlert.type !== "timeout" && (
-                    <div className="mt-3 pt-2.5 border-t border-rose-200/60">
-                      {!appealSuccess ? (
-                        <>
-                          {!showAppealForm ? (
-                            <div className="flex flex-wrap items-center gap-2.5 text-xs">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (fileInputRef.current) {
-                                    fileInputRef.current.click();
-                                  }
-                                }}
-                                className="font-semibold text-rose-900 underline underline-offset-2 hover:text-rose-950 cursor-pointer transition-colors"
-                              >
-                                เลือกรูปภาพอื่น
-                              </button>
-                              <span className="text-rose-300">•</span>
-                              <button
-                                type="button"
-                                onClick={() => setShowAppealForm(true)}
-                                className="text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
-                              >
-                                คิดว่าเป็นข้อผิดพลาด? ยื่นให้แอดมินตรวจสอบ
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="mt-1 space-y-2">
-                              <p className="text-[11px] text-rose-800">
-                                ระบุเหตุผลเพื่อให้เจ้าหน้าที่ตรวจสอบ (เช่น ภาพวาดศิลปะ/งานดีไซน์):
-                              </p>
-                              <div className="flex gap-2">
-                                <input
-                                  type="text"
-                                  value={appealReason}
-                                  onChange={(e) => setAppealReason(e.target.value)}
-                                  placeholder="ระบุเหตุผล เช่น เป็นภาพวาดศิลปะ ไม่ได้มีเจตนาอนาจาร"
-                                  className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none shadow-2xs"
-                                />
-                                <button
-                                  type="button"
-                                  disabled={!appealReason.trim() || isAppealing}
-                                  onClick={handleSendAppeal}
-                                  className="rounded-xl bg-rose-600 px-3.5 py-1.5 font-semibold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer transition-all flex items-center gap-1 text-xs shrink-0"
-                                >
-                                  {isAppealing ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  ) : (
-                                    "ส่งคำร้อง"
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          ส่งคำร้องให้เจ้าหน้าที่ตรวจสอบเรียบร้อยแล้ว แอดมินจะพิจารณาให้โดยเร็วครับ
+                    {/* Badges เหตุผลที่ตรวจพบ */}
+                    {moderationAlert.reasons &&
+                      moderationAlert.reasons.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {moderationAlert.reasons.map((r, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-lg bg-white/80 px-2 py-0.5 font-medium text-[11px] text-rose-800 border border-rose-200/80 shadow-2xs"
+                            >
+                              {r}
+                            </span>
+                          ))}
                         </div>
                       )}
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* ปุ่มปิดคำเตือน */}
-              <button
-                type="button"
-                onClick={() => {
-                  setModerationAlert(null);
-                  setShowAppealForm(false);
-                  setAppealSuccess(false);
-                }}
-                className="rounded-lg p-1 text-rose-400 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
-                title="ปิดการแจ้งเตือน"
-              >
-                <X className="h-4 w-4" />
-              </button>
+                    {/* Appeal / Change Image Actions */}
+                    {moderationAlert.type !== "timeout" && (
+                      <div className="mt-3 pt-2.5 border-t border-rose-200/60">
+                        {!appealSuccess ? (
+                          <>
+                            {!showAppealForm ? (
+                              <div className="flex flex-wrap items-center gap-2.5 text-xs">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (fileInputRef.current) {
+                                      fileInputRef.current.click();
+                                    }
+                                  }}
+                                  className="font-semibold text-rose-900 underline underline-offset-2 hover:text-rose-950 cursor-pointer transition-colors"
+                                >
+                                  เลือกรูปภาพอื่น
+                                </button>
+                                <span className="text-rose-300">•</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowAppealForm(true)}
+                                  className="text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+                                >
+                                  คิดว่าเป็นข้อผิดพลาด? ยื่นให้แอดมินตรวจสอบ
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="mt-1 space-y-2">
+                                <p className="text-[11px] text-rose-800">
+                                  ระบุเหตุผลเพื่อให้เจ้าหน้าที่ตรวจสอบ (เช่น
+                                  ภาพวาดศิลปะ/งานดีไซน์):
+                                </p>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="text"
+                                    value={appealReason}
+                                    onChange={(e) =>
+                                      setAppealReason(e.target.value)
+                                    }
+                                    placeholder="ระบุเหตุผล เช่น เป็นภาพวาดศิลปะ ไม่ได้มีเจตนาอนาจาร"
+                                    className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none shadow-2xs"
+                                  />
+                                  <button
+                                    type="button"
+                                    disabled={
+                                      !appealReason.trim() || isAppealing
+                                    }
+                                    onClick={handleSendAppeal}
+                                    className="rounded-xl bg-rose-600 px-3.5 py-1.5 font-semibold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer transition-all flex items-center gap-1 text-xs shrink-0"
+                                  >
+                                    {isAppealing ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      "ส่งคำร้อง"
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            ส่งคำร้องให้เจ้าหน้าที่ตรวจสอบเรียบร้อยแล้ว
+                            แอดมินจะพิจารณาให้โดยเร็วครับ
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ปุ่มปิดคำเตือน */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModerationAlert(null);
+                    setShowAppealForm(false);
+                    setAppealSuccess(false);
+                  }}
+                  className="rounded-lg p-1 text-rose-400 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                  title="ปิดการแจ้งเตือน"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
         </div>
 
         {/* Hidden File Input for Image Upload (เฉพาะรูปภาพ JPG, PNG, WebP) */}
@@ -892,7 +923,8 @@ export default function PostFormModal({
               disabled={isUploading}
               onClick={() => {
                 if (fileInputRef.current) {
-                  fileInputRef.current.accept = "image/png,image/jpeg,image/webp,image/avif";
+                  fileInputRef.current.accept =
+                    "image/png,image/jpeg,image/webp,image/avif";
                   fileInputRef.current.click();
                 }
               }}

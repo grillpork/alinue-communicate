@@ -376,9 +376,22 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               </div>
               <div className="flex items-center gap-2 text-gray-400 group-hover:text-gray-700 transition-colors">
                 {selectedService ? (
-                  <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-lg max-w-[200px] truncate">
-                    {selectedService.title}
-                  </span>
+                  <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-lg bg-gray-100 border border-gray-200/80 shadow-2xs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={
+                        selectedService.coverUrl ||
+                        (Array.isArray(selectedService.images) && selectedService.images[0]) ||
+                        selectedService.cover_url ||
+                        '/empty/no-image.png'
+                      }
+                      alt={selectedService.title || 'Linked service'}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = '/empty/no-image.png';
+                      }}
+                    />
+                  </div>
                 ) : null}
                 <ChevronRight className="h-4 w-4" />
               </div>
