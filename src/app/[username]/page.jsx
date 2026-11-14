@@ -12,12 +12,16 @@ import {
   Briefcase,
   Plus,
   Bookmark,
+  Sparkles,
 } from 'lucide-react';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import PostCard from '@/components/post/PostCard';
 import ShowcaseCard from '@/components/showcase/ShowcaseCard';
 import ShowcaseModal from '@/components/showcase/ShowcaseModal';
 import CreateShowcaseModal from '@/components/showcase/CreateShowcaseModal';
+import ServiceCard from '@/components/service/ServiceCard';
+import ServiceDetailModal from '@/components/service/ServiceDetailModal';
+import CreateServiceModal from '@/components/service/CreateServiceModal';
 import { useMeQuery } from '@/services/auth';
 import {
   useUserProfileQuery,
@@ -26,14 +30,17 @@ import {
   useUpdateProfileMutation,
 } from '@/services/user';
 import { useShowcasesQuery } from '@/services/showcase';
+import { useServicesQuery } from '@/services/service';
 import { useBookmarks } from '@/services/bookmark';
 
 function UserProfileContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const showcaseParamId = searchParams?.get('showcase');
+  const serviceParamId = searchParams?.get('service');
   const tabParam = searchParams?.get('tab');
   const [urlSelectedShowcase, setUrlSelectedShowcase] = useState(null);
+  const [urlSelectedService, setUrlSelectedService] = useState(null);
 
   const rawUsername = params?.username;
   const username =
@@ -45,11 +52,12 @@ function UserProfileContent() {
   const { bookmarks: bookmarkedPosts } = useBookmarks();
 
   useEffect(() => {
-    if (tabParam && ['showcases', 'posts', 'likes', 'bookmarks'].includes(tabParam)) {
+    if (tabParam && ['showcases', 'services', 'posts', 'likes', 'bookmarks'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
   const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
 
   // 1. ดึงข้อมูลผู้ใช้ปัจจุบันที่ Login อยู่
   const { data: meData } = useMeQuery();
@@ -104,6 +112,23 @@ function UserProfileContent() {
       }
     }
   }, [showcaseParamId, showcases]);
+
+  // 6. ดึงบริการ/โพสต์รับงาน Service ของผู้ใช้นี้
+  const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
+    { username, status: isSelf ? 'all' : 'active' },
+    { enabled: Boolean(username) }
+  );
+  const services = servicesData?.services || [];
+
+  // ตรวจสอบว่ามี ?service=:id ใน URL หรือไม่ เพื่อเปิด Modal ทันที
+  useEffect(() => {
+    if (serviceParamId && services.length > 0) {
+      const found = services.find((s) => String(s.id) === String(serviceParamId));
+      if (found) {
+        setUrlSelectedService(found);
+      }
+    }
+  }, [serviceParamId, services]);
 
   const filteredShowcases = showcases || [];
 
@@ -184,6 +209,12 @@ function UserProfileContent() {
         <div className="flex">
           {[
             { id: 'showcases', label: 'Showcase', icon: Briefcase, count: showcases.length },
+            {
+              id: 'services',
+              label: 'Services',
+              icon: Sparkles,
+              count: services.length > 0 ? services.length : (isSelf ? 0 : undefined),
+            },
             { id: 'posts', label: 'Posts', icon: Grid, count: posts.length },
             { id: 'likes', label: 'Likes', icon: Heart, count: likedPosts.length > 0 ? likedPosts.length : undefined },
             {
@@ -269,6 +300,74 @@ function UserProfileContent() {
                   >
                     <Plus className="h-3.5 w-3.5" />
                     <span>เพิ่มผลงานชิ้นแรก</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Services */}
+        {activeTab === 'services' && (
+          <div>
+            {isSelf && (
+              <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-gray-900">
+                    บริการและประกาศรับงาน (Services)
+                  </h3>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    โพสต์รับงานมีอายุ 30 วัน (1 เดือน) และสามารถต่ออายุได้ตลอดเวลา
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsServiceModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-black px-3.5 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>โพสต์รับงาน</span>
+                </button>
+              </div>
+            )}
+
+            {isServicesLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                <p className="text-xs">กำลังโหลดรายการบริการรับงาน...</p>
+              </div>
+            ) : services.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-4">
+                {services.map((srv) => (
+                  <ServiceCard
+                    key={srv.id}
+                    service={srv}
+                    currentUserId={currentUser?.id}
+                    isOwner={isSelf}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-2 p-6">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
+                  <Sparkles className="h-6 w-6" />
+                </div>
+                <p className="text-xs font-semibold text-gray-700">
+                  ยังไม่มีบริการหรือประกาศรับงาน
+                </p>
+                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
+                  {isSelf
+                    ? 'เปิดรับงาน คอมมิชชัน หรือบริการสร้างสรรค์ผลงานของคุณ พร้อมตัวอย่างงานและราคาเริ่มต้น'
+                    : `@${username} ยังไม่ได้เปิดรับงานในขณะนี้`}
+                </p>
+                {isSelf && (
+                  <button
+                    type="button"
+                    onClick={() => setIsServiceModalOpen(true)}
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>สร้างโพสต์รับงานชิ้นแรก</span>
                   </button>
                 )}
               </div>
@@ -388,6 +487,28 @@ function UserProfileContent() {
             (currentUser &&
               (Number(currentUser.id) === Number(urlSelectedShowcase?.userId || urlSelectedShowcase?.author?.id) ||
                 currentUser.username?.toLowerCase() === urlSelectedShowcase?.author?.username?.toLowerCase()))
+          }
+        />
+      )}
+
+      {/* 6. Create Service Modal */}
+      <CreateServiceModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+      />
+
+      {/* 7. URL Service Modal (เมื่อมี ?service=:id) */}
+      {urlSelectedService && (
+        <ServiceDetailModal
+          service={urlSelectedService}
+          isOpen={Boolean(urlSelectedService)}
+          onClose={() => setUrlSelectedService(null)}
+          currentUserId={currentUser?.id}
+          isOwner={
+            isSelf ||
+            (currentUser &&
+              (Number(currentUser.id) === Number(urlSelectedService?.userId || urlSelectedService?.author?.id) ||
+                currentUser.username?.toLowerCase() === urlSelectedService?.author?.username?.toLowerCase()))
           }
         />
       )}

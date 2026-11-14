@@ -17,9 +17,12 @@ import {
   Loader2,
   ChevronRight,
   TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 import { useSearchUsersQuery } from '@/services/user';
 import { usePostsQuery } from '@/services/post';
+import { useServicesQuery } from '@/services/service';
+import ServiceCard from '@/components/service/ServiceCard';
 import { formatRelativeTime } from '@/lib/date';
 import PostDetailModal from '@/components/post/PostDetailModal';
 import UserAvatar from '@/components/common/UserAvatar';
@@ -118,6 +121,12 @@ export default function SearchPage() {
     { enabled: Boolean(cleanQ) }
   );
   const matchedPosts = postsData?.posts || [];
+
+  const { data: servicesData, isLoading: isLoadingServices } = useServicesQuery(
+    { search: cleanQ },
+    { enabled: Boolean(cleanQ) }
+  );
+  const matchedServices = servicesData?.services || [];
 
   // Submit search
   const handleSearchSubmit = (term) => {
@@ -310,6 +319,17 @@ export default function SearchPage() {
               </button>
               <button
                 type="button"
+                onClick={() => setActiveTab('services')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'services'
+                    ? 'bg-black text-white shadow-2xs'
+                    : 'text-gray-500 hover:text-black bg-gray-50'
+                }`}
+              >
+                Services ({matchedServices.length})
+              </button>
+              <button
+                type="button"
                 onClick={() => setActiveTab('users')}
                 className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'users'
@@ -338,7 +358,7 @@ export default function SearchPage() {
           </div>
 
           {/* Loading Indicator */}
-          {(isLoadingUsers || isLoadingPosts) && (
+          {(isLoadingUsers || isLoadingPosts || isLoadingServices) && (
             <div className="py-16 flex flex-col items-center justify-center text-gray-400 gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               <p className="text-xs">กำลังค้นหา...</p>
@@ -346,9 +366,25 @@ export default function SearchPage() {
           )}
 
           {/* Results List */}
-          {!isLoadingUsers && !isLoadingPosts && (
+          {!isLoadingUsers && !isLoadingPosts && !isLoadingServices && (
             <>
-              {/* Case 1: Designers / Users Section */}
+              {/* Case 1: Services Section */}
+              {(activeTab === 'all' || activeTab === 'services') && matchedServices.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1.5 px-1 text-xs font-bold text-gray-900">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    <span>บริการรับงาน / Commissions ({matchedServices.length})</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {matchedServices.map((srv) => (
+                      <ServiceCard key={srv.id} service={srv} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Case 2: Designers / Users Section */}
               {(activeTab === 'all' || activeTab === 'users') && matchedUsers.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5 px-1 text-xs font-bold text-gray-900">
@@ -472,8 +508,8 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* Case 3: Empty State (No users and no posts) */}
-              {matchedUsers.length === 0 && matchedPosts.length === 0 && (
+              {/* Case 4: Empty State */}
+              {matchedUsers.length === 0 && matchedPosts.length === 0 && matchedServices.length === 0 && (
                 <div className="py-20 text-center">
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-gray-50 text-gray-300 mb-3 ring-1 ring-gray-100">
                     <Search className="h-7 w-7" />

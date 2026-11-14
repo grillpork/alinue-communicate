@@ -14,6 +14,7 @@ import {
   LogOut,
   MoreHorizontal,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { useMeQuery, useSignOutMutation } from '@/services/auth';
 import { useUnreadNotificationCountQuery } from '@/services/notification';
@@ -70,6 +71,13 @@ export default function Sidebar() {
       active: pathname === '/notifications',
     },
     {
+      label: 'Services',
+      href: user?.username ? `/${user.username}?tab=services` : '/search',
+      icon: Sparkles,
+      badge: null,
+      active: Boolean(user?.username && pathname === `/${user.username}` && currentTab === 'services'),
+    },
+    {
       label: 'Bookmarks',
       href: user?.username ? `/${user.username}?tab=bookmarks` : '/sign-in',
       icon: Bookmark,
@@ -80,7 +88,12 @@ export default function Sidebar() {
       label: 'Profile',
       href: user?.username ? `/${user.username}` : '/sign-in',
       icon: User,
-      active: Boolean(user?.username && pathname === `/${user.username}` && currentTab !== 'bookmarks'),
+      active: Boolean(
+        user?.username &&
+          pathname === `/${user.username}` &&
+          currentTab !== 'bookmarks' &&
+          currentTab !== 'services'
+      ),
     },
     {
       label: 'Settings',
