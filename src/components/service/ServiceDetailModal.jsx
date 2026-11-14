@@ -20,6 +20,7 @@ import {
   Copy,
   ExternalLink,
   MoreHorizontal,
+  Globe,
 } from 'lucide-react';
 import {
   useToggleServiceLikeMutation,
@@ -28,6 +29,8 @@ import {
   useToggleServiceStatusMutation,
 } from '@/services/service';
 import { useMeQuery } from '@/services/auth';
+import { useUserProfileQuery } from '@/services/user';
+import { getPlatformInfo, formatPlatformUrl } from '@/components/profile/SocialLinksModal';
 import useBodyScrollLock from '@/hooks/useBodyScrollLock';
 import useEmblaCarousel from 'embla-carousel-react';
 import EditServiceModal from './EditServiceModal';
@@ -57,6 +60,11 @@ export default function ServiceDetailModal({
   const deleteMutation = useDeleteServiceMutation();
   const renewMutation = useRenewServiceMutation();
   const toggleStatusMutation = useToggleServiceStatusMutation();
+
+  const authorUsername = service?.author?.username;
+  const { data: userProfileData } = useUserProfileQuery(authorUsername, {
+    enabled: Boolean(isOpen && authorUsername),
+  });
 
   useEffect(() => {
     setActiveImageIdx(0);
@@ -96,12 +104,37 @@ export default function ServiceDetailModal({
 
   if (!isOpen || !service) return null;
 
-  const author = service.author || {
+  const authorProfile = userProfileData?.profile;
+
+  const author = {
     id: service.userId,
-    name: 'Creator',
-    username: 'user',
-    avatar: null,
+    name: authorProfile?.name || service.author?.name || 'Creator',
+    username: authorProfile?.username || service.author?.username || 'user',
+    avatar: authorProfile?.avatar || service.author?.avatar || null,
+    socialLinks: authorProfile?.socialLinks || service.author?.socialLinks || {},
+    website: authorProfile?.website || service.author?.website || null,
   };
+
+  // รวบรวมลิงก์ของครีเอเตอร์ (Social Links & Website)
+  const mergedLinks = {
+    ...(author.socialLinks || {}),
+  };
+  if (!mergedLinks.website && author.website) {
+    mergedLinks.website = author.website;
+  }
+  if (!mergedLinks.twitter && service.author?.twitter) {
+    mergedLinks.twitter = service.author.twitter;
+  }
+  if (!mergedLinks.discord && service.author?.discord) {
+    mergedLinks.discord = service.author.discord;
+  }
+  if (!mergedLinks.artstation && service.author?.artstation) {
+    mergedLinks.artstation = service.author.artstation;
+  }
+
+  const effectiveLinksList = Object.entries(mergedLinks)
+    .filter(([_, val]) => Boolean(val && String(val).trim()))
+    .map(([platform, val]) => ({ platform, val: String(val).trim() }));
 
   const isOwner =
     isOwnerProp !== undefined
@@ -417,62 +450,134 @@ export default function ServiceDetailModal({
 
               {/* Price & Title Section */}
               <div className="space-y-3">
-                {/* Clean Modern Price Section (Full-width Grid) */}
-                {(() => {
-                  const hasStartPrice = service.startPrice !== undefined && service.startPrice !== null;
-                  const hasEndPrice = service.endPrice !== undefined && service.endPrice !== null && Number(service.endPrice) > Number(service.startPrice);
-
-                  if (hasStartPrice && hasEndPrice) {
-                    return (
-                      <div className="grid grid-cols-2 gap-2.5 rounded-2xl border border-gray-100 bg-gray-50/70 p-3 sm:p-3.5">
-                        <div className="min-w-0">
-                          <span className="block text-[11px] font-medium text-gray-400">
-                            ราคาเริ่มต้น
-                          </span>
-                          <div className="mt-0.5 flex items-baseline gap-1">
-                            <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
-                              ฿{Number(service.startPrice).toLocaleString()}
-                            </span>
-                            <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                {/* Clean Modern Price Section with Creator Profile & Links */}
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-3.5 sm:p-4 space-y-3">
+                  {/* Top: Creator Profile & View Profile Button */}
+                  <div className="flex items-center justify-between gap-3">
+                    <Link
+                      href={`/${author.username}`}
+                      onClick={onClose}
+                      className="flex items-center gap-2.5 group min-w-0"
+                    >
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-200 border border-white shadow-2xs shrink-0">
+                        {author.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={author.avatar} alt={author.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-gray-200 text-gray-400">
+                            <User className="h-5 w-5" />
                           </div>
-                        </div>
-
-                        <div className="min-w-0 border-l border-gray-200/60 pl-3">
-                          <span className="block text-[11px] font-medium text-gray-400">
-                            ราคาสูงสุด
-                          </span>
-                          <div className="mt-0.5 flex items-baseline gap-1">
-                            <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
-                              ฿{Number(service.endPrice).toLocaleString()}
-                            </span>
-                            <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
-                          </div>
-                        </div>
+                        )}
                       </div>
-                    );
-                  }
+                      <div className="min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-gray-900 group-hover:underline truncate">
+                          {author.name}
+                        </h4>
+                        <p className="text-[11px] text-gray-500 truncate">@{author.username}</p>
+                      </div>
+                    </Link>
 
-                  const displayPrice =
-                    hasStartPrice
+                    <Link
+                      href={`/${author.username}`}
+                      onClick={onClose}
+                      className="inline-flex items-center gap-1 rounded-xl bg-white border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-2xs hover:bg-gray-100 transition-colors shrink-0 cursor-pointer"
+                    >
+                      <span>ดูโปรไฟล์</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+
+                  {/* Middle: Prices (2-column grid or single price) */}
+                  {(() => {
+                    const hasStartPrice = service.startPrice !== undefined && service.startPrice !== null;
+                    const hasEndPrice =
+                      service.endPrice !== undefined &&
+                      service.endPrice !== null &&
+                      Number(service.endPrice) > Number(service.startPrice);
+
+                    if (hasStartPrice && hasEndPrice) {
+                      return (
+                        <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-200/60">
+                          <div className="min-w-0">
+                            <span className="block text-[11px] font-medium text-gray-400">
+                              ราคาเริ่มต้น
+                            </span>
+                            <div className="mt-0.5 flex items-baseline gap-1">
+                              <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
+                                ฿{Number(service.startPrice).toLocaleString()}
+                              </span>
+                              <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                            </div>
+                          </div>
+
+                          <div className="min-w-0 border-l border-gray-200/60 pl-3">
+                            <span className="block text-[11px] font-medium text-gray-400">
+                              ราคาสูงสุด
+                            </span>
+                            <div className="mt-0.5 flex items-baseline gap-1">
+                              <span className="text-lg sm:text-2xl font-bold tracking-tight text-gray-900 truncate">
+                                ฿{Number(service.endPrice).toLocaleString()}
+                              </span>
+                              <span className="text-xs text-gray-400 shrink-0">/ งาน</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const displayPrice = hasStartPrice
                       ? `฿${Number(service.startPrice).toLocaleString()}`
                       : service.priceText || (service.price ? `฿${Number(service.price).toLocaleString()}` : null);
 
-                  if (!displayPrice) return null;
+                    if (!displayPrice) return null;
 
-                  return (
-                    <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-3 sm:p-3.5">
-                      <span className="block text-[11px] font-medium text-gray-400">
-                        ราคาเริ่มต้น / ค่าบริการ
-                      </span>
-                      <div className="mt-0.5 flex items-baseline gap-1">
-                        <span className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
-                          {displayPrice}
+                    return (
+                      <div className="pt-3 border-t border-gray-200/60">
+                        <span className="block text-[11px] font-medium text-gray-400">
+                          ราคาเริ่มต้น / ค่าบริการ
                         </span>
-                        <span className="text-xs text-gray-400">/ งาน</span>
+                        <div className="mt-0.5 flex items-baseline gap-1">
+                          <span className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+                            {displayPrice}
+                          </span>
+                          <span className="text-xs text-gray-400">/ งาน</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Bottom: Links (Social Links / Contact Channels) */}
+                  {effectiveLinksList.length > 0 && (
+                    <div className="pt-2.5 border-t border-gray-200/60 flex items-center gap-2 flex-wrap">
+                      <span className="text-[11px] font-semibold text-gray-500 mr-1 flex items-center gap-1">
+                        <Globe className="h-3 w-3 text-gray-400" />
+                        <span>ช่องทางติดต่อ / ลิงก์:</span>
+                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {effectiveLinksList.map(({ platform, val }) => {
+                          const info = getPlatformInfo(platform);
+                          const href = formatPlatformUrl(platform, val);
+                          return (
+                            <a
+                              key={platform}
+                              href={href}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:text-black shadow-2xs transition-all"
+                              title={`${info.name}: ${val}`}
+                            >
+                              <span className="h-3.5 w-3.5 flex items-center justify-center shrink-0">
+                                {info.icon}
+                              </span>
+                              <span>{info.name}</span>
+                            </a>
+                          );
+                        })}
                       </div>
                     </div>
-                  );
-                })()}
+                  )}
+                </div>
 
                 {/* Title Header */}
                 <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
