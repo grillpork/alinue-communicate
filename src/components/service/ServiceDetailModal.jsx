@@ -221,7 +221,7 @@ export default function ServiceDetailModal({
         {/* Modal Container */}
         <div
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full h-full sm:h-[92vh] max-h-[900px] max-w-6xl overflow-hidden rounded-none sm:rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col md:flex-row animate-in zoom-in-95 duration-150"
+          className="relative w-full h-full sm:h-[92vh] max-h-[900px] max-w-6xl overflow-y-auto md:overflow-hidden rounded-none sm:rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col md:flex-row animate-in zoom-in-95 duration-150 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
           {/* Floating Close Button */}
           <button
@@ -234,7 +234,7 @@ export default function ServiceDetailModal({
           </button>
 
           {/* 1. LEFT SIDE: Image Viewer with Embla Carousel */}
-          <div className="relative flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden min-h-[300px] sm:min-h-[420px] md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
+          <div className="relative shrink-0 md:flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden h-[380px] sm:h-[480px] md:h-full md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
             {images.length > 0 ? (
               <>
                 {/* Embla Viewport */}
@@ -253,7 +253,7 @@ export default function ServiceDetailModal({
                           src={img}
                           alt={`Sample ${idx + 1}`}
                           draggable={false}
-                          className="max-h-[75vh] max-w-full object-contain pointer-events-auto rounded-xl shadow-xs"
+                          className="max-h-full max-w-full object-contain pointer-events-auto rounded-xl shadow-xs"
                         />
                       </div>
                     ))}
@@ -329,7 +329,7 @@ export default function ServiceDetailModal({
           </div>
 
           {/* 2. RIGHT SIDE: Service Details & Actions Panel */}
-          <div className="w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col bg-white overflow-hidden border-t md:border-t-0 md:border-l border-gray-100">
+          <div className="w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col bg-white border-t md:border-t-0 md:border-l border-gray-100 md:overflow-hidden">
             {/* Top Bar with Expiry & Actions */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-10">
               {/* Status & Expiry Badge */}
@@ -426,7 +426,7 @@ export default function ServiceDetailModal({
             </div>
 
             {/* Scrollable Content Body (Hidden Scrollbar) */}
-            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1 md:overflow-y-auto p-5 sm:p-6 space-y-5 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {/* Thumbnails strip (If multiple images) */}
               {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
