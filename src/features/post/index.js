@@ -3,6 +3,12 @@ export * from "./hooks/post.keys";
 export * from "./hooks/use-posts";
 
 export { default as PostCard } from "./components/PostCard";
+export { default as PostHeader } from "./components/PostHeader";
+export { default as PostContent } from "./components/PostContent";
+export { default as PostImagesCarousel } from "./components/PostImagesCarousel";
+export { default as PostActions } from "./components/PostActions";
+export { default as PostComments } from "./components/PostComments";
+export { default as PostMenu } from "./components/PostMenu";
 export { default as PostDetailModal } from "./components/PostDetailModal";
 export { default as PostFeed } from "./components/PostFeed";
 export { default as PostFormModal } from "./components/PostFormModal";

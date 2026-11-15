@@ -105,19 +105,108 @@ export function useDeletePostMutation(options = {}) {
 }
 
 /**
- * Hook สำหรับกด Like / Unlike
+ * Hook สำหรับกด Like / Unlike พร้อม Optimistic Update และ Rollback อัตโนมัติ
  */
 export function useToggleLikeMutation(options = {}) {
   const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...restOptions } = options;
+  const {
+    onMutate: customOnMutate,
+    onError: customOnError,
+    onSuccess: customOnSuccess,
+    onSettled: customOnSettled,
+    ...restOptions
+  } = options;
 
   return useMutation({
     mutationFn: api.toggleLike,
+    onMutate: async (postId) => {
+      // 1. ยกเลิก Queries ที่กำลังดึงอยู่เพื่อไม่ให้ทับข้อมูล Optimistic
+      await queryClient.cancelQueries({ queryKey: postKeys.all });
+
+      // 2. Snapshot แคชเก่าไว้สำหรับ Rollback เมื่อ Error
+      const previousLists = queryClient.getQueriesData({
+        queryKey: postKeys.lists(),
+      });
+      const previousDetail = queryClient.getQueryData(postKeys.detail(postId));
+
+      // 3. Optimistic Update ทุก Lists ที่มี Post นี้
+      queryClient.setQueriesData({ queryKey: postKeys.lists() }, (old) => {
+        if (!old || !Array.isArray(old.posts)) return old;
+        return {
+          ...old,
+          posts: old.posts.map((p) => {
+            if (String(p.id) === String(postId)) {
+              const nextIsLiked = !p.isLiked;
+              const currentLikes =
+                typeof p.likesCount === "number"
+                  ? p.likesCount
+                  : parseInt(p.likesCount, 10) || 0;
+              return {
+                ...p,
+                isLiked: nextIsLiked,
+                likesCount: nextIsLiked
+                  ? currentLikes + 1
+                  : Math.max(0, currentLikes - 1),
+              };
+            }
+            return p;
+          }),
+        };
+      });
+
+      // 4. Optimistic Update ใน Post Detail (ถ้ามี)
+      if (previousDetail?.post) {
+        queryClient.setQueryData(postKeys.detail(postId), (old) => {
+          if (!old?.post) return old;
+          const nextIsLiked = !old.post.isLiked;
+          const currentLikes =
+            typeof old.post.likesCount === "number"
+              ? old.post.likesCount
+              : parseInt(old.post.likesCount, 10) || 0;
+          return {
+            ...old,
+            post: {
+              ...old.post,
+              isLiked: nextIsLiked,
+              likesCount: nextIsLiked
+                ? currentLikes + 1
+                : Math.max(0, currentLikes - 1),
+            },
+          };
+        });
+      }
+
+      let customContext = {};
+      if (customOnMutate) {
+        customContext = (await customOnMutate(postId)) || {};
+      }
+
+      return { previousLists, previousDetail, ...customContext };
+    },
+    onError: (err, postId, context) => {
+      // Rollback แคชเดิมกลับมาเมื่อ API ล้มเหลว
+      if (context?.previousLists) {
+        context.previousLists.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      }
+      if (context?.previousDetail) {
+        queryClient.setQueryData(postKeys.detail(postId), context.previousDetail);
+      }
+      if (customOnError) {
+        customOnError(err, postId, context);
+      }
+    },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: postKeys.all });
-      queryClient.invalidateQueries({ queryKey: ["users"] });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
+      }
+    },
+    onSettled: (data, error, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      if (customOnSettled) {
+        customOnSettled(data, error, variables, context);
       }
     },
     ...restOptions,
@@ -161,6 +250,31 @@ export function useAddCommentMutation(options = {}) {
         });
       }
 
+      // Sync commentsCount ใน cache ของ post lists โดยตรง
+      queryClient.setQueriesData({ queryKey: postKeys.lists() }, (old) => {
+        if (!old || !Array.isArray(old.posts)) return old;
+        return {
+          ...old,
+          posts: old.posts.map((p) =>
+            String(p.id) === String(variables.postId)
+              ? { ...p, commentsCount: (p.commentsCount ?? 0) + 1 }
+              : p,
+          ),
+        };
+      });
+
+      // Sync commentsCount ใน cache ของ post detail (ถ้ามี)
+      queryClient.setQueryData(postKeys.detail(variables.postId), (old) => {
+        if (!old?.post) return old;
+        return {
+          ...old,
+          post: {
+            ...old.post,
+            commentsCount: (old.post.commentsCount ?? 0) + 1,
+          },
+        };
+      });
+
       queryClient.invalidateQueries({
         queryKey: postKeys.comments(variables.postId),
       });
@@ -193,6 +307,34 @@ export function useDeleteCommentMutation(options = {}) {
           };
         });
       }
+
+      // Sync commentsCount ใน cache ของ post lists โดยตรง
+      queryClient.setQueriesData({ queryKey: postKeys.lists() }, (old) => {
+        if (!old || !Array.isArray(old.posts)) return old;
+        return {
+          ...old,
+          posts: old.posts.map((p) =>
+            String(p.id) === String(variables.postId)
+              ? {
+                  ...p,
+                  commentsCount: Math.max(0, (p.commentsCount ?? 0) - 1),
+                }
+              : p,
+          ),
+        };
+      });
+
+      // Sync commentsCount ใน cache ของ post detail (ถ้ามี)
+      queryClient.setQueryData(postKeys.detail(variables.postId), (old) => {
+        if (!old?.post) return old;
+        return {
+          ...old,
+          post: {
+            ...old.post,
+            commentsCount: Math.max(0, (old.post.commentsCount ?? 0) - 1),
+          },
+        };
+      });
 
       queryClient.invalidateQueries({
         queryKey: postKeys.comments(variables.postId),
