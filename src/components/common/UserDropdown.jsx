@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import { User, Settings, LogOut } from 'lucide-react';
-import UserAvatar from '@/components/common/UserAvatar';
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { User, Settings, LogOut } from "lucide-react";
+import UserAvatar from "@/components/common/UserAvatar";
 
 export default function UserDropdown({ user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,8 +16,8 @@ export default function UserDropdown({ user, onLogout }) {
         setIsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   if (!user) return null;
@@ -33,7 +33,7 @@ export default function UserDropdown({ user, onLogout }) {
       >
         <UserAvatar
           src={user.avatar}
-          alt={user.name || 'User'}
+          alt={user.name || "User"}
           size="sm"
           className="ring-2 ring-gray-100"
         />

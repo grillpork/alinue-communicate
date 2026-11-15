@@ -14,7 +14,7 @@ import {
 import {
   useSuggestedUsersQuery,
   useToggleFollowMutation,
-} from "@/services/user";
+} from "@/services/account/user";
 import UserAvatar from "@/components/common/UserAvatar";
 
 const TRENDING_TAGS = [

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React from 'react';
-import PostFeed from '@/components/post/PostFeed';
+import React from "react";
+import PostFeed from "@/components/post/PostFeed";
 
 const HomeHeader = () => {
   return (

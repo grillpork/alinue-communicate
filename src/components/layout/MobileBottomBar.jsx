@@ -1,16 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  Home,
-  Search,
-  Bell,
-  User,
-} from 'lucide-react';
-import { useMeQuery } from '@/services/auth';
-import { useUnreadNotificationCountQuery } from '@/services/notification';
+import React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Search, Bell, User } from "lucide-react";
+import { useMeQuery } from "@/services/auth/auth";
+import { useUnreadNotificationCountQuery } from "@/services/notification/notification";
 
 export default function MobileBottomBar() {
   const pathname = usePathname();
@@ -24,41 +19,45 @@ export default function MobileBottomBar() {
   });
   const unreadCount = notifData?.unreadCount || 0;
 
-  const isHomeActive = pathname === '/';
-  const isSearchActive = pathname === '/search';
-  const isNotifActive = pathname === '/notifications';
+  const isHomeActive = pathname === "/";
+  const isSearchActive = pathname === "/search";
+  const isNotifActive = pathname === "/notifications";
   const isProfileActive = Boolean(
-    pathname.startsWith('/profile') ||
-    (user?.username && pathname === `/${user.username}`)
+    pathname.startsWith("/profile") ||
+    (user?.username && pathname === `/${user.username}`),
   );
 
   const items = [
     {
-      id: 'home',
-      label: 'Home',
-      href: '/',
+      id: "home",
+      label: "Home",
+      href: "/",
       icon: Home,
       isActive: isHomeActive,
     },
     {
-      id: 'search',
-      label: 'Searching',
-      href: '/search',
+      id: "search",
+      label: "Searching",
+      href: "/search",
       icon: Search,
       isActive: isSearchActive,
     },
     {
-      id: 'notifications',
-      label: 'Notification',
-      href: '/notifications',
+      id: "notifications",
+      label: "Notification",
+      href: "/notifications",
       icon: Bell,
-      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null,
+      badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : null,
       isActive: isNotifActive,
     },
     {
-      id: 'profile',
-      label: 'Profile',
-      href: user?.username ? `/${user.username}` : (isLogin ? '/profile' : '/sign-in'),
+      id: "profile",
+      label: "Profile",
+      href: user?.username
+        ? `/${user.username}`
+        : isLogin
+          ? "/profile"
+          : "/sign-in",
       icon: User,
       isAvatar: Boolean(user?.avatarUrl || user?.avatar),
       avatarUrl: user?.avatarUrl || user?.avatar,
@@ -76,7 +75,9 @@ export default function MobileBottomBar() {
               key={item.id}
               href={item.href}
               className={`relative flex-1 flex flex-col items-center justify-center h-full transition-colors group cursor-pointer ${
-                item.isActive ? 'text-black' : 'text-gray-400 hover:text-gray-700'
+                item.isActive
+                  ? "text-black"
+                  : "text-gray-400 hover:text-gray-700"
               }`}
             >
               {/* Top Active Indicator Bar (ตรงตามภาพอ้างอิง) */}
@@ -89,7 +90,7 @@ export default function MobileBottomBar() {
                 {item.isAvatar ? (
                   <div
                     className={`h-6 w-6 rounded-full overflow-hidden ring-1 transition-all ${
-                      item.isActive ? 'ring-black' : 'ring-gray-200'
+                      item.isActive ? "ring-black" : "ring-gray-200"
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -102,7 +103,7 @@ export default function MobileBottomBar() {
                 ) : (
                   <Icon
                     className={`h-5 w-5 transition-transform group-active:scale-90 ${
-                      item.isActive ? 'stroke-[2.2]' : 'stroke-[1.8]'
+                      item.isActive ? "stroke-[2.2]" : "stroke-[1.8]"
                     }`}
                   />
                 )}
@@ -118,7 +119,9 @@ export default function MobileBottomBar() {
               {/* Label */}
               <span
                 className={`text-[10px] mt-1 transition-colors leading-none tracking-tight ${
-                  item.isActive ? 'font-bold text-black' : 'font-medium text-gray-500'
+                  item.isActive
+                    ? "font-bold text-black"
+                    : "font-medium text-gray-500"
                 }`}
               >
                 {item.label}
@@ -130,4 +133,3 @@ export default function MobileBottomBar() {
     </nav>
   );
 }
-

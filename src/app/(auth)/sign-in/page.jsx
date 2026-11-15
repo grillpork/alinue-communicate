@@ -1,8 +1,8 @@
-import AuthForm from '@/components/auth/AuthForm';
+import AuthForm from "@/components/auth/AuthForm";
 
 export const metadata = {
-  title: 'Sign In - Alinue',
-  description: 'Sign in to your Alinue account',
+  title: "Sign In - Alinue",
+  description: "Sign in to your Alinue account",
 };
 
 export default function SignInPage() {
@@ -12,4 +12,3 @@ export default function SignInPage() {
     </div>
   );
 }
-

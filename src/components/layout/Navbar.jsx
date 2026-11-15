@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Search, Bell, Bookmark } from 'lucide-react';
-import UserDropdown from '../common/UserDropdown';
-import { useMeQuery, useSignOutMutation } from '@/services/auth';
+import React from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Search, Bell, Bookmark } from "lucide-react";
+import UserDropdown from "../common/UserDropdown";
+import { useMeQuery, useSignOutMutation } from "@/services/auth/auth";
 
 const Navbar = () => {
   const { data: meData } = useMeQuery();
@@ -67,7 +67,11 @@ const Navbar = () => {
 
               {/* Bookmark Icon */}
               <Link
-                href={user?.username ? `/${user.username}?tab=bookmarks` : '/sign-in'}
+                href={
+                  user?.username
+                    ? `/${user.username}?tab=bookmarks`
+                    : "/sign-in"
+                }
                 className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors cursor-pointer"
                 aria-label="Bookmarks"
               >

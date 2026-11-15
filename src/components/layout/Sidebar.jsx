@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname, useSearchParams } from 'next/navigation';
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   Briefcase,
   Search,
@@ -15,14 +15,14 @@ import {
   MoreHorizontal,
   Loader2,
   LayoutList,
-} from 'lucide-react';
-import { useMeQuery, useSignOutMutation } from '@/services/auth';
-import { useUnreadNotificationCountQuery } from '@/services/notification';
+} from "lucide-react";
+import { useMeQuery, useSignOutMutation } from "@/services/auth/auth";
+import { useUnreadNotificationCountQuery } from "@/services/notification/notification";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentTab = searchParams?.get('tab');
+  const currentTab = searchParams?.get("tab");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -46,60 +46,68 @@ export default function Sidebar() {
         setShowUserMenu(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const navItems = [
     {
-      label: 'Portfolio / Feed',
-      href: '/',
+      label: "Portfolio / Feed",
+      href: "/",
       icon: Briefcase,
-      active: pathname === '/',
+      active: pathname === "/",
     },
     {
-      label: 'Search',
-      href: '/search',
+      label: "Search",
+      href: "/search",
       icon: Search,
-      active: pathname === '/search',
+      active: pathname === "/search",
     },
     {
-      label: 'Notifications',
-      href: '/notifications',
+      label: "Notifications",
+      href: "/notifications",
       icon: Bell,
-      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null,
-      active: pathname === '/notifications',
+      badge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : null,
+      active: pathname === "/notifications",
     },
     {
-      label: 'Services',
-      href: user?.username ? `/${user.username}?tab=services` : '/search',
+      label: "Services",
+      href: user?.username ? `/${user.username}?tab=services` : "/search",
       icon: LayoutList,
       badge: null,
-      active: Boolean(user?.username && pathname === `/${user.username}` && currentTab === 'services'),
-    },
-    {
-      label: 'Bookmarks',
-      href: user?.username ? `/${user.username}?tab=bookmarks` : '/sign-in',
-      icon: Bookmark,
-      badge: null,
-      active: Boolean(user?.username && pathname === `/${user.username}` && currentTab === 'bookmarks'),
-    },
-    {
-      label: 'Profile',
-      href: user?.username ? `/${user.username}` : '/sign-in',
-      icon: User,
       active: Boolean(
         user?.username &&
-          pathname === `/${user.username}` &&
-          currentTab !== 'bookmarks' &&
-          currentTab !== 'services'
+        pathname === `/${user.username}` &&
+        currentTab === "services",
       ),
     },
     {
-      label: 'Settings',
-      href: '/settings',
+      label: "Bookmarks",
+      href: user?.username ? `/${user.username}?tab=bookmarks` : "/sign-in",
+      icon: Bookmark,
+      badge: null,
+      active: Boolean(
+        user?.username &&
+        pathname === `/${user.username}` &&
+        currentTab === "bookmarks",
+      ),
+    },
+    {
+      label: "Profile",
+      href: user?.username ? `/${user.username}` : "/sign-in",
+      icon: User,
+      active: Boolean(
+        user?.username &&
+        pathname === `/${user.username}` &&
+        currentTab !== "bookmarks" &&
+        currentTab !== "services",
+      ),
+    },
+    {
+      label: "Settings",
+      href: "/settings",
       icon: Settings,
-      active: pathname === '/settings',
+      active: pathname === "/settings",
     },
   ];
 
@@ -142,14 +150,14 @@ export default function Sidebar() {
                 href={item.href}
                 className={`group flex items-center justify-between rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all ${
                   item.active
-                    ? 'bg-black text-white shadow-2xs'
-                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                    ? "bg-black text-white shadow-2xs"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <Icon
                     className={`h-5 w-5 transition-transform group-hover:scale-105 ${
-                      item.active ? 'text-white' : 'text-gray-500'
+                      item.active ? "text-white" : "text-gray-500"
                     }`}
                   />
                   <span>{item.label}</span>
@@ -159,8 +167,8 @@ export default function Sidebar() {
                   <span
                     className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       item.active
-                        ? 'bg-white text-black'
-                        : 'bg-blue-500 text-white'
+                        ? "bg-white text-black"
+                        : "bg-blue-500 text-white"
                     }`}
                   >
                     {item.badge}
@@ -230,7 +238,7 @@ export default function Sidebar() {
 
                 <div className="py-1">
                   <Link
-                    href={user?.username ? `/${user.username}` : '/profile'}
+                    href={user?.username ? `/${user.username}` : "/profile"}
                     onClick={() => setShowUserMenu(false)}
                     className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                   >

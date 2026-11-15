@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
-import QueryProvider from "@/providers/QueryProvider";
+import { Providers } from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://catako.site'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://catako.site",
+  ),
   title: "Alinue - Wall of Portfolios",
   description: "Share and discover designer portfolios and creative works",
   icons: {
@@ -25,9 +27,7 @@ export const metadata = {
       { url: "/logos/LogoAlinue.png", sizes: "512x512", type: "image/png" },
     ],
     shortcut: "/logos/LogoAlinue.png",
-    apple: [
-      { url: "/logos/LogoAlinue.png" },
-    ],
+    apple: [{ url: "/logos/LogoAlinue.png" }],
   },
   openGraph: {
     title: "Alinue - Wall of Portfolios",
@@ -60,11 +60,11 @@ export default function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white">
-        <QueryProvider>
+        <Providers>
           <Suspense fallback={null}>
             <AppShell>{children}</AppShell>
           </Suspense>
-        </QueryProvider>
+        </Providers>
       </body>
     </html>
   );
