@@ -1,14 +1,11 @@
 "use client";
 
-import React, { useRef, useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useMemo } from "react";
 
 /**
- * Carousel รูปภาพใน PostCard ใช้ Native CSS Scroll Snap
+ * แสดงรูปภาพใน PostCard แบบ Scroll แนวนอนอิสระ (overflow-x-auto โดยไม่มี snap และไม่มีปุ่มลูกศร)
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
-  const containerRef = useRef(null);
-
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
     return (images || [])
@@ -57,13 +54,10 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: Card Peek Carousel ด้วย Native CSS Scroll Snap
+  // กรณี 2 รูปขึ้นไป: เลื่อนแนวนอนอิสระ (Free horizontal scroll without snap or arrows)
   return (
-    <div className="relative mt-3 group select-none">
-      <div
-        ref={containerRef}
-        className="flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory scroll-smooth"
-      >
+    <div className="relative mt-3 select-none">
+      <div className="flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {normalizedImages.map((img, idx) => (
           <div
             key={img.id || idx}
@@ -77,7 +71,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
               }
             }}
             aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-            className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] snap-start overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -89,32 +83,6 @@ export default function PostImagesCarousel({ images, onImageClick }) {
           </div>
         ))}
       </div>
-
-      {/* Prev Navigation Arrow */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          containerRef.current?.scrollBy({ left: -320, behavior: "smooth" });
-        }}
-        aria-label="Previous slide"
-        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
-      >
-        <ChevronLeft className="h-4 w-4" />
-      </button>
-
-      {/* Next Navigation Arrow */}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          containerRef.current?.scrollBy({ left: 320, behavior: "smooth" });
-        }}
-        aria-label="Next slide"
-        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
-      >
-        <ChevronRight className="h-4 w-4" />
-      </button>
     </div>
   );
 }
