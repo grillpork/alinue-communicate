@@ -1,5 +1,3 @@
-import { slugify } from "@/lib/slug";
-
 export const VALID_PROFILE_TABS = [
   "showcases",
   "services",
@@ -7,16 +5,6 @@ export const VALID_PROFILE_TABS = [
   "likes",
   "bookmarks",
 ];
-
-export function parseUsername(rawUsername) {
-  if (typeof rawUsername !== "string") return "";
-  return decodeURIComponent(rawUsername).replace(/^@/, "");
-}
-
-export function parseSlugArray(rawSlug) {
-  if (!rawSlug) return [];
-  return Array.isArray(rawSlug) ? rawSlug : [rawSlug];
-}
 
 export function getActiveTabFromUrl(slugArray, searchParams) {
   if (slugArray[0] === "showcases") return "showcases";
@@ -71,13 +59,4 @@ export function buildProfileTabUrl(username, tabId, existingSearchParams) {
 
   const queryStr = params.toString();
   return `/${username}${queryStr ? `?${queryStr}` : ""}`;
-}
-
-export function matchSlug(item, targetSlug) {
-  if (!item || !targetSlug) return false;
-  return (
-    slugify(item.title || item.content?.slice(0, 50) || "") === targetSlug ||
-    String(item.id) === targetSlug ||
-    (item.title && item.title.toLowerCase() === targetSlug.toLowerCase())
-  );
 }

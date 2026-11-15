@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "../api/post.client";
 import { postKeys } from "./post.keys";
+import { userKeys } from "@/features/user/hooks/user.keys";
 
 /**
  * Hook ดึงรายการโพสต์ทั้งหมดใน Feed
@@ -39,6 +40,7 @@ export function useCreatePostMutation(options = {}) {
     mutationFn: api.createPost,
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }
@@ -58,6 +60,7 @@ export function useUpdatePostMutation(options = {}) {
     mutationFn: api.updatePost,
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }
@@ -77,6 +80,7 @@ export function useDeletePostMutation(options = {}) {
     mutationFn: api.deletePost,
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }
@@ -199,6 +203,7 @@ export function useSharePostMutation(options = {}) {
     mutationFn: ({ id, platform }) => api.sharePost(id, { platform }),
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }

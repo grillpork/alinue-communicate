@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Loader2, UserX, ArrowLeft } from "lucide-react";
+import { Loader2, UserX, ArrowLeft, AlertTriangle, RotateCcw } from "lucide-react";
 import {
   ProfileHeader,
   ProfileTabs,
@@ -38,7 +38,7 @@ function UserProfileContent() {
     [params?.slug],
   );
 
-  // 2. Navigation Hook (Single Responsibility: Active Tab & URL)
+  // 2. Navigation Hook (Active Tab & URL synchronization)
   const { activeTab, changeTab } = useProfileNavigation({
     username,
     slugArray,
@@ -57,27 +57,19 @@ function UserProfileContent() {
     isSelf,
     profile,
     isProfileLoading,
-    isError,
-    showcases,
-    services,
-    posts,
-    likedPosts,
-    bookmarkedPosts,
+    isProfileError,
+    profileError,
+    refetchProfile,
+    counts,
     selectedShowcase,
     selectedService,
     selectedPost,
   } = profileData;
 
-  // 4. Tab Items Hook (Single Responsibility: Tab configuration & counts)
+  // 4. Tab Items Hook (Using API stats/total counts)
   const { tabs } = useProfileTabItems({
     profile,
-    counts: {
-      showcases: showcases.length,
-      services: services.length,
-      posts: posts.length,
-      likes: likedPosts.length,
-      bookmarks: bookmarkedPosts.length,
-    },
+    counts,
     isSelf,
   });
 
@@ -110,16 +102,20 @@ function UserProfileContent() {
       serviceTitle: data.serviceTitle || null,
     };
 
-    if (modal.type === "edit-post" && modal.data?.id) {
-      await updatePostMutation.mutateAsync({
-        id: modal.data.id,
-        ...payload,
-      });
-    } else {
-      await createPostMutation.mutateAsync(payload);
+    try {
+      if (modal.type === "edit-post" && modal.data?.id) {
+        await updatePostMutation.mutateAsync({
+          id: modal.data.id,
+          ...payload,
+        });
+      } else {
+        await createPostMutation.mutateAsync(payload);
+      }
+      closeModal();
+    } catch (error) {
+      console.error("Post submission failed:", error);
+      throw error;
     }
-
-    closeModal();
   };
 
   const handleCloseDetailModal = useCallback(() => {
@@ -127,17 +123,25 @@ function UserProfileContent() {
     router.replace(url, { scroll: false });
   }, [username, activeTab, searchParams, router]);
 
-  // Delete Post Handler (Confirm + execute mutation + close modal)
+  // Delete Post Handler (Async confirm + mutation + close modal only on success)
   const handleDeletePost = useCallback(
-    (postId) => {
-      if (confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
-        deletePostMutation.mutate(postId);
-        if (selectedPost) {
+    async (postId) => {
+      if (!confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
+        return;
+      }
+
+      try {
+        await deletePostMutation.mutateAsync(postId);
+
+        // ปิด modal เฉพาะเมื่อโพสต์ที่กำลังเปิดดูอยู่คือโพสต์ที่เพิ่งลบสำเร็จ
+        if (String(selectedPost?.id) === String(postId)) {
           handleCloseDetailModal();
         }
+      } catch (error) {
+        console.error("Failed to delete post:", error);
       }
     },
-    [deletePostMutation, selectedPost, handleCloseDetailModal],
+    [deletePostMutation, selectedPost?.id, handleCloseDetailModal],
   );
 
   // Memoized User Object with correct isVerified default
@@ -157,17 +161,17 @@ function UserProfileContent() {
       avatar: profile.avatar || profile.avatarUrl || null,
       banner: profile.banner || "/empty/no-image.png",
       stats: profile.stats || {
-        posts: posts.length,
+        posts: counts.posts,
         followers: 0,
         following: 0,
         viewing: 0,
-        likes: 0,
+        likes: counts.likes,
       },
       isFollowing: profile.isFollowing,
     };
-  }, [profile, posts.length]);
+  }, [profile, counts.posts, counts.likes]);
 
-  // Loading state
+  // 1. Loading state
   if (isProfileLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-gray-400">
@@ -179,8 +183,38 @@ function UserProfileContent() {
     );
   }
 
-  // Not found state
-  if (isError || !profile || !user) {
+  // 2. Network Error State (แยกจาก 404 Not Found)
+  const isNotFound =
+    profileError?.status === 404 ||
+    profileError?.statusCode === 404 ||
+    (!profile && !isProfileError);
+
+  if (isProfileError && !isNotFound) {
+    return (
+      <div className="rounded-3xl border border-rose-100 bg-white p-8 text-center shadow-xs my-8 max-w-md mx-auto">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 mb-4">
+          <AlertTriangle className="h-7 w-7" />
+        </div>
+        <h2 className="text-base font-bold text-gray-900">
+          เกิดข้อผิดพลาดในการโหลดข้อมูล
+        </h2>
+        <p className="text-xs text-gray-400 mt-1 mb-5">
+          ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง
+        </p>
+        <button
+          type="button"
+          onClick={() => refetchProfile()}
+          className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-colors cursor-pointer"
+        >
+          <RotateCcw className="h-4 w-4" />
+          <span>ลองใหม่อีกครั้ง</span>
+        </button>
+      </div>
+    );
+  }
+
+  // 3. User Not Found (404)
+  if (isNotFound || !profile || !user) {
     return (
       <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-xs my-8 max-w-md mx-auto">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-4">
@@ -227,9 +261,12 @@ function UserProfileContent() {
         currentUser={currentUser}
         data={profileData}
         callbacks={{
-          onOpenCreateShowcase: () => setModal({ type: "create-showcase", data: null }),
-          onOpenCreateService: () => setModal({ type: "create-service", data: null }),
-          onOpenCreatePost: () => setModal({ type: "create-post", data: null }),
+          onOpenCreateShowcase: () =>
+            setModal({ type: "create-showcase", data: null }),
+          onOpenCreateService: () =>
+            setModal({ type: "create-service", data: null }),
+          onOpenCreatePost: () =>
+            setModal({ type: "create-post", data: null }),
           onEditPost: (post) => setModal({ type: "edit-post", data: post }),
           onDeletePost: handleDeletePost,
         }}

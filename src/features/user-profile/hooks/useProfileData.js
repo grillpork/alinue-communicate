@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import {
   useUserProfileQuery,
   useUserPostsQuery,
@@ -9,13 +9,13 @@ import {
 import { useShowcasesQuery } from "@/features/showcase";
 import { useServicesQuery } from "@/features/service";
 import { useBookmarks } from "@/features/bookmark";
+import { useMeQuery } from "@/features/auth";
 import {
   getShowcaseSlug,
   getServiceSlug,
   getPostSlug,
-  matchSlug,
 } from "../utils/profile-url";
-import { useProfilePermissions } from "./useProfilePermissions";
+import { matchSlug, isContentOwner } from "../utils/profile-parser";
 
 export function useProfileData({
   username,
@@ -23,14 +23,33 @@ export function useProfileData({
   searchParams,
   activeTab,
 }) {
-  const { currentUser, isSelf, isMeLoading, checkIsOwner } =
-    useProfilePermissions(username);
+  // 1. Auth & Permissions
+  const { data: meData, isLoading: isMeLoading } = useMeQuery();
+  const currentUser = meData?.user;
 
-  // 1. User Profile Query
+  const isSelf = useMemo(() => {
+    return Boolean(
+      currentUser?.username &&
+        username &&
+        currentUser.username.toLowerCase() === username.toLowerCase(),
+    );
+  }, [currentUser?.username, username]);
+
+  const checkIsOwner = useCallback(
+    (content) => {
+      if (isSelf) return true;
+      return isContentOwner(currentUser, content);
+    },
+    [isSelf, currentUser],
+  );
+
+  // 2. User Profile Query
   const {
     data: profileData,
     isLoading: isProfileLoading,
-    isError,
+    isError: isProfileError,
+    error: profileError,
+    refetch: refetchProfile,
   } = useUserProfileQuery(username, {
     enabled: Boolean(username),
   });
@@ -47,7 +66,7 @@ export function useProfileData({
   );
   const postSlug = useMemo(() => getPostSlug(slugArray), [slugArray]);
 
-  // 2. Showcases Query (Lazy loaded when showcases tab or detail active)
+  // 3. Showcases Query (Lazy loaded when showcases tab or detail active)
   const { data: showcasesData, isLoading: isShowcasesLoading } =
     useShowcasesQuery(
       { username },
@@ -59,7 +78,7 @@ export function useProfileData({
     );
   const showcases = showcasesData?.showcases || [];
 
-  // 3. Services Query (รอจนกว่าจะยืนยัน isMeLoading ก่อนกำหนด status: all / active)
+  // 4. Services Query (รอจนกว่าจะยืนยัน isMeLoading ก่อนกำหนด status: all / active)
   const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
     { username, status: isSelf ? "all" : "active" },
     {
@@ -71,7 +90,7 @@ export function useProfileData({
   );
   const services = servicesData?.services || [];
 
-  // 4. Posts Query (ต้องรอให้ได้ profile.id ที่แน่นอนก่อนเสมอ เพื่อไม่ให้สลับ Query Key)
+  // 5. Posts Query (ต้องรอให้ได้ profile.id ที่แน่นอนก่อนเสมอ เพื่อไม่ให้สลับ Query Key)
   const { data: postsData, isLoading: isPostsLoading } = useUserPostsQuery(
     profile?.id,
     {
@@ -81,21 +100,44 @@ export function useProfileData({
   );
   const posts = postsData?.posts || [];
 
-  // 5. Liked Posts Query (ต้องรอให้ได้ profile.id และอยู่บน tab likes เท่านั้น)
+  // 6. Liked Posts Query (ต้องรอให้ได้ profile.id และอยู่บน tab likes เท่านั้น)
   const { data: likedPostsData, isLoading: isLikedPostsLoading } =
     useUserLikedPostsQuery(profile?.id, {
       enabled: Boolean(profile?.id) && activeTab === "likes",
     });
   const likedPosts = likedPostsData?.posts || [];
 
-  // 6. Bookmarked Posts: เฉพาะโปรไฟล์ของตัวเอง (isSelf) เท่านั้นที่จะเข้าถึงได้
+  // 7. Bookmarked Posts: เฉพาะโปรไฟล์ของตัวเอง (isSelf) เท่านั้นที่จะเข้าถึงได้
   const { bookmarks: allUserBookmarks } = useBookmarks();
   const bookmarkedPosts = useMemo(() => {
     if (!isSelf) return [];
     return allUserBookmarks || [];
   }, [isSelf, allUserBookmarks]);
 
-  // 7. Derived Details (ค้นหาจาก slug โดยไม่ต้องใช้ useEffect หรือ useState)
+  // 8. Accurate Total Counts (อ่านจาก API stats / total เพื่อรองรับ Pagination อย่างถูกต้อง)
+  const counts = useMemo(
+    () => ({
+      showcases: showcasesData?.total ?? showcases.length,
+      services: servicesData?.total ?? services.length,
+      posts: profile?.stats?.posts ?? postsData?.total ?? posts.length,
+      likes: profile?.stats?.likes ?? likedPostsData?.total ?? likedPosts.length,
+      bookmarks: bookmarkedPosts.length,
+    }),
+    [
+      showcasesData?.total,
+      showcases.length,
+      servicesData?.total,
+      services.length,
+      profile?.stats,
+      postsData?.total,
+      posts.length,
+      likedPostsData?.total,
+      likedPosts.length,
+      bookmarkedPosts.length,
+    ],
+  );
+
+  // 9. Derived Details (ค้นหาจาก slug โดยไม่ต้องใช้ useEffect หรือ useState)
   const selectedShowcase = useMemo(() => {
     if (!showcaseSlug || showcases.length === 0) return null;
     return showcases.find((s) => matchSlug(s, showcaseSlug)) || null;
@@ -118,7 +160,9 @@ export function useProfileData({
     checkIsOwner,
     profile,
     isProfileLoading,
-    isError,
+    isProfileError,
+    profileError,
+    refetchProfile,
     showcases,
     isShowcasesLoading,
     services,
@@ -128,6 +172,7 @@ export function useProfileData({
     likedPosts,
     isLikedPostsLoading,
     bookmarkedPosts,
+    counts,
     selectedShowcase,
     selectedService,
     selectedPost,

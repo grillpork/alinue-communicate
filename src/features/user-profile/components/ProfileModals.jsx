@@ -13,7 +13,7 @@ import {
   ServiceDetailModal,
   CreateServiceModal,
 } from "@/features/service";
-import { isContentOwner } from "../utils/profile-permissions";
+import { isContentOwner } from "../utils/profile-parser";
 
 export function ProfileModals({
   modal,
