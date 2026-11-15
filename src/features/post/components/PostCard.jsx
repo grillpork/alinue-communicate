@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,10 +13,8 @@ import {
   Heart,
   MessageCircle,
   Send,
-  User,
   Loader2,
   FolderKanban,
-  Check,
   Bookmark,
   Share2,
   Flag,
@@ -28,9 +27,8 @@ import {
 } from "../hooks/use-posts";
 import { useMeQuery } from "@/features/auth";
 import { useBookmarks } from "@/features/bookmark";
-import { getPostPath, slugify } from "@/lib/slug";
+import { getPostPath } from "@/lib/slug";
 import { formatRelativeTime, formatFullDateTime } from "@/lib/date";
-import PostDetailModal from "./PostDetailModal";
 import SharePostModal from "./SharePostModal";
 import CommentPortfolioCard from "./CommentPortfolioCard";
 import CommentActionsMenu from "./CommentActionsMenu";
@@ -63,60 +61,30 @@ function renderPostText(text) {
 
 /**
  * Carousel รูปภาพใน PostCard ใช้ Native CSS Scroll Snap (overflow-x-auto snap-x snap-mandatory)
- * ประสิทธิภาพสูง ไม่พึ่งพา external library และเลื่อนลื่นไหลบนทุกอุปกรณ์
  */
 function PostImagesCarousel({ images, onImageClick }) {
   const containerRef = useRef(null);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
 
-  const checkScroll = useCallback(() => {
-    if (!containerRef.current) return;
-    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
-    setCanScrollPrev(scrollLeft > 5);
-    setCanScrollNext(scrollLeft < scrollWidth - clientWidth - 5);
-  }, []);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    checkScroll();
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    window.addEventListener("resize", checkScroll);
-    return () => {
-      el.removeEventListener("scroll", checkScroll);
-      window.removeEventListener("resize", checkScroll);
-    };
-  }, [checkScroll]);
-
-  const scrollPrev = (e) => {
-    e.stopPropagation();
-    containerRef.current?.scrollBy({ left: -320, behavior: "smooth" });
-  };
-
-  const scrollNext = (e) => {
-    e.stopPropagation();
-    containerRef.current?.scrollBy({ left: 320, behavior: "smooth" });
-  };
-
-  // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ รองรับทั้ง Array of String ("https://...") และ Array of Object ({ url: "..." })
-  const normalizedImages = (images || [])
-    .map((img, idx) => {
-      if (!img) return null;
-      if (typeof img === "string") {
-        return { id: String(idx), url: img, name: "Post image" };
-      }
-      return {
-        id: img.id || String(idx),
-        url: img.url || "",
-        name: img.name || "Post image",
-      };
-    })
-    .filter((img) => Boolean(img?.url));
+  // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
+  const normalizedImages = useMemo(() => {
+    return (images || [])
+      .map((img, idx) => {
+        if (!img) return null;
+        if (typeof img === "string") {
+          return { id: String(idx), url: img, name: "Post image" };
+        }
+        return {
+          id: img.id || String(idx),
+          url: img.url || "",
+          name: img.name || "Post image",
+        };
+      })
+      .filter((img) => Boolean(img?.url));
+  }, [images]);
 
   if (normalizedImages.length === 0) return null;
 
-  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ สไตล์ Threads (ล็อคความสูงสูงสุดเท่ากัน ไม่ crop ภาพทิ้ง)
+  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ
   if (normalizedImages.length === 1) {
     const singleImage = normalizedImages[0];
     return (
@@ -136,10 +104,9 @@ function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: Card Carousel แบบเห็นการ์ดถัดไปยื่นออกมา (Peek Style) ใช้ Native CSS Scroll Snap
+  // กรณี 2 รูปขึ้นไป: Card Peek Carousel สไตล์ Threads ด้วย Native CSS Scroll Snap
   return (
     <div className="relative mt-3 group select-none">
-      {/* Scrollable Container with Snap */}
       <div
         ref={containerRef}
         className="flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory scroll-smooth"
@@ -161,29 +128,31 @@ function PostImagesCarousel({ images, onImageClick }) {
         ))}
       </div>
 
-      {/* Prev Navigation Arrow (ปรากฏเมื่อ Hover บนจอ Desktop) */}
-      {canScrollPrev && (
-        <button
-          type="button"
-          onClick={scrollPrev}
-          aria-label="Previous slide"
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </button>
-      )}
+      {/* Prev Navigation Arrow */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          containerRef.current?.scrollBy({ left: -320, behavior: "smooth" });
+        }}
+        aria-label="Previous slide"
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
 
-      {/* Next Navigation Arrow (ปรากฏเมื่อ Hover บนจอ Desktop) */}
-      {canScrollNext && (
-        <button
-          type="button"
-          onClick={scrollNext}
-          aria-label="Next slide"
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-      )}
+      {/* Next Navigation Arrow */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          containerRef.current?.scrollBy({ left: 320, behavior: "smooth" });
+        }}
+        aria-label="Next slide"
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
     </div>
   );
 }
@@ -195,62 +164,26 @@ export default function PostCard({
   onDelete,
   onImageClick,
 }) {
+  const router = useRouter();
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likesCount, setLikesCount] = useState(post.likesCount ?? 0);
-  const [sharesCount, setSharesCount] = useState(post.sharesCount ?? 0);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [attachPortfolio, setAttachPortfolio] = useState(false);
-  const [commentsCount, setCommentsCount] = useState(post.commentsCount ?? 0);
+  const [localCommentsDelta, setLocalCommentsDelta] = useState(0);
   const [isContentExpanded, setIsContentExpanded] = useState(false);
   const menuRef = useRef(null);
+
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(post?.id);
 
   const contentText = post.content || "";
-  const isLongContent = useMemo(() => {
-    const lines = contentText.split("\n");
-    return lines.length > 5 || contentText.length > 260;
-  }, [contentText]);
+  const isLongContent = contentText.length > 200 || contentText.split("\n").length > 4;
 
-  const displayContent = useMemo(() => {
-    if (!isLongContent || isContentExpanded) {
-      return contentText;
-    }
-    const lines = contentText.split("\n");
-    const maxLines = 4;
-    const maxChars = 240;
-    let resultLines = [];
-    let chars = 0;
-
-    for (let i = 0; i < lines.length && i < maxLines; i++) {
-      const line = lines[i];
-      if (chars + line.length > maxChars) {
-        const remaining = Math.max(0, maxChars - chars);
-        resultLines.push(line.slice(0, remaining).trimEnd() + "...");
-        return resultLines.join("\n");
-      }
-      resultLines.push(line);
-      chars += line.length + 1;
-    }
-    return resultLines.join("\n");
-  }, [contentText, isLongContent, isContentExpanded]);
-
-  useEffect(() => {
-    if (typeof post.commentsCount === "number") {
-      setCommentsCount(post.commentsCount);
-    }
-  }, [post.commentsCount]);
-
-  useEffect(() => {
-    if (typeof post.sharesCount === "number") {
-      setSharesCount(post.sharesCount);
-    }
-  }, [post.sharesCount]);
+  const commentsCount = Math.max(0, (post.commentsCount ?? 0) + localCommentsDelta);
+  const sharesCount = post.sharesCount ?? 0;
 
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
@@ -271,13 +204,13 @@ export default function PostCard({
     onSuccess: () => {
       setCommentText("");
       setAttachPortfolio(false);
-      setCommentsCount((prev) => prev + 1);
+      setLocalCommentsDelta((prev) => prev + 1);
     },
   });
 
   const deleteCommentMutation = useDeleteCommentMutation({
     onSuccess: () => {
-      setCommentsCount((prev) => Math.max(0, prev - 1));
+      setLocalCommentsDelta((prev) => prev - 1);
     },
   });
 
@@ -318,44 +251,21 @@ export default function PostCard({
   const postAuthorUsername = post.author?.username || "user";
 
   const handleOpenDetailModal = () => {
-    setIsDetailModalOpen(true);
-    if (typeof window !== "undefined") {
-      const path = getPostPath(postAuthorUsername, post);
-      window.history.pushState({ modal: "post", id: post.id }, "", path);
+    if (onImageClick) {
+      onImageClick();
+      return;
     }
+    const path = getPostPath(postAuthorUsername, post);
+    router.push(path, { scroll: false });
   };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    if (typeof window !== "undefined") {
-      const postSlug =
-        slugify(post.title || post.content?.slice(0, 50)) || post.id;
-      const encodedSlug = encodeURIComponent(postSlug);
-      if (window.location.pathname.endsWith(`/${encodedSlug}`)) {
-        window.history.replaceState({}, "", `/${postAuthorUsername}`);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (!isDetailModalOpen) return;
-    const handlePopState = () => {
-      setIsDetailModalOpen(false);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [isDetailModalOpen]);
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(
         `${window.location.origin}${getPostPath(postAuthorUsername, post)}`,
       );
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-        setShowMenu(false);
-      }, 1200);
+      setShowMenu(false);
+      alert("คัดลอกลิงก์โพสต์เรียบร้อยแล้ว");
     }
   };
 
@@ -364,7 +274,6 @@ export default function PostCard({
       {/* Header: Author Avatar, Name, Dot, Time, More Options */}
       <div className="flex items-center justify-between px-3.5 sm:px-4">
         <div className="flex items-center gap-2.5">
-          {/* Post Author Profile Trigger (Hover = Mini Popup, Toggle/Click = Modal Profile) */}
           <PostAuthorProfileTrigger author={post.author} />
           <span className="text-gray-400 text-xs">•</span>
           <span
@@ -380,7 +289,7 @@ export default function PostCard({
           <button
             type="button"
             onClick={() => setShowMenu(!showMenu)}
-            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
             aria-label="More options"
           >
             <MoreHorizontal className="h-4 w-4" />
@@ -390,6 +299,15 @@ export default function PostCard({
             <div className="absolute right-0 mt-1.5 w-44 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-30 animate-in fade-in zoom-in-95 duration-100 text-left">
               <button
                 type="button"
+                onClick={handleCopyLink}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <Copy className="h-3.5 w-3.5 text-gray-500" />
+                <span>คัดลอกลิงก์</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => {
                   setShowMenu(false);
                   setIsShareModalOpen(true);
@@ -397,7 +315,7 @@ export default function PostCard({
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <Share2 className="h-3.5 w-3.5 text-gray-500" />
-                <span>Share</span>
+                <span>แชร์โพสต์</span>
               </button>
 
               <button
@@ -409,10 +327,10 @@ export default function PostCard({
                 className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <Flag className="h-3.5 w-3.5 text-gray-400" />
-                <span>Report</span>
+                <span>รายงาน</span>
               </button>
 
-              {isOwner ? (
+              {isOwner && (
                 <>
                   <button
                     type="button"
@@ -423,7 +341,7 @@ export default function PostCard({
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <Pencil className="h-3.5 w-3.5 text-gray-500" />
-                    <span>Edit</span>
+                    <span>แก้ไขโพสต์</span>
                   </button>
 
                   <button
@@ -435,19 +353,25 @@ export default function PostCard({
                     className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   >
                     <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-                    <span>Delete</span>
+                    <span>ลบโพสต์</span>
                   </button>
                 </>
-              ) : null}
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Post Text Content (มีปุ่มดูเพิ่มเติมเมื่อข้อความยาวเกินไป) */}
+      {/* Post Text Content (ตัดบรรทัดด้วย native CSS line-clamp-4) */}
       {post.content && (
-        <div className="mt-2.5 text-xs sm:text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words px-3.5 sm:px-4">
-          {renderPostText(displayContent)}
+        <div className="mt-2.5 px-3.5 sm:px-4">
+          <p
+            className={`text-xs sm:text-sm leading-relaxed text-gray-800 whitespace-pre-wrap break-words ${
+              !isContentExpanded && isLongContent ? "line-clamp-4" : ""
+            }`}
+          >
+            {renderPostText(contentText)}
+          </p>
           {isLongContent && (
             <button
               type="button"
@@ -460,10 +384,10 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Post Images (Embla Carousel with mouse drag slide) */}
+      {/* Post Images Carousel */}
       <PostImagesCarousel
         images={post.images}
-        onImageClick={onImageClick || handleOpenDetailModal}
+        onImageClick={handleOpenDetailModal}
       />
 
       {/* Linked Service Card */}
@@ -510,7 +434,7 @@ export default function PostCard({
             <span>{commentsCount}</span>
           </button>
 
-          {/* Share Button (Paper plane) */}
+          {/* Share Button */}
           <button
             type="button"
             onClick={() => setIsShareModalOpen(true)}
@@ -545,10 +469,9 @@ export default function PostCard({
         </button>
       </div>
 
-      {/* Comments Section */}
+      {/* Inline Comments Section */}
       {showComments && (
         <div className="mt-3.5 pt-3 border-t border-gray-100 space-y-3 px-3.5 sm:px-4">
-          {/* View in Full Modal Button */}
           {commentsCount > 0 && (
             <div className="flex items-center justify-between pb-1 text-xs">
               <span className="text-gray-500 font-medium">
@@ -564,6 +487,7 @@ export default function PostCard({
               </button>
             </div>
           )}
+
           {/* Add Comment Input Form */}
           <form
             onSubmit={handleSubmitComment}
@@ -654,7 +578,6 @@ export default function PostCard({
                     key={comment.id}
                     className="flex items-start gap-3 group/comment"
                   >
-                    {/* Left: Avatar + SVG Curved Thread line connecting down to card if has attachment */}
                     <div className="flex flex-col items-center shrink-0 w-10 mt-0.5">
                       <Link
                         href={
@@ -726,7 +649,6 @@ export default function PostCard({
                         {comment.content}
                       </p>
 
-                      {/* Attached Portfolio / Showcase Card (สไตล์ UI ตัวอย่าง) */}
                       {comment.portfolioAttachment && (
                         <CommentPortfolioCard
                           data={comment.portfolioAttachment}
@@ -741,22 +663,11 @@ export default function PostCard({
         </div>
       )}
 
-      {/* Post Detail & All Comments Modal (สไตล์ Threads ตาม UI ตัวอย่าง) */}
-      <PostDetailModal
-        post={{ ...post, sharesCount }}
-        isOpen={isDetailModalOpen}
-        onClose={handleCloseDetailModal}
-        onShareSuccess={(newCount) => setSharesCount(newCount)}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
-
       {/* Share Post Modal */}
       <SharePostModal
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         post={{ ...post, sharesCount }}
-        onShareSuccess={(newCount) => setSharesCount(newCount)}
       />
     </article>
   );
