@@ -29,6 +29,7 @@ import {
 } from "../hooks/use-posts";
 import { useMeQuery } from "@/features/auth";
 import { useBookmarks } from "@/features/bookmark";
+import { getPostPath, slugify } from "@/lib/slug";
 import { formatRelativeTime, formatFullDateTime } from "@/lib/date";
 import PostDetailModal from "./PostDetailModal";
 import SharePostModal from "./SharePostModal";
@@ -322,10 +323,41 @@ export default function PostCard({
     if (onLike) onLike(post.id, nextState);
   };
 
+  const postAuthorUsername = post.author?.username || "user";
+
+  const handleOpenDetailModal = () => {
+    setIsDetailModalOpen(true);
+    if (typeof window !== "undefined") {
+      const path = getPostPath(postAuthorUsername, post);
+      window.history.pushState({ modal: "post", id: post.id }, "", path);
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    if (typeof window !== "undefined") {
+      const postSlug =
+        slugify(post.title || post.content?.slice(0, 50)) || post.id;
+      const encodedSlug = encodeURIComponent(postSlug);
+      if (window.location.pathname.endsWith(`/${encodedSlug}`)) {
+        window.history.replaceState({}, "", `/${postAuthorUsername}`);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isDetailModalOpen) return;
+    const handlePopState = () => {
+      setIsDetailModalOpen(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDetailModalOpen]);
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(
-        `${window.location.origin}/#post-${post.id}`,
+        `${window.location.origin}${getPostPath(postAuthorUsername, post)}`,
       );
       setCopied(true);
       setTimeout(() => {
@@ -439,7 +471,7 @@ export default function PostCard({
       {/* Post Images (Embla Carousel with mouse drag slide) */}
       <PostImagesCarousel
         images={post.images}
-        onImageClick={onImageClick || (() => setIsDetailModalOpen(true))}
+        onImageClick={onImageClick || handleOpenDetailModal}
       />
 
       {/* Linked Service Card */}
@@ -532,7 +564,7 @@ export default function PostCard({
               </span>
               <button
                 type="button"
-                onClick={() => setIsDetailModalOpen(true)}
+                onClick={handleOpenDetailModal}
                 className="text-gray-500 hover:text-black font-medium transition-colors cursor-pointer flex items-center gap-0.5"
               >
                 <span>ดูทั้งหมด</span>
@@ -721,7 +753,7 @@ export default function PostCard({
       <PostDetailModal
         post={{ ...post, sharesCount }}
         isOpen={isDetailModalOpen}
-        onClose={() => setIsDetailModalOpen(false)}
+        onClose={handleCloseDetailModal}
         onShareSuccess={(newCount) => setSharesCount(newCount)}
         onEdit={onEdit}
         onDelete={onDelete}

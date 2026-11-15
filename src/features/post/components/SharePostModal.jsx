@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useSharePostMutation } from "../hooks/use-posts";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { getPostPath } from "@/lib/slug";
 
 /**
  * SharePostModal - Modal สำหรับแชร์โพสต์ไปยังช่องทางต่างๆ พร้อมนับจำนวนแชร์ (sharesCount)
@@ -52,7 +53,7 @@ export default function SharePostModal({
       ? window.location.origin
       : "https://catako.site";
   const authorUsername = post.author?.username;
-  const shareUrl = `${origin}/?post=${post.id}`;
+  const shareUrl = `${origin}${getPostPath(authorUsername, post)}`;
 
   const shareTitle = `${post.author?.name || post.author?.username || "Alinue"}: "${(
     post.caption ||

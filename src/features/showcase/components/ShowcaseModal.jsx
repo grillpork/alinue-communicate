@@ -27,6 +27,7 @@ import {
 } from "../hooks/use-showcase";
 import { useMeQuery } from "@/features/auth";
 import { formatRelativeTime } from "@/lib/date";
+import { getShowcasePath } from "@/lib/slug";
 import EditShowcaseModal from "./EditShowcaseModal";
 import LinkedServiceCard from "@/components/common/LinkedServiceCard";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
@@ -229,7 +230,7 @@ export default function ShowcaseModal({
   const handleCopyLink = (e) => {
     e?.stopPropagation?.();
     if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
+      const url = `${window.location.origin}${getShowcasePath(author.username, showcase)}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -239,7 +240,7 @@ export default function ShowcaseModal({
   const handleShare = async (e) => {
     e?.stopPropagation?.();
     if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${author.username}?showcase=${showcase.id}`;
+      const url = `${window.location.origin}${getShowcasePath(author.username, showcase)}`;
       if (navigator.share) {
         try {
           await navigator.share({

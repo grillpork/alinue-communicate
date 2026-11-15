@@ -19,6 +19,7 @@ import {
   useDeleteShowcaseMutation,
 } from "../hooks/use-showcase";
 import { useMeQuery } from "@/features/auth";
+import { getShowcasePath } from "@/lib/slug";
 import ShowcaseModal from "./ShowcaseModal";
 import EditShowcaseModal from "./EditShowcaseModal";
 
@@ -72,6 +73,32 @@ export default function ShowcaseCard({
             loggedInUser.username.toLowerCase() ===
               authorUsername.toLowerCase()),
         );
+
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+    if (typeof window !== "undefined") {
+      const path = getShowcasePath(authorUsername, showcase);
+      window.history.pushState({ modal: "showcase", id: showcase.id }, "", path);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    if (typeof window !== "undefined") {
+      if (window.location.pathname.includes("/showcases/")) {
+        window.history.replaceState({}, "", `/${authorUsername}?tab=showcases`);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+    const handlePopState = () => {
+      setIsModalOpen(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isModalOpen]);
   const isLiked = Boolean(showcase.is_liked);
   const likesCount = showcase.likes_count || 0;
 
@@ -158,7 +185,7 @@ export default function ShowcaseCard({
     <div className="group relative flex flex-col">
       {/* 1. Pinterest-style Media Card */}
       <div
-        onClick={() => setIsModalOpen(true)}
+        onClick={handleOpenModal}
         className="relative w-full overflow-hidden rounded-2xl bg-gray-100 transition-all duration-300 group-hover:shadow-md cursor-pointer"
       >
         {isVideo ? (
@@ -330,7 +357,7 @@ export default function ShowcaseCard({
       <div className="pt-2 px-0.5">
         {/* Title */}
         <h3
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenModal}
           className="line-clamp-1 text-xs sm:text-[13px] font-bold text-gray-900 leading-snug group-hover:text-black cursor-pointer hover:underline"
         >
           {showcase.title}
@@ -388,7 +415,7 @@ export default function ShowcaseCard({
       <ShowcaseModal
         showcase={showcase}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={handleCloseModal}
         currentUserId={effectiveUserId}
         isOwner={isOwner}
         onDeleted={onDeleted}

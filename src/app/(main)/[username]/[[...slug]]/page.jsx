@@ -24,6 +24,7 @@ import {
 import {
   PostCard,
   PostFormModal,
+  PostDetailModal,
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
@@ -42,6 +43,7 @@ import {
 } from "@/features/service";
 import { useMeQuery } from "@/features/auth";
 import { useBookmarks } from "@/features/bookmark";
+import { slugify } from "@/lib/slug";
 
 function UserProfileContent() {
   const params = useParams();
@@ -51,6 +53,7 @@ function UserProfileContent() {
   const tabParam = searchParams?.get("tab");
   const [urlSelectedShowcase, setUrlSelectedShowcase] = useState(null);
   const [urlSelectedService, setUrlSelectedService] = useState(null);
+  const [urlSelectedPost, setUrlSelectedPost] = useState(null);
 
   const rawUsername = params?.username;
   const username =
@@ -158,17 +161,44 @@ function UserProfileContent() {
     useShowcasesQuery({ username }, { enabled: Boolean(username) });
   const showcases = showcasesData?.showcases || [];
 
-  // ตรวจสอบว่ามี ?showcase=:id ใน URL หรือไม่ เพื่อเปิด Modal ทันที
+  const slugArray = Array.isArray(params?.slug)
+    ? params.slug
+    : params?.slug
+      ? [params.slug]
+      : [];
+
+  const showcaseSlug =
+    slugArray[0] === "showcases" && slugArray[1]
+      ? decodeURIComponent(slugArray[1])
+      : showcaseParamId || null;
+
+  const serviceSlug =
+    slugArray[0] === "services" && slugArray[1]
+      ? decodeURIComponent(slugArray[1])
+      : serviceParamId || null;
+
+  const postSlug =
+    slugArray.length === 1 &&
+    slugArray[0] !== "showcases" &&
+    slugArray[0] !== "services"
+      ? decodeURIComponent(slugArray[0])
+      : null;
+
+  // ตรวจสอบ Showcase จาก URL Slug หรือ ?showcase=:id
   useEffect(() => {
-    if (showcaseParamId && showcases.length > 0) {
+    if (showcaseSlug && showcases.length > 0) {
       const found = showcases.find(
-        (s) => String(s.id) === String(showcaseParamId),
+        (s) =>
+          slugify(s.title) === showcaseSlug ||
+          String(s.id) === showcaseSlug ||
+          s.title?.toLowerCase() === showcaseSlug.toLowerCase(),
       );
       if (found) {
         setUrlSelectedShowcase(found);
+        setActiveTab("showcases");
       }
     }
-  }, [showcaseParamId, showcases]);
+  }, [showcaseSlug, showcases]);
 
   // 6. ดึงบริการ/โพสต์รับงาน Service ของผู้ใช้นี้
   const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
@@ -177,17 +207,56 @@ function UserProfileContent() {
   );
   const services = servicesData?.services || [];
 
-  // ตรวจสอบว่ามี ?service=:id ใน URL หรือไม่ เพื่อเปิด Modal ทันที
+  // ตรวจสอบ Service จาก URL Slug หรือ ?service=:id
   useEffect(() => {
-    if (serviceParamId && services.length > 0) {
+    if (serviceSlug && services.length > 0) {
       const found = services.find(
-        (s) => String(s.id) === String(serviceParamId),
+        (s) =>
+          slugify(s.title) === serviceSlug ||
+          String(s.id) === serviceSlug ||
+          s.title?.toLowerCase() === serviceSlug.toLowerCase(),
       );
       if (found) {
         setUrlSelectedService(found);
+        setActiveTab("services");
       }
     }
-  }, [serviceParamId, services]);
+  }, [serviceSlug, services]);
+
+  // ตรวจสอบ Post จาก URL Slug: /[username]/[ชื่อโพสต์]
+  useEffect(() => {
+    if (postSlug && posts.length > 0) {
+      const found = posts.find(
+        (p) =>
+          slugify(p.title || p.content?.slice(0, 50)) === postSlug ||
+          String(p.id) === postSlug,
+      );
+      if (found) {
+        setUrlSelectedPost(found);
+      }
+    }
+  }, [postSlug, posts]);
+
+  const handleCloseUrlShowcase = () => {
+    setUrlSelectedShowcase(null);
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", `/${username}?tab=showcases`);
+    }
+  };
+
+  const handleCloseUrlService = () => {
+    setUrlSelectedService(null);
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", `/${username}?tab=services`);
+    }
+  };
+
+  const handleCloseUrlPost = () => {
+    setUrlSelectedPost(null);
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", `/${username}`);
+    }
+  };
 
   const filteredShowcases = showcases || [];
 
@@ -611,12 +680,12 @@ function UserProfileContent() {
         onSubmit={handleCreatePost}
       />
 
-      {/* 5. URL Showcase Modal (เมื่อมี ?showcase=:id) */}
+      {/* 5. URL Showcase Modal (เมื่อ URL เป็น /[username]/showcases/[ชื่อผลงาน] หรือมี ?showcase=:id) */}
       {urlSelectedShowcase && (
         <ShowcaseModal
           showcase={urlSelectedShowcase}
           isOpen={Boolean(urlSelectedShowcase)}
-          onClose={() => setUrlSelectedShowcase(null)}
+          onClose={handleCloseUrlShowcase}
           currentUserId={currentUser?.id}
           isOwner={
             isSelf ||
@@ -638,12 +707,12 @@ function UserProfileContent() {
         onClose={() => setIsServiceModalOpen(false)}
       />
 
-      {/* 7. URL Service Modal (เมื่อมี ?service=:id) */}
+      {/* 7. URL Service Modal (เมื่อ URL เป็น /[username]/services/[ชื่อบริการ] หรือมี ?service=:id) */}
       {urlSelectedService && (
         <ServiceDetailModal
           service={urlSelectedService}
           isOpen={Boolean(urlSelectedService)}
-          onClose={() => setUrlSelectedService(null)}
+          onClose={handleCloseUrlService}
           currentUserId={currentUser?.id}
           isOwner={
             isSelf ||
@@ -655,6 +724,18 @@ function UserProfileContent() {
                 currentUser.username?.toLowerCase() ===
                   urlSelectedService?.author?.username?.toLowerCase()))
           }
+        />
+      )}
+
+      {/* 8. URL Post Modal (เมื่อ URL เป็น /[username]/[ชื่อโพสต์]) */}
+      {urlSelectedPost && (
+        <PostDetailModal
+          post={urlSelectedPost}
+          isOpen={Boolean(urlSelectedPost)}
+          onClose={handleCloseUrlPost}
+          onDelete={() => {
+            handleCloseUrlPost();
+          }}
         />
       )}
     </div>

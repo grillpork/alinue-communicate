@@ -37,6 +37,7 @@ import {
   getPlatformInfo,
   formatPlatformUrl,
 } from "@/features/user/components/SocialLinksModal";
+import { getServicePath } from "@/lib/slug";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 import useEmblaCarousel from "embla-carousel-react";
 import EditServiceModal from "./EditServiceModal";
@@ -191,7 +192,7 @@ export default function ServiceDetailModal({
 
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${author.username}?tab=services&service=${service.id}`;
+      const url = `${window.location.origin}${getServicePath(author.username, service)}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
@@ -200,7 +201,7 @@ export default function ServiceDetailModal({
 
   const handleShare = async () => {
     if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${author.username}?tab=services&service=${service.id}`;
+      const url = `${window.location.origin}${getServicePath(author.username, service)}`;
       if (navigator.share) {
         try {
           await navigator.share({

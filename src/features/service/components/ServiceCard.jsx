@@ -23,6 +23,7 @@ import {
   useToggleServiceStatusMutation,
 } from "../hooks/use-services";
 import { useMeQuery } from "@/features/auth";
+import { getServicePath } from "@/lib/slug";
 import ServiceDetailModal from "./ServiceDetailModal";
 import EditServiceModal from "./EditServiceModal";
 
@@ -102,9 +103,33 @@ export default function ServiceCard({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const authorUsername = author?.username || "user";
+
   const handleCardClick = () => {
     setIsDetailOpen(true);
+    if (typeof window !== "undefined") {
+      const path = getServicePath(authorUsername, service);
+      window.history.pushState({ modal: "service", id: service.id }, "", path);
+    }
   };
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
+    if (typeof window !== "undefined") {
+      if (window.location.pathname.includes("/services/")) {
+        window.history.replaceState({}, "", `/${authorUsername}?tab=services`);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isDetailOpen) return;
+    const handlePopState = () => {
+      setIsDetailOpen(false);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDetailOpen]);
 
   const handleToggleLike = (e) => {
     e.stopPropagation();
@@ -114,7 +139,7 @@ export default function ServiceCard({
   const handleCopyLink = (e) => {
     e.stopPropagation();
     if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${author.username}?tab=services&service=${service.id}`;
+      const url = `${window.location.origin}${getServicePath(authorUsername, service)}`;
       navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => {
@@ -128,7 +153,7 @@ export default function ServiceCard({
     e.stopPropagation();
     setShowMenu(false);
     if (typeof window !== "undefined") {
-      const url = `${window.location.origin}/${author.username}?tab=services&service=${service.id}`;
+      const url = `${window.location.origin}${getServicePath(authorUsername, service)}`;
       if (navigator.share) {
         try {
           await navigator.share({
@@ -399,7 +424,7 @@ export default function ServiceCard({
       {isDetailOpen && (
         <ServiceDetailModal
           isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
+          onClose={handleCloseDetail}
           service={service}
           isOwner={isOwner}
           onDeleted={onDeleted}
