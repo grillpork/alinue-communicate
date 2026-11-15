@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useMemo } from "react";
-import { motion, useMotionValue } from "motion/react";
+import React, { useMemo } from "react";
+import useEmblaCarousel from "embla-carousel-react";
 
 /**
- * แสดงรูปภาพใน PostCard ด้วย Motion Physics (Spring Elasticity, Momentum, Drag to Scroll แบบ Threads)
+ * Embla Carousel สำหรับเลื่อนดูรูปภาพใน PostCard (สไตล์ Threads / Card Peek สไลด์ด้วย Mouse Drag และ Touch)
+ * ไม่มีปุ่มลูกศร (No Arrows) และใช้ระบบ Drag/Scroll ของ Embla แท้
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
-  const containerRef = useRef(null);
-  const contentRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const [dragConstraint, setDragConstraint] = useState(0);
-  const x = useMotionValue(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: false,
+    align: "start",
+    containScroll: "trimSnaps",
+    duration: 25,
+  });
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -29,50 +31,6 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       })
       .filter((img) => Boolean(img?.url));
   }, [images]);
-
-  // คำนวณระยะที่สามารถ Drag ได้จากขนาดจริงของ Container และ Content
-  const updateConstraints = () => {
-    if (containerRef.current && contentRef.current) {
-      const containerWidth = containerRef.current.offsetWidth;
-      const contentWidth = contentRef.current.scrollWidth;
-      const maxDrag = Math.max(0, contentWidth - containerWidth);
-      setDragConstraint(maxDrag);
-
-      // รีเซ็ตตำแหน่งหากขนาดหน้าจอขยายจนเกินขอบเขต
-      if (x.get() < -maxDrag) {
-        x.set(-maxDrag);
-      }
-    }
-  };
-
-  useEffect(() => {
-    updateConstraints();
-
-    const container = containerRef.current;
-    if (!container) return;
-
-    const ro = new ResizeObserver(() => updateConstraints());
-    ro.observe(container);
-    if (contentRef.current) ro.observe(contentRef.current);
-
-    return () => ro.disconnect();
-  }, [normalizedImages]);
-
-  // ป้องกันการเปิด Image Modal เมื่อผู้ใช้ตั้งใจ Drag เลื่อนดูรูป
-  const handleImageClick = (url, idx) => {
-    if (isDraggingRef.current) return;
-    onImageClick?.(url, idx);
-  };
-
-  // รองรับการปาดด้วย 2 นิ้วบน Trackpad ของ Mac หรือล้อหมุนเมาส์แนวนอน
-  const handleWheel = (e) => {
-    if (dragConstraint <= 0) return;
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 2) {
-      const currentX = x.get();
-      const nextX = Math.min(0, Math.max(-dragConstraint, currentX - e.deltaX));
-      x.set(nextX);
-    }
-  };
 
   if (normalizedImages.length === 0) return null;
 
@@ -106,60 +64,47 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: Motion Drag Physics (Spring Elasticity + Inertia Momentum แบบ Threads)
+  // ป้องกันการเปิด Image Modal เมื่อผู้ใช้ Drag สไลด์รูปใน Embla
+  const handleImageClick = (url, idx) => {
+    if (emblaApi && !emblaApi.clickAllowed()) return;
+    onImageClick?.(url, idx);
+  };
+
+  // กรณี 2 รูปขึ้นไป: Card Carousel แบบเห็นการ์ดถัดไปยื่นออกมา (Peek Style) ด้วย Embla Carousel
   return (
-    <div
-      ref={containerRef}
-      onWheel={handleWheel}
-      className="relative mt-3 select-none overflow-hidden px-3.5 sm:px-4 cursor-grab active:cursor-grabbing"
-    >
-      <motion.div
-        ref={contentRef}
-        drag="x"
-        style={{ x }}
-        dragConstraints={{ left: -dragConstraint, right: 0 }}
-        dragElastic={0.16} // แรงสปริงหน่วงยืดหยุ่นเวลาลากชนขอบ
-        dragTransition={{
-          power: 0.22, // แรงเหวี่ยงส่งต่อหลังปล่อยเมาส์ (Inertia)
-          timeConstant: 250, // ความนุ่มนวลของการชะลอความเร็ว
-          bounceStiffness: 350, // ความเด้งของสปริงเมื่อคืนกลับ
-          bounceDamping: 30,
-        }}
-        onDragStart={() => {
-          isDraggingRef.current = true;
-        }}
-        onDragEnd={() => {
-          setTimeout(() => {
-            isDraggingRef.current = false;
-          }, 50);
-        }}
-        className="flex gap-2.5 w-max will-change-transform"
+    <div className="relative mt-3 select-none">
+      {/* Embla Viewport (ไม่มีปุ่มลูกศร เลื่อนด้วยเมาส์หรือทัช) */}
+      <div
+        ref={emblaRef}
+        className="overflow-hidden cursor-grab active:cursor-grabbing"
       >
-        {normalizedImages.map((img, idx) => (
-          <div
-            key={img.id || idx}
-            role="button"
-            tabIndex={0}
-            onClick={() => handleImageClick(img.url, idx)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onImageClick?.(img.url, idx);
-              }
-            }}
-            aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-            className="relative flex-[0_0_260px] sm:flex-[0_0_320px] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={img.url}
-              alt={img.name || `Image ${idx + 1}`}
-              draggable={false}
-              className="h-full w-full object-cover pointer-events-none select-none transition-transform duration-300 hover:scale-[1.02]"
-            />
-          </div>
-        ))}
-      </motion.div>
+        <div className="flex gap-2.5 px-3.5 sm:px-4">
+          {normalizedImages.map((img, idx) => (
+            <div
+              key={img.id || idx}
+              role="button"
+              tabIndex={0}
+              onClick={() => handleImageClick(img.url, idx)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onImageClick?.(img.url, idx);
+                }
+              }}
+              aria-label={`ดูรูปภาพที่ ${idx + 1}`}
+              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={img.url}
+                alt={img.name || `Image ${idx + 1}`}
+                draggable={false}
+                className="h-full w-full object-cover pointer-events-auto transition-transform duration-300 hover:scale-[1.02] cursor-pointer"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
