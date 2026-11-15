@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
-import useEmblaCarousel from "embla-carousel-react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -63,46 +62,41 @@ function renderPostText(text) {
 }
 
 /**
- * Embla Carousel สำหรับเลื่อนดูรูปภาพใน PostCard (สไตล์ Threads / Card Peek สไลด์ด้วย Mouse Drag)
+ * Carousel รูปภาพใน PostCard ใช้ Native CSS Scroll Snap (overflow-x-auto snap-x snap-mandatory)
+ * ประสิทธิภาพสูง ไม่พึ่งพา external library และเลื่อนลื่นไหลบนทุกอุปกรณ์
  */
 function PostImagesCarousel({ images, onImageClick }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
-    align: "start",
-    containScroll: "trimSnaps",
-    duration: 25,
-  });
+  const containerRef = useRef(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
 
+  const checkScroll = useCallback(() => {
+    if (!containerRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = containerRef.current;
+    setCanScrollPrev(scrollLeft > 5);
+    setCanScrollNext(scrollLeft < scrollWidth - clientWidth - 5);
+  }, []);
+
   useEffect(() => {
-    if (!emblaApi) return;
-
-    const syncEmbla = () => {
-      setCanScrollPrev(emblaApi.canScrollPrev());
-      setCanScrollNext(emblaApi.canScrollNext());
-    };
-
-    emblaApi.on("select", syncEmbla);
-    emblaApi.on("reInit", syncEmbla);
-
-    const rafId = requestAnimationFrame(syncEmbla);
-
+    const el = containerRef.current;
+    if (!el) return;
+    checkScroll();
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
     return () => {
-      cancelAnimationFrame(rafId);
-      emblaApi.off("select", syncEmbla);
-      emblaApi.off("reInit", syncEmbla);
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
     };
-  }, [emblaApi]);
+  }, [checkScroll]);
 
   const scrollPrev = (e) => {
     e.stopPropagation();
-    emblaApi?.scrollPrev();
+    containerRef.current?.scrollBy({ left: -320, behavior: "smooth" });
   };
 
   const scrollNext = (e) => {
     e.stopPropagation();
-    emblaApi?.scrollNext();
+    containerRef.current?.scrollBy({ left: 320, behavior: "smooth" });
   };
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ รองรับทั้ง Array of String ("https://...") และ Array of Object ({ url: "..." })
@@ -142,31 +136,29 @@ function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: Card Carousel แบบเห็นการ์ดถัดไปยื่นออกมา (Peek Style) เหมือนใน Threads
+  // กรณี 2 รูปขึ้นไป: Card Carousel แบบเห็นการ์ดถัดไปยื่นออกมา (Peek Style) ใช้ Native CSS Scroll Snap
   return (
     <div className="relative mt-3 group select-none">
-      {/* Embla Viewport */}
+      {/* Scrollable Container with Snap */}
       <div
-        ref={emblaRef}
-        className="overflow-hidden cursor-grab active:cursor-grabbing"
+        ref={containerRef}
+        className="flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory scroll-smooth"
       >
-        <div className="flex gap-2.5 px-3.5 sm:px-4">
-          {normalizedImages.map((img, idx) => (
-            <div
-              key={img.id || idx}
-              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.url}
-                alt={img.name || `Image ${idx + 1}`}
-                draggable={false}
-                onClick={() => onImageClick && onImageClick(img.url)}
-                className="h-full w-full object-cover pointer-events-auto transition-transform duration-300 hover:scale-[1.02]"
-              />
-            </div>
-          ))}
-        </div>
+        {normalizedImages.map((img, idx) => (
+          <div
+            key={img.id || idx}
+            className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] snap-start overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={img.url}
+              alt={img.name || `Image ${idx + 1}`}
+              draggable={false}
+              onClick={() => onImageClick && onImageClick(img.url)}
+              className="h-full w-full object-cover pointer-events-auto transition-transform duration-300 hover:scale-[1.02] cursor-pointer"
+            />
+          </div>
+        ))}
       </div>
 
       {/* Prev Navigation Arrow (ปรากฏเมื่อ Hover บนจอ Desktop) */}
@@ -175,7 +167,7 @@ function PostImagesCarousel({ images, onImageClick }) {
           type="button"
           onClick={scrollPrev}
           aria-label="Previous slide"
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -187,7 +179,7 @@ function PostImagesCarousel({ images, onImageClick }) {
           type="button"
           onClick={scrollNext}
           aria-label="Next slide"
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-800 shadow-md backdrop-blur-xs opacity-0 group-hover:opacity-100 hover:bg-white transition-all active:scale-95 border border-gray-100 cursor-pointer"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

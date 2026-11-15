@@ -3,7 +3,13 @@
 import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { Loader2, UserX, ArrowLeft, AlertTriangle, RotateCcw } from "lucide-react";
+import {
+  Loader2,
+  UserX,
+  ArrowLeft,
+  AlertTriangle,
+  RotateCcw,
+} from "lucide-react";
 import {
   ProfileHeader,
   ProfileTabs,
@@ -33,10 +39,7 @@ function UserProfileContent() {
     () => parseUsername(params?.username),
     [params?.username],
   );
-  const slugArray = useMemo(
-    () => parseSlugArray(params?.slug),
-    [params?.slug],
-  );
+  const slugArray = useMemo(() => parseSlugArray(params?.slug), [params?.slug]);
 
   // 2. Navigation Hook (Active Tab & URL synchronization)
   const { activeTab, changeTab } = useProfileNavigation({
@@ -141,8 +144,8 @@ function UserProfileContent() {
     router.replace(url, { scroll: false });
   }, [username, activeTab, searchParams, router]);
 
-  // Delete Post Handler (Async confirm + mutation + error alert + close modal only on success)
   const handleDeletePost = useCallback(
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     async (postId) => {
       if (deletePostMutation.isPending) return;
       if (!confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
@@ -152,7 +155,6 @@ function UserProfileContent() {
       try {
         await deletePostMutation.mutateAsync(postId);
 
-        // ปิด modal เฉพาะเมื่อโพสต์ที่กำลังเปิดดูอยู่คือโพสต์ที่เพิ่งลบสำเร็จ
         if (String(selectedPost?.id) === String(postId)) {
           handleCloseDetailModal();
         }
@@ -321,11 +323,7 @@ function UserProfileContent() {
       />
 
       {/* 2. Navigation Tabs (Sticky Top) */}
-      <ProfileTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onChangeTab={changeTab}
-      />
+      <ProfileTabs tabs={tabs} activeTab={activeTab} onChangeTab={changeTab} />
 
       {/* 3. Tab Content */}
       <ProfileTabContent
