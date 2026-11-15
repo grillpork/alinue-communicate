@@ -4,12 +4,7 @@ import React from "react";
 import { Heart, Loader2 } from "lucide-react";
 import { PostCard } from "@/features/post";
 
-export function LikedPostsTab({
-  likedPosts = [],
-  isLoading,
-  isSelf,
-  username,
-}) {
+export function LikesTab({ likedPosts = [], isLoading, isSelf, username }) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-gray-400">

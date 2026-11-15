@@ -1,0 +1,129 @@
+"use client";
+
+import { useMemo } from "react";
+import {
+  useUserProfileQuery,
+  useUserPostsQuery,
+  useUserLikedPostsQuery,
+} from "@/features/user";
+import { useShowcasesQuery } from "@/features/showcase";
+import { useServicesQuery } from "@/features/service";
+import { useBookmarks } from "@/features/bookmark";
+import {
+  getShowcaseSlug,
+  getServiceSlug,
+  getPostSlug,
+  matchSlug,
+} from "../utils/profile-url";
+import { useProfilePermissions } from "./useProfilePermissions";
+
+export function useProfileData({
+  username,
+  slugArray,
+  searchParams,
+  activeTab,
+}) {
+  const { currentUser, isSelf, isMeLoading } = useProfilePermissions(username);
+
+  // 1. User Profile Query
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError,
+  } = useUserProfileQuery(username, {
+    enabled: Boolean(username),
+  });
+  const profile = profileData?.profile || null;
+
+  // Slugs parsed from URL
+  const showcaseSlug = useMemo(
+    () => getShowcaseSlug(slugArray, searchParams),
+    [slugArray, searchParams],
+  );
+  const serviceSlug = useMemo(
+    () => getServiceSlug(slugArray, searchParams),
+    [slugArray, searchParams],
+  );
+  const postSlug = useMemo(() => getPostSlug(slugArray), [slugArray]);
+
+  // 2. Showcases Query (Lazy loaded when showcases tab or detail active)
+  const { data: showcasesData, isLoading: isShowcasesLoading } =
+    useShowcasesQuery(
+      { username },
+      {
+        enabled:
+          Boolean(username) &&
+          (activeTab === "showcases" || Boolean(showcaseSlug)),
+      },
+    );
+  const showcases = showcasesData?.showcases || [];
+
+  // 3. Services Query (Lazy loaded when services tab or detail active)
+  const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
+    { username, status: isSelf ? "all" : "active" },
+    {
+      enabled:
+        Boolean(username) &&
+        !isMeLoading &&
+        (activeTab === "services" || Boolean(serviceSlug)),
+    },
+  );
+  const services = servicesData?.services || [];
+
+  // 4. Posts Query (Guarded by profile.id and active tab/slug)
+  const { data: postsData, isLoading: isPostsLoading } = useUserPostsQuery(
+    profile?.id,
+    {
+      enabled:
+        Boolean(profile?.id) && (activeTab === "posts" || Boolean(postSlug)),
+    },
+  );
+  const posts = postsData?.posts || [];
+
+  // 5. Liked Posts Query (Guarded by profile.id and active tab)
+  const { data: likedPostsData, isLoading: isLikedPostsLoading } =
+    useUserLikedPostsQuery(profile?.id, {
+      enabled: Boolean(profile?.id) && activeTab === "likes",
+    });
+  const likedPosts = likedPostsData?.posts || [];
+
+  // 6. Bookmarked Posts
+  const { bookmarks: bookmarkedPosts } = useBookmarks();
+
+  // 7. Derived Details (No useState / useEffect)
+  const selectedShowcase = useMemo(() => {
+    if (!showcaseSlug || showcases.length === 0) return null;
+    return showcases.find((s) => matchSlug(s, showcaseSlug)) || null;
+  }, [showcaseSlug, showcases]);
+
+  const selectedService = useMemo(() => {
+    if (!serviceSlug || services.length === 0) return null;
+    return services.find((s) => matchSlug(s, serviceSlug)) || null;
+  }, [serviceSlug, services]);
+
+  const selectedPost = useMemo(() => {
+    if (!postSlug || posts.length === 0) return null;
+    return posts.find((p) => matchSlug(p, postSlug)) || null;
+  }, [postSlug, posts]);
+
+  return {
+    currentUser,
+    isSelf,
+    isMeLoading,
+    profile,
+    isProfileLoading,
+    isError,
+    showcases,
+    isShowcasesLoading,
+    services,
+    isServicesLoading,
+    posts,
+    isPostsLoading,
+    likedPosts,
+    isLikedPostsLoading,
+    bookmarkedPosts,
+    selectedShowcase,
+    selectedService,
+    selectedPost,
+  };
+}

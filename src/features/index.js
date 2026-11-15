@@ -6,3 +6,4 @@ export * from './showcase';
 export * from './bookmark';
 export * from './notification';
 export * from './artwork';
+export * from './user-profile';

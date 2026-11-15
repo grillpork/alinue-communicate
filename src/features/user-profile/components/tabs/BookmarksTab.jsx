@@ -4,11 +4,7 @@ import React from "react";
 import { Bookmark } from "lucide-react";
 import { PostCard } from "@/features/post";
 
-export function BookmarksTab({
-  bookmarkedPosts = [],
-  isSelf,
-  username,
-}) {
+export function BookmarksTab({ bookmarkedPosts = [], isSelf, username }) {
   return (
     <div>
       {isSelf ? (

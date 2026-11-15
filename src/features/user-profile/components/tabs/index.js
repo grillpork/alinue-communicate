@@ -1,5 +1,5 @@
-export { ShowcasesTab } from "./ShowcasesTab";
+export { ShowcaseTab } from "./ShowcaseTab";
 export { ServicesTab } from "./ServicesTab";
 export { PostsTab } from "./PostsTab";
-export { LikedPostsTab } from "./LikedPostsTab";
+export { LikesTab } from "./LikesTab";
 export { BookmarksTab } from "./BookmarksTab";

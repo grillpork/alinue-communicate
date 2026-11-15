@@ -4,7 +4,7 @@ import React from "react";
 import { Plus, Briefcase, Loader2 } from "lucide-react";
 import { ShowcaseCard } from "@/features/showcase";
 
-export function ShowcasesTab({
+export function ShowcaseTab({
   showcases = [],
   isLoading,
   isSelf,
