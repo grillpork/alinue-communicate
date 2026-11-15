@@ -1,9 +1,4 @@
-import {
-  fetchApi,
-  getAuthToken,
-  setAuthToken,
-  clearAuthToken,
-} from '@/lib/api';
+import { fetchApi } from '@/lib/api';
 
 export const authService = {
   // สมัครสมาชิกใหม่

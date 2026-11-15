@@ -19,7 +19,6 @@ import {
   authService,
   useMeQuery,
 } from "@/features/auth";
-import { getAuthToken } from "@/lib/api";
 
 /**
  * Reusable AuthForm Component
@@ -31,16 +30,14 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
   const router = useRouter();
   const isSignIn = type === "sign-in";
 
-  // ตรวจสอบสถานะการ Login: หากมี session/token อยู่แล้วให้ redirect ไปหน้าแรกทันที
+  // ตรวจสอบสถานะการ Login: หากมี session อยู่แล้วให้ redirect ไปหน้าแรกทันที
   const { data: meData, isLoading: isMeLoading } = useMeQuery();
+
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const token = getAuthToken();
-      if (token || meData?.user) {
-        router.replace("/");
-      }
+    if (!isMeLoading && meData?.user) {
+      router.replace("/");
     }
-  }, [meData, router]);
+  }, [meData, isMeLoading, router]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -129,6 +126,14 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
       window.location.href = authService.getGoogleAuthUrl();
     }
   };
+
+  if (isMeLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm mx-auto">

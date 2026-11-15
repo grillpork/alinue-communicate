@@ -12,13 +12,10 @@ export function useMeQuery(options = {}) {
   return useQuery({
     queryKey: authKeys.me(),
     queryFn: async () => {
-      const token = getAuthToken();
-      if (!token) return null;
       try {
         const res = await authService.getMe();
         return res;
       } catch (err) {
-        console.warn('useMeQuery error:', err);
         return null;
       }
     },
