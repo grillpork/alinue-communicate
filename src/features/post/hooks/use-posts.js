@@ -61,6 +61,15 @@ export function useUpdatePostMutation(options = {}) {
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: userKeys.all });
+
+      // อัปเดตแคชโพสต์เดี่ยวทันที
+      if (variables?.id) {
+        queryClient.setQueryData(postKeys.detail(variables.id), (old) => {
+          if (!old) return data?.post || data;
+          return { ...old, ...(data?.post || data) };
+        });
+      }
+
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }
@@ -81,6 +90,12 @@ export function useDeletePostMutation(options = {}) {
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: postKeys.all });
       queryClient.invalidateQueries({ queryKey: userKeys.all });
+
+      // นำแคชของโพสต์ที่ถูกลบออกจากหน่วยความจำ
+      if (variables) {
+        queryClient.removeQueries({ queryKey: postKeys.detail(variables) });
+      }
+
       if (customOnSuccess) {
         customOnSuccess(data, variables, context);
       }
