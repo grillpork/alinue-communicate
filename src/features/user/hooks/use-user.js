@@ -37,6 +37,7 @@ export function useUserPostsQuery(userId, options = {}) {
     queryKey: userKeys.posts(userId),
     queryFn: () => userService.getUserPosts(userId),
     enabled: Boolean(userId),
+    staleTime: 1000 * 60, // 1 นาที
     ...options,
   });
 }
@@ -49,6 +50,7 @@ export function useUserLikedPostsQuery(userId, options = {}) {
     queryKey: userKeys.likes(userId),
     queryFn: () => userService.getUserLikedPosts(userId),
     enabled: Boolean(userId),
+    staleTime: 1000 * 60, // 1 นาที
     ...options,
   });
 }

@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import {
   Grid,
   Heart,
@@ -10,7 +10,6 @@ import {
   UserX,
   ArrowLeft,
   Briefcase,
-  Plus,
   Bookmark,
   LayoutList,
 } from "lucide-react";
@@ -20,9 +19,13 @@ import {
   useUserPostsQuery,
   useUserLikedPostsQuery,
   useUpdateProfileMutation,
+  ShowcasesTab,
+  ServicesTab,
+  PostsTab,
+  LikedPostsTab,
+  BookmarksTab,
 } from "@/features/user";
 import {
-  PostCard,
   PostFormModal,
   PostDetailModal,
   useCreatePostMutation,
@@ -30,13 +33,11 @@ import {
   useDeletePostMutation,
 } from "@/features/post";
 import {
-  ShowcaseCard,
   ShowcaseModal,
   CreateShowcaseModal,
   useShowcasesQuery,
 } from "@/features/showcase";
 import {
-  ServiceCard,
   ServiceDetailModal,
   CreateServiceModal,
   useServicesQuery,
@@ -45,73 +46,200 @@ import { useMeQuery } from "@/features/auth";
 import { useBookmarks } from "@/features/bookmark";
 import { slugify } from "@/lib/slug";
 
+const VALID_TABS = ["showcases", "services", "posts", "likes", "bookmarks"];
+
 function UserProfileContent() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const showcaseParamId = searchParams?.get("showcase");
-  const serviceParamId = searchParams?.get("service");
-  const tabParam = searchParams?.get("tab");
-  const [urlSelectedShowcase, setUrlSelectedShowcase] = useState(null);
-  const [urlSelectedService, setUrlSelectedService] = useState(null);
-  const [urlSelectedPost, setUrlSelectedPost] = useState(null);
 
+  // 1. URL parsing (Source of Truth)
   const rawUsername = params?.username;
-  const username =
-    typeof rawUsername === "string"
+  const username = useMemo(() => {
+    return typeof rawUsername === "string"
       ? decodeURIComponent(rawUsername).replace(/^@/, "")
       : "";
+  }, [rawUsername]);
 
-  const [activeTab, setActiveTab] = useState(tabParam || "showcases");
+  const slugArray = useMemo(() => {
+    if (!params?.slug) return [];
+    return Array.isArray(params.slug) ? params.slug : [params.slug];
+  }, [params?.slug]);
+
+  // Derived Active Tab จาก URL
+  const activeTab = useMemo(() => {
+    if (slugArray[0] === "showcases") return "showcases";
+    if (slugArray[0] === "services") return "services";
+    const tab = searchParams?.get("tab");
+    if (tab && VALID_TABS.includes(tab)) return tab;
+    return "showcases";
+  }, [slugArray, searchParams]);
+
+  // Derived Slugs จาก URL
+  const showcaseSlug = useMemo(() => {
+    if (slugArray[0] === "showcases" && slugArray[1]) {
+      return decodeURIComponent(slugArray[1]);
+    }
+    return searchParams?.get("showcase") || null;
+  }, [slugArray, searchParams]);
+
+  const serviceSlug = useMemo(() => {
+    if (slugArray[0] === "services" && slugArray[1]) {
+      return decodeURIComponent(slugArray[1]);
+    }
+    return searchParams?.get("service") || null;
+  }, [slugArray, searchParams]);
+
+  const postSlug = useMemo(() => {
+    if (
+      slugArray.length === 1 &&
+      slugArray[0] !== "showcases" &&
+      slugArray[0] !== "services"
+    ) {
+      return decodeURIComponent(slugArray[0]);
+    }
+    return null;
+  }, [slugArray]);
+
+  // 2. Auth & Current User
+  const { data: meData, isLoading: isMeLoading } = useMeQuery();
+  const currentUser = meData?.user;
+  const isSelf = Boolean(
+    currentUser?.username &&
+      username &&
+      currentUser.username.toLowerCase() === username.toLowerCase(),
+  );
+
+  // 3. User Profile Query
+  const {
+    data: profileData,
+    isLoading: isProfileLoading,
+    isError,
+  } = useUserProfileQuery(username, {
+    enabled: Boolean(username),
+  });
+  const profile = profileData?.profile || null;
+
+  // 4. React Query Data (Guarded & Lazy-loaded per Active Tab to prevent duplicate requests)
+  const { data: showcasesData, isLoading: isShowcasesLoading } =
+    useShowcasesQuery(
+      { username },
+      {
+        enabled:
+          Boolean(username) &&
+          (activeTab === "showcases" || Boolean(showcaseSlug)),
+      },
+    );
+  const showcases = showcasesData?.showcases || [];
+
+  const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
+    { username, status: isSelf ? "all" : "active" },
+    {
+      enabled:
+        Boolean(username) &&
+        !isMeLoading &&
+        (activeTab === "services" || Boolean(serviceSlug)),
+    },
+  );
+  const services = servicesData?.services || [];
+
+  const { data: postsData, isLoading: isPostsLoading } = useUserPostsQuery(
+    profile?.id,
+    {
+      enabled:
+        Boolean(profile?.id) && (activeTab === "posts" || Boolean(postSlug)),
+    },
+  );
+  const posts = postsData?.posts || [];
+
+  const { data: likedPostsData, isLoading: isLikedPostsLoading } =
+    useUserLikedPostsQuery(profile?.id, {
+      enabled: Boolean(profile?.id) && activeTab === "likes",
+    });
+  const likedPosts = likedPostsData?.posts || [];
+
   const { bookmarks: bookmarkedPosts } = useBookmarks();
 
-  useEffect(() => {
-    if (
-      tabParam &&
-      ["showcases", "services", "posts", "likes", "bookmarks"].includes(
-        tabParam,
-      )
-    ) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
-  const [isShowcaseModalOpen, setIsShowcaseModalOpen] = useState(false);
-  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  // 5. Derived Selected Items for Detail Modals (No useState/useEffect needed!)
+  const selectedShowcase = useMemo(() => {
+    if (!showcaseSlug || showcases.length === 0) return null;
+    return (
+      showcases.find(
+        (s) =>
+          slugify(s.title) === showcaseSlug ||
+          String(s.id) === showcaseSlug ||
+          s.title?.toLowerCase() === showcaseSlug.toLowerCase(),
+      ) || null
+    );
+  }, [showcaseSlug, showcases]);
+
+  const selectedService = useMemo(() => {
+    if (!serviceSlug || services.length === 0) return null;
+    return (
+      services.find(
+        (s) =>
+          slugify(s.title) === serviceSlug ||
+          String(s.id) === serviceSlug ||
+          s.title?.toLowerCase() === serviceSlug.toLowerCase(),
+      ) || null
+    );
+  }, [serviceSlug, services]);
+
+  const selectedPost = useMemo(() => {
+    if (!postSlug || posts.length === 0) return null;
+    return (
+      posts.find(
+        (p) =>
+          slugify(p.title || p.content?.slice(0, 50)) === postSlug ||
+          String(p.id) === postSlug,
+      ) || null
+    );
+  }, [postSlug, posts]);
+
+  // 6. Navigation & URL Updates (Source of Truth)
+  const handleTabChange = (tabId) => {
+    const url = `/${username}${tabId !== "showcases" ? `?tab=${tabId}` : ""}`;
+    router.replace(url, { scroll: false });
+  };
+
+  const handleCloseDetailModal = () => {
+    const url = `/${username}${activeTab !== "showcases" ? `?tab=${activeTab}` : ""}`;
+    router.replace(url, { scroll: false });
+  };
+
+  // 7. Creation Modals State
+  const [isShowcaseCreateOpen, setIsShowcaseCreateOpen] = useState(false);
+  const [isServiceCreateOpen, setIsServiceCreateOpen] = useState(false);
+  const [isPostCreateOpen, setIsPostCreateOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
 
-  // 1. ดึงข้อมูลผู้ใช้ปัจจุบันที่ Login อยู่
-  const { data: meData } = useMeQuery();
-  const currentUser = meData?.user;
+  // Mutations
   const createPostMutation = useCreatePostMutation();
   const updatePostMutation = useUpdatePostMutation();
   const deletePostMutation = useDeletePostMutation();
+  const updateProfileMutation = useUpdateProfileMutation();
 
   const handleCreatePost = async (data) => {
-    try {
-      const imageList = (data.images || []).map((img) =>
-        typeof img === "string" ? img : img.url,
-      );
-      if (editingPost) {
-        await updatePostMutation.mutateAsync({
-          id: editingPost.id,
-          content: data.content,
-          images: imageList,
-          serviceId: data.serviceId || null,
-          serviceTitle: data.serviceTitle || null,
-        });
-        setEditingPost(null);
-      } else {
-        await createPostMutation.mutateAsync({
-          content: data.content,
-          images: imageList,
-          serviceId: data.serviceId || null,
-          serviceTitle: data.serviceTitle || null,
-        });
-        setIsPostModalOpen(false);
-      }
-    } catch (err) {
-      console.error("Failed to submit post:", err);
-      throw err;
+    const imageList = (data.images || []).map((img) =>
+      typeof img === "string" ? img : img.url,
+    );
+    if (editingPost) {
+      await updatePostMutation.mutateAsync({
+        id: editingPost.id,
+        content: data.content,
+        images: imageList,
+        serviceId: data.serviceId || null,
+        serviceTitle: data.serviceTitle || null,
+      });
+      setEditingPost(null);
+    } else {
+      await createPostMutation.mutateAsync({
+        content: data.content,
+        images: imageList,
+        serviceId: data.serviceId || null,
+        serviceTitle: data.serviceTitle || null,
+      });
+      setIsPostCreateOpen(false);
     }
   };
 
@@ -121,152 +249,7 @@ function UserProfileContent() {
     }
   };
 
-  const handleEditPost = (post) => {
-    setEditingPost(post);
-  };
-
-  // 2. ดึงข้อมูลโปรไฟล์ของ [username] จาก Neon DB
-  const {
-    data: profileData,
-    isLoading: isProfileLoading,
-    isError,
-  } = useUserProfileQuery(username, {
-    enabled: Boolean(username),
-  });
-
-  const profile = profileData?.profile || null;
-  const isSelf =
-    Boolean(currentUser?.username) &&
-    currentUser?.username?.toLowerCase() === username?.toLowerCase();
-
-  // 3. ดึงโพสต์ของผู้ใช้นี้
-  const { data: postsData, isLoading: isPostsLoading } = useUserPostsQuery(
-    profile?.id || username,
-    {
-      enabled: Boolean(profile?.id || username),
-    },
-  );
-
-  const posts = postsData?.posts || [];
-
-  // 4. ดึงโพสต์ที่ผู้ใช้นี้กด Like
-  const { data: likedPostsData, isLoading: isLikedPostsLoading } =
-    useUserLikedPostsQuery(profile?.id || username, {
-      enabled: Boolean(profile?.id || username),
-    });
-  const likedPosts = likedPostsData?.posts || [];
-
-  // 5. ดึงผลงาน Showcase ของผู้ใช้นี้
-  const { data: showcasesData, isLoading: isShowcasesLoading } =
-    useShowcasesQuery({ username }, { enabled: Boolean(username) });
-  const showcases = showcasesData?.showcases || [];
-
-  const slugArray = Array.isArray(params?.slug)
-    ? params.slug
-    : params?.slug
-      ? [params.slug]
-      : [];
-
-  const showcaseSlug =
-    slugArray[0] === "showcases" && slugArray[1]
-      ? decodeURIComponent(slugArray[1])
-      : showcaseParamId || null;
-
-  const serviceSlug =
-    slugArray[0] === "services" && slugArray[1]
-      ? decodeURIComponent(slugArray[1])
-      : serviceParamId || null;
-
-  const postSlug =
-    slugArray.length === 1 &&
-    slugArray[0] !== "showcases" &&
-    slugArray[0] !== "services"
-      ? decodeURIComponent(slugArray[0])
-      : null;
-
-  // ตรวจสอบ Showcase จาก URL Slug หรือ ?showcase=:id
-  useEffect(() => {
-    if (showcaseSlug && showcases.length > 0) {
-      const found = showcases.find(
-        (s) =>
-          slugify(s.title) === showcaseSlug ||
-          String(s.id) === showcaseSlug ||
-          s.title?.toLowerCase() === showcaseSlug.toLowerCase(),
-      );
-      if (found) {
-        setUrlSelectedShowcase(found);
-        setActiveTab("showcases");
-      }
-    }
-  }, [showcaseSlug, showcases]);
-
-  // 6. ดึงบริการ/โพสต์รับงาน Service ของผู้ใช้นี้
-  const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
-    { username, status: isSelf ? "all" : "active" },
-    { enabled: Boolean(username) },
-  );
-  const services = servicesData?.services || [];
-
-  // ตรวจสอบ Service จาก URL Slug หรือ ?service=:id
-  useEffect(() => {
-    if (serviceSlug && services.length > 0) {
-      const found = services.find(
-        (s) =>
-          slugify(s.title) === serviceSlug ||
-          String(s.id) === serviceSlug ||
-          s.title?.toLowerCase() === serviceSlug.toLowerCase(),
-      );
-      if (found) {
-        setUrlSelectedService(found);
-        setActiveTab("services");
-      }
-    }
-  }, [serviceSlug, services]);
-
-  // ตรวจสอบ Post จาก URL Slug: /[username]/[ชื่อโพสต์]
-  useEffect(() => {
-    if (postSlug && posts.length > 0) {
-      const found = posts.find(
-        (p) =>
-          slugify(p.title || p.content?.slice(0, 50)) === postSlug ||
-          String(p.id) === postSlug,
-      );
-      if (found) {
-        setUrlSelectedPost(found);
-      }
-    }
-  }, [postSlug, posts]);
-
-  const handleCloseUrlShowcase = () => {
-    setUrlSelectedShowcase(null);
-    if (typeof window !== "undefined") {
-      window.history.replaceState({}, "", `/${username}?tab=showcases`);
-    }
-  };
-
-  const handleCloseUrlService = () => {
-    setUrlSelectedService(null);
-    if (typeof window !== "undefined") {
-      window.history.replaceState({}, "", `/${username}?tab=services`);
-    }
-  };
-
-  const handleCloseUrlPost = () => {
-    setUrlSelectedPost(null);
-    if (typeof window !== "undefined") {
-      window.history.replaceState({}, "", `/${username}`);
-    }
-  };
-
-  const filteredShowcases = showcases || [];
-
-  const updateProfileMutation = useUpdateProfileMutation();
-
-  const handleUpdateNote = (newNote) => {
-    updateProfileMutation.mutate({ note: newNote });
-  };
-
-  // กำลังโหลดข้อมูล
+  // Loading state
   if (isProfileLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-28 text-gray-400">
@@ -278,7 +261,7 @@ function UserProfileContent() {
     );
   }
 
-  // ไม่พบผู้ใช้นี้ในระบบ
+  // Not found state
   if (isError || !profile) {
     return (
       <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-xs my-8 max-w-md mx-auto">
@@ -329,7 +312,9 @@ function UserProfileContent() {
       <ProfileHeader
         user={user}
         isSelf={isSelf}
-        onUpdateNote={isSelf ? handleUpdateNote : undefined}
+        onUpdateNote={
+          isSelf ? (note) => updateProfileMutation.mutate({ note }) : undefined
+        }
       />
 
       {/* 2. Navigation Tabs (Sticky Top) */}
@@ -340,21 +325,25 @@ function UserProfileContent() {
               id: "showcases",
               label: "Showcase",
               icon: Briefcase,
-              count: showcases.length,
+              count: showcases.length > 0 ? showcases.length : undefined,
             },
             {
               id: "services",
               label: "Services",
               icon: LayoutList,
-              count:
-                services.length > 0 ? services.length : isSelf ? 0 : undefined,
+              count: services.length > 0 ? services.length : undefined,
             },
-            { id: "posts", label: "Posts", icon: Grid, count: posts.length },
+            {
+              id: "posts",
+              label: "Posts",
+              icon: Grid,
+              count: profile?.stats?.posts || (posts.length > 0 ? posts.length : undefined),
+            },
             {
               id: "likes",
               label: "Likes",
               icon: Heart,
-              count: likedPosts.length > 0 ? likedPosts.length : undefined,
+              count: profile?.stats?.likes || (likedPosts.length > 0 ? likedPosts.length : undefined),
             },
             {
               id: "bookmarks",
@@ -372,7 +361,7 @@ function UserProfileContent() {
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 title={tab.label}
                 aria-label={tab.label}
                 className={`flex flex-1 items-center justify-center gap-2 py-3 text-xs font-semibold border-b-2 transition-colors cursor-pointer ${
@@ -394,348 +383,125 @@ function UserProfileContent() {
         </div>
       </div>
 
-      {/* 3. Tab Content */}
+      {/* 3. Tab Content (Extracted Tab Components) */}
       <div className="mt-4 px-2 sm:px-0">
-        {/* Tab: Showcase */}
         {activeTab === "showcases" && (
-          <div>
-            {isSelf && (
-              <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                    ผลงาน (Showcase)
-                  </h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    แกลเลอรีภาพและวิดีโอผลงาน
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsShowcaseModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black p-3.5 sm:py-2 sm:px-4 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:block">เพิ่มผลงาน</span>
-                </button>
-              </div>
-            )}
-
-            {isShowcasesLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <p className="text-xs">กำลังโหลดผลงาน Showcase...</p>
-              </div>
-            ) : filteredShowcases.length > 0 ? (
-              <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3.5 [column-fill:_balance]">
-                {filteredShowcases.map((sc) => (
-                  <div key={sc.id} className="break-inside-avoid mb-4">
-                    <ShowcaseCard
-                      showcase={sc}
-                      currentUserId={currentUser?.id}
-                      isOwner={
-                        isSelf ||
-                        (currentUser &&
-                          (Number(currentUser.id) ===
-                            Number(sc.userId || sc.author?.id) ||
-                            currentUser.username?.toLowerCase() ===
-                              sc.author?.username?.toLowerCase()))
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-2 p-6">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                  <Briefcase className="h-6 w-6" />
-                </div>
-                <p className="text-xs font-semibold text-gray-700">
-                  ยังไม่มีผลงาน Showcase
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                  {isSelf
-                    ? "เริ่มอัปโหลดรูปภาพหรือคลิปผลงานของคุณเพื่อให้คอมมูนิตี้เข้ามากด Like และชื่นชมได้เลย!"
-                    : `@${username} ยังไม่ได้โพสต์ผลงาน Showcase`}
-                </p>
-                {isSelf && (
-                  <button
-                    type="button"
-                    onClick={() => setIsShowcaseModalOpen(true)}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>เพิ่มผลงานชิ้นแรก</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <ShowcasesTab
+            showcases={showcases}
+            isLoading={isShowcasesLoading}
+            isSelf={isSelf}
+            username={username}
+            currentUser={currentUser}
+            onOpenCreate={() => setIsShowcaseCreateOpen(true)}
+          />
         )}
 
-        {/* Tab: Services */}
         {activeTab === "services" && (
-          <div>
-            {isSelf && (
-              <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                    บริการและประกาศรับงาน
-                  </h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    โพสต์รับงานมีอายุ 30 วัน (1 เดือน)
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsServiceModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black  p-3.5   sm:py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:block">โพสต์รับงาน</span>
-                </button>
-              </div>
-            )}
-
-            {isServicesLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <p className="text-xs">กำลังโหลดรายการบริการรับงาน...</p>
-              </div>
-            ) : services.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                {services.map((srv) => (
-                  <ServiceCard
-                    key={srv.id}
-                    service={srv}
-                    currentUserId={currentUser?.id}
-                    isOwner={isSelf}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-2 p-6">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                  <LayoutList className="h-6 w-6" />
-                </div>
-                <p className="text-xs font-semibold text-gray-700">
-                  ยังไม่มีบริการหรือประกาศรับงาน
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                  {isSelf
-                    ? "เปิดรับงาน คอมมิชชัน หรือบริการสร้างสรรค์ผลงานของคุณ พร้อมตัวอย่างงานและราคาเริ่มต้น"
-                    : `@${username} ยังไม่ได้เปิดรับงานในขณะนี้`}
-                </p>
-                {isSelf && (
-                  <button
-                    type="button"
-                    onClick={() => setIsServiceModalOpen(true)}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    <span>สร้างโพสต์รับงานชิ้นแรก</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <ServicesTab
+            services={services}
+            isLoading={isServicesLoading}
+            isSelf={isSelf}
+            username={username}
+            currentUser={currentUser}
+            onOpenCreate={() => setIsServiceCreateOpen(true)}
+          />
         )}
 
-        {/* Tab: Posts */}
         {activeTab === "posts" && (
-          <div>
-            {isSelf && (
-              <div className="flex items-center justify-between mb-4 bg-gray-50/70 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-gray-900">
-                    โพสต์และอัปเดต (Posts)
-                  </h3>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    แชร์เรื่องราวและพูดคุย
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPostModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-black p-3.5 sm:py-2 sm:px-4 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-all cursor-pointer shrink-0"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span className="hidden sm:block">สร้างโพสต์</span>
-                </button>
-              </div>
-            )}
-
-            {isPostsLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <p className="text-xs">Loading posts...</p>
-              </div>
-            ) : posts.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    onEdit={handleEditPost}
-                    onDelete={handleDeletePost}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center text-xs text-gray-400 border border-dashed border-gray-200 rounded-3xl mt-4">
-                No posts shared by @{username} yet.
-              </div>
-            )}
-          </div>
+          <PostsTab
+            posts={posts}
+            isLoading={isPostsLoading}
+            isSelf={isSelf}
+            username={username}
+            onOpenCreate={() => setIsPostCreateOpen(true)}
+            onEditPost={(p) => setEditingPost(p)}
+            onDeletePost={handleDeletePost}
+          />
         )}
 
-        {/* Tab: Likes */}
         {activeTab === "likes" && (
-          <div>
-            {isLikedPostsLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-                <Loader2 className="h-6 w-6 animate-spin mb-2" />
-                <p className="text-xs">กำลังโหลดโพสต์ที่ถูกใจ...</p>
-              </div>
-            ) : likedPosts.length > 0 ? (
-              <div className="divide-y divide-gray-100">
-                {likedPosts.map((post) => (
-                  <PostCard key={post.id} post={post} />
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-4 p-6">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                  <Heart className="h-6 w-6" />
-                </div>
-                <p className="text-xs font-semibold text-gray-700">
-                  ยังไม่มีโพสต์ที่ถูกใจ
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                  {isSelf
-                    ? "เมื่อคุณกดถูกใจโพสต์ โพสต์เหล่านั้นจะมาแสดงอยู่ที่นี่"
-                    : `@${username} ยังไม่ได้กดถูกใจโพสต์ใดๆ`}
-                </p>
-              </div>
-            )}
-          </div>
+          <LikedPostsTab
+            likedPosts={likedPosts}
+            isLoading={isLikedPostsLoading}
+            isSelf={isSelf}
+            username={username}
+          />
         )}
 
-        {/* Tab: Bookmark */}
         {activeTab === "bookmarks" && (
-          <div>
-            {isSelf ? (
-              bookmarkedPosts.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {bookmarkedPosts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-4 p-6">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                    <Bookmark className="h-6 w-6" />
-                  </div>
-                  <p className="text-xs font-semibold text-gray-700">
-                    ยังไม่มีโพสต์ที่บันทึกไว้ในบุ๊กมาร์ก
-                  </p>
-                  <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                    กดไอคอน Bookmark บนโพสต์ที่คุณสนใจ
-                    เพื่อเก็บไว้ดูย้อนหลังได้ทุกเมื่อ
-                  </p>
-                </div>
-              )
-            ) : (
-              <div className="py-16 text-center border border-dashed border-gray-200 rounded-3xl mt-4 p-6">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-3">
-                  <Bookmark className="h-6 w-6" />
-                </div>
-                <p className="text-xs font-semibold text-gray-700">
-                  รายการบุ๊กมาร์กเป็นข้อมูลส่วนตัว
-                </p>
-                <p className="text-[11px] text-gray-400 mt-1 max-w-xs mx-auto">
-                  เฉพาะเจ้าของบัญชี @{username}{" "}
-                  เท่านั้นที่สามารถดูโพสต์ที่บันทึกไว้ได้
-                </p>
-              </div>
-            )}
-          </div>
+          <BookmarksTab
+            bookmarkedPosts={bookmarkedPosts}
+            isSelf={isSelf}
+            username={username}
+          />
         )}
       </div>
 
-      {/* 4. Create Showcase Modal */}
+      {/* 4. Creation Modals */}
       <CreateShowcaseModal
-        isOpen={isShowcaseModalOpen}
-        onClose={() => setIsShowcaseModalOpen(false)}
+        isOpen={isShowcaseCreateOpen}
+        onClose={() => setIsShowcaseCreateOpen(false)}
       />
 
-      {/* 4.1 Create / Edit Post Modal */}
+      <CreateServiceModal
+        isOpen={isServiceCreateOpen}
+        onClose={() => setIsServiceCreateOpen(false)}
+      />
+
       <PostFormModal
-        isOpen={isPostModalOpen || Boolean(editingPost)}
+        isOpen={isPostCreateOpen || Boolean(editingPost)}
         isEdit={Boolean(editingPost)}
         initialPost={editingPost}
         onClose={() => {
-          setIsPostModalOpen(false);
+          setIsPostCreateOpen(false);
           setEditingPost(null);
         }}
         onSubmit={handleCreatePost}
       />
 
-      {/* 5. URL Showcase Modal (เมื่อ URL เป็น /[username]/showcases/[ชื่อผลงาน] หรือมี ?showcase=:id) */}
-      {urlSelectedShowcase && (
+      {/* 5. URL-driven Detail Modals (URL is Single Source of Truth) */}
+      {selectedShowcase && (
         <ShowcaseModal
-          showcase={urlSelectedShowcase}
-          isOpen={Boolean(urlSelectedShowcase)}
-          onClose={handleCloseUrlShowcase}
+          showcase={selectedShowcase}
+          isOpen={Boolean(selectedShowcase)}
+          onClose={handleCloseDetailModal}
           currentUserId={currentUser?.id}
           isOwner={
             isSelf ||
             (currentUser &&
               (Number(currentUser.id) ===
                 Number(
-                  urlSelectedShowcase?.userId ||
-                    urlSelectedShowcase?.author?.id,
+                  selectedShowcase.userId || selectedShowcase.author?.id,
                 ) ||
                 currentUser.username?.toLowerCase() ===
-                  urlSelectedShowcase?.author?.username?.toLowerCase()))
+                  selectedShowcase.author?.username?.toLowerCase()))
           }
         />
       )}
 
-      {/* 6. Create Service Modal */}
-      <CreateServiceModal
-        isOpen={isServiceModalOpen}
-        onClose={() => setIsServiceModalOpen(false)}
-      />
-
-      {/* 7. URL Service Modal (เมื่อ URL เป็น /[username]/services/[ชื่อบริการ] หรือมี ?service=:id) */}
-      {urlSelectedService && (
+      {selectedService && (
         <ServiceDetailModal
-          service={urlSelectedService}
-          isOpen={Boolean(urlSelectedService)}
-          onClose={handleCloseUrlService}
+          service={selectedService}
+          isOpen={Boolean(selectedService)}
+          onClose={handleCloseDetailModal}
           currentUserId={currentUser?.id}
           isOwner={
             isSelf ||
             (currentUser &&
               (Number(currentUser.id) ===
-                Number(
-                  urlSelectedService?.userId || urlSelectedService?.author?.id,
-                ) ||
+                Number(selectedService.userId || selectedService.author?.id) ||
                 currentUser.username?.toLowerCase() ===
-                  urlSelectedService?.author?.username?.toLowerCase()))
+                  selectedService.author?.username?.toLowerCase()))
           }
         />
       )}
 
-      {/* 8. URL Post Modal (เมื่อ URL เป็น /[username]/[ชื่อโพสต์]) */}
-      {urlSelectedPost && (
+      {selectedPost && (
         <PostDetailModal
-          post={urlSelectedPost}
-          isOpen={Boolean(urlSelectedPost)}
-          onClose={handleCloseUrlPost}
-          onDelete={() => {
-            handleCloseUrlPost();
-          }}
+          post={selectedPost}
+          isOpen={Boolean(selectedPost)}
+          onClose={handleCloseDetailModal}
+          onDelete={handleCloseDetailModal}
         />
       )}
     </div>

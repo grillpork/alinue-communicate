@@ -3,8 +3,8 @@ import { Suspense } from "react";
 
 const page = () => {
   return (
-    <Suspense>
-     <PostFeed />
+    <Suspense fallback={<div>Loading...</div>}>
+      <PostFeed />
     </Suspense>
   );
 };
