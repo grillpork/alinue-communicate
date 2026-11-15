@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useRef, useState, useMemo } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
+import { motion, useMotionValue } from "motion/react";
 
 /**
- * แสดงรูปภาพใน PostCard พร้อมรองรับ Drag to Scroll (ลากเมาส์เลื่อนแนวนอน) บน Desktop
+ * แสดงรูปภาพใน PostCard ด้วย Motion Physics (Spring Elasticity, Momentum, Drag to Scroll แบบ Threads)
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
-  const scrollRef = useRef(null);
-  const isMouseDownRef = useRef(false);
-  const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
+  const containerRef = useRef(null);
+  const contentRef = useRef(null);
   const isDraggingRef = useRef(false);
-  const [isDraggingState, setIsDraggingState] = useState(false);
+  const [dragConstraint, setDragConstraint] = useState(0);
+  const x = useMotionValue(0);
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -30,55 +30,48 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       .filter((img) => Boolean(img?.url));
   }, [images]);
 
-  // เริ่มต้นกดเมาส์ (Drag to Scroll)
-  const handleMouseDown = (e) => {
-    if (e.button !== 0) return; // คลิกซ้ายเท่านั้น
-    const container = scrollRef.current;
-    if (!container) return;
+  // คำนวณระยะที่สามารถ Drag ได้จากขนาดจริงของ Container และ Content
+  const updateConstraints = () => {
+    if (containerRef.current && contentRef.current) {
+      const containerWidth = containerRef.current.offsetWidth;
+      const contentWidth = contentRef.current.scrollWidth;
+      const maxDrag = Math.max(0, contentWidth - containerWidth);
+      setDragConstraint(maxDrag);
 
-    isMouseDownRef.current = true;
-    isDraggingRef.current = false;
-    startXRef.current = e.pageX - container.offsetLeft;
-    scrollLeftRef.current = container.scrollLeft;
-  };
-
-  // เลื่อนเมาส์ขณะกด (Drag to Scroll)
-  const handleMouseMove = (e) => {
-    if (!isMouseDownRef.current) return;
-    const container = scrollRef.current;
-    if (!container) return;
-
-    const x = e.pageX - container.offsetLeft;
-    const walk = x - startXRef.current;
-
-    // ขยับเกิน 5px ให้ถือว่าเป็นการ Drag
-    if (Math.abs(walk) > 5) {
-      if (!isDraggingRef.current) {
-        isDraggingRef.current = true;
-        setIsDraggingState(true);
+      // รีเซ็ตตำแหน่งหากขนาดหน้าจอขยายจนเกินขอบเขต
+      if (x.get() < -maxDrag) {
+        x.set(-maxDrag);
       }
-      e.preventDefault();
-      container.scrollLeft = scrollLeftRef.current - walk;
     }
   };
 
-  // ปล่อยเมาส์หรือเมาส์หลุดออกจากพื้นที่
-  const handleMouseUpOrLeave = () => {
-    isMouseDownRef.current = false;
-    if (isDraggingRef.current) {
-      setTimeout(() => {
-        isDraggingRef.current = false;
-        setIsDraggingState(false);
-      }, 50);
-    } else {
-      setIsDraggingState(false);
-    }
-  };
+  useEffect(() => {
+    updateConstraints();
 
-  // จัดการการคลิกที่รูปภาพ (ถ้าผู้ใช้กำลัง Drag จะไม่เปิด Detail Modal)
+    const container = containerRef.current;
+    if (!container) return;
+
+    const ro = new ResizeObserver(() => updateConstraints());
+    ro.observe(container);
+    if (contentRef.current) ro.observe(contentRef.current);
+
+    return () => ro.disconnect();
+  }, [normalizedImages]);
+
+  // ป้องกันการเปิด Image Modal เมื่อผู้ใช้ตั้งใจ Drag เลื่อนดูรูป
   const handleImageClick = (url, idx) => {
     if (isDraggingRef.current) return;
     onImageClick?.(url, idx);
+  };
+
+  // รองรับการปาดด้วย 2 นิ้วบน Trackpad ของ Mac หรือล้อหมุนเมาส์แนวนอน
+  const handleWheel = (e) => {
+    if (dragConstraint <= 0) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 2) {
+      const currentX = x.get();
+      const nextX = Math.min(0, Math.max(-dragConstraint, currentX - e.deltaX));
+      x.set(nextX);
+    }
   };
 
   if (normalizedImages.length === 0) return null;
@@ -113,18 +106,34 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: รองรับ Drag to Scroll ด้วยเมาส์ และ Touch Scroll บนมือถือ
+  // กรณี 2 รูปขึ้นไป: Motion Drag Physics (Spring Elasticity + Inertia Momentum แบบ Threads)
   return (
-    <div className="relative mt-3 select-none">
-      <div
-        ref={scrollRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUpOrLeave}
-        onMouseLeave={handleMouseUpOrLeave}
-        className={`flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
-          isDraggingState ? "cursor-grabbing select-none" : "cursor-grab"
-        }`}
+    <div
+      ref={containerRef}
+      onWheel={handleWheel}
+      className="relative mt-3 select-none overflow-hidden px-3.5 sm:px-4 cursor-grab active:cursor-grabbing"
+    >
+      <motion.div
+        ref={contentRef}
+        drag="x"
+        style={{ x }}
+        dragConstraints={{ left: -dragConstraint, right: 0 }}
+        dragElastic={0.16} // แรงสปริงหน่วงยืดหยุ่นเวลาลากชนขอบ
+        dragTransition={{
+          power: 0.22, // แรงเหวี่ยงส่งต่อหลังปล่อยเมาส์ (Inertia)
+          timeConstant: 250, // ความนุ่มนวลของการชะลอความเร็ว
+          bounceStiffness: 350, // ความเด้งของสปริงเมื่อคืนกลับ
+          bounceDamping: 30,
+        }}
+        onDragStart={() => {
+          isDraggingRef.current = true;
+        }}
+        onDragEnd={() => {
+          setTimeout(() => {
+            isDraggingRef.current = false;
+          }, 50);
+        }}
+        className="flex gap-2.5 w-max will-change-transform"
       >
         {normalizedImages.map((img, idx) => (
           <div
@@ -139,7 +148,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
               }
             }}
             aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-            className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+            className="relative flex-[0_0_260px] sm:flex-[0_0_320px] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -150,7 +159,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
             />
           </div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
