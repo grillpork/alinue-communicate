@@ -262,6 +262,7 @@ export default function PostCard({
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
   const currentUserAvatar = currentUser?.avatarUrl || currentUser?.avatar || "";
+  const currentUserName = currentUser?.name || currentUser?.username || "You";
   const isOwner = Boolean(
     currentUser?.id &&
     (post?.userId === currentUser.id || post?.author?.id === currentUser.id),
