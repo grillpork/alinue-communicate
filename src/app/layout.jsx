@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layout/AppShell";
-import { Providers } from "./providers";
+import { Providers } from "../components/provider/providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

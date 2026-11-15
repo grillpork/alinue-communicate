@@ -1,3 +1,3 @@
-'use client';
+"use client";
 
-export { default, Providers } from '@/app/providers';
+export { default, Providers } from "@/components/provider/providers";
