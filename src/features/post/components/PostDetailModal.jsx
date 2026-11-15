@@ -75,6 +75,7 @@ export default function PostDetailModal({
   onShareSuccess,
   onEdit,
   onDelete,
+  isDeleting = false,
 }) {
   const [activeImageIndex, setActiveImageIndex] = useState(initialImageIndex);
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -301,18 +302,18 @@ export default function PostDetailModal({
 
           <button
             type="button"
+            disabled={isDeleting}
             onClick={(e) => {
               e.stopPropagation();
               setShowMenu(false);
               if (onDelete) {
                 onDelete(post.id);
-                onClose();
               }
             }}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="h-3.5 w-3.5 text-rose-500" />
-            <span>ลบโพสต์</span>
+            <span>{isDeleting ? "กำลังลบ..." : "ลบโพสต์"}</span>
           </button>
         </>
       )}

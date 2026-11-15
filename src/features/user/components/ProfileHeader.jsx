@@ -85,7 +85,12 @@ function renderBioText(text) {
   });
 }
 
-export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
+export default function ProfileHeader({
+  user,
+  isSelf = true,
+  onUpdateNote,
+  isUpdatingNote = false,
+}) {
   const router = useRouter();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
@@ -185,9 +190,15 @@ export default function ProfileHeader({ user, isSelf = true, onUpdateNote }) {
   };
 
   const handleSaveNote = async (newNote) => {
-    setNoteText(newNote);
-    if (onUpdateNote) {
-      await onUpdateNote(newNote);
+    try {
+      if (onUpdateNote) {
+        await onUpdateNote(newNote);
+      }
+      setNoteText(newNote);
+    } catch (err) {
+      console.error("Failed to update note:", err);
+      alert("ไม่สามารถบันทึกข้อความได้ กรุณาลองใหม่อีกครั้ง");
+      throw err;
     }
   };
 

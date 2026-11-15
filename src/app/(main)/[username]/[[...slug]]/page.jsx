@@ -58,7 +58,8 @@ function UserProfileContent() {
     profile,
     isProfileLoading,
     isProfileError,
-    profileError,
+    isProfileNotFound,
+    isNetworkError,
     refetchProfile,
     counts,
     selectedShowcase,
@@ -81,6 +82,23 @@ function UserProfileContent() {
 
   const closeModal = useCallback(() => {
     setModal({ type: null, data: null });
+  }, []);
+
+  // Modal Opener Callbacks (Memoized to prevent unnecessary re-renders)
+  const openCreatePost = useCallback(() => {
+    setModal({ type: "create-post", data: null });
+  }, []);
+
+  const openCreateService = useCallback(() => {
+    setModal({ type: "create-service", data: null });
+  }, []);
+
+  const openCreateShowcase = useCallback(() => {
+    setModal({ type: "create-showcase", data: null });
+  }, []);
+
+  const editPost = useCallback((post) => {
+    setModal({ type: "edit-post", data: post });
   }, []);
 
   // Mutations
@@ -123,9 +141,10 @@ function UserProfileContent() {
     router.replace(url, { scroll: false });
   }, [username, activeTab, searchParams, router]);
 
-  // Delete Post Handler (Async confirm + mutation + close modal only on success)
+  // Delete Post Handler (Async confirm + mutation + error alert + close modal only on success)
   const handleDeletePost = useCallback(
     async (postId) => {
+      if (deletePostMutation.isPending) return;
       if (!confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
         return;
       }
@@ -139,9 +158,61 @@ function UserProfileContent() {
         }
       } catch (error) {
         console.error("Failed to delete post:", error);
+        alert(error?.message || "ไม่สามารถลบโพสต์ได้ กรุณาลองใหม่อีกครั้ง");
       }
     },
     [deletePostMutation, selectedPost?.id, handleCloseDetailModal],
+  );
+
+  // Update Note Handler (Async + error propagation)
+  const handleUpdateNote = useCallback(
+    async (note) => {
+      try {
+        await updateProfileMutation.mutateAsync({ note });
+      } catch (error) {
+        console.error("Failed to update profile note:", error);
+        throw error;
+      }
+    },
+    [updateProfileMutation],
+  );
+
+  // Memoized Callbacks for ProfileTabContent
+  const tabCallbacks = useMemo(
+    () => ({
+      onOpenCreateShowcase: openCreateShowcase,
+      onOpenCreateService: openCreateService,
+      onOpenCreatePost: openCreatePost,
+      onEditPost: editPost,
+      onDeletePost: handleDeletePost,
+    }),
+    [
+      openCreateShowcase,
+      openCreateService,
+      openCreatePost,
+      editPost,
+      handleDeletePost,
+    ],
+  );
+
+  // Memoized Detail Modals config
+  const detailModals = useMemo(
+    () => ({
+      selectedShowcase,
+      selectedService,
+      selectedPost,
+      onCloseDetail: handleCloseDetailModal,
+      onDeletePost: handleDeletePost,
+      isDeletingPost: deletePostMutation.isPending,
+    }),
+    [
+      selectedShowcase,
+      selectedService,
+      selectedPost,
+      handleCloseDetailModal,
+      handleDeletePost,
+      deletePostMutation.isPending,
+    ],
   );
 
   // Memoized User Object with correct isVerified default
@@ -156,7 +227,7 @@ function UserProfileContent() {
       socialLinks: profile.socialLinks || {},
       location: profile.location || "",
       note: profile.note || "Tell there what you think.",
-      isVerified: Boolean(profile.isVerified ?? false), // Fixed bug: defaults to false
+      isVerified: Boolean(profile.isVerified ?? false),
       joinedDate: profile.joinedDate,
       avatar: profile.avatar || profile.avatarUrl || null,
       banner: profile.banner || "/empty/no-image.png",
@@ -183,13 +254,8 @@ function UserProfileContent() {
     );
   }
 
-  // 2. Network Error State (แยกจาก 404 Not Found)
-  const isNotFound =
-    profileError?.status === 404 ||
-    profileError?.statusCode === 404 ||
-    (!profile && !isProfileError);
-
-  if (isProfileError && !isNotFound) {
+  // 2. Network Error State (เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ มีปุ่ม Retry)
+  if (isNetworkError) {
     return (
       <div className="rounded-3xl border border-rose-100 bg-white p-8 text-center shadow-xs my-8 max-w-md mx-auto">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 mb-4">
@@ -213,8 +279,8 @@ function UserProfileContent() {
     );
   }
 
-  // 3. User Not Found (404)
-  if (isNotFound || !profile || !user) {
+  // 3. User Not Found (404 จริงๆ)
+  if (isProfileNotFound) {
     return (
       <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-xs my-8 max-w-md mx-auto">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-4">
@@ -235,15 +301,23 @@ function UserProfileContent() {
     );
   }
 
+  // 4. Fallback ระหว่างเตรียมข้อมูล
+  if (!profile || !user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-28 text-gray-400">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600 mb-3" />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full pb-16">
       {/* 1. Profile Header */}
       <ProfileHeader
         user={user}
         isSelf={isSelf}
-        onUpdateNote={
-          isSelf ? (note) => updateProfileMutation.mutate({ note }) : undefined
-        }
+        onUpdateNote={isSelf ? handleUpdateNote : undefined}
+        isUpdatingNote={updateProfileMutation.isPending}
       />
 
       {/* 2. Navigation Tabs (Sticky Top) */}
@@ -260,16 +334,7 @@ function UserProfileContent() {
         isSelf={isSelf}
         currentUser={currentUser}
         data={profileData}
-        callbacks={{
-          onOpenCreateShowcase: () =>
-            setModal({ type: "create-showcase", data: null }),
-          onOpenCreateService: () =>
-            setModal({ type: "create-service", data: null }),
-          onOpenCreatePost: () =>
-            setModal({ type: "create-post", data: null }),
-          onEditPost: (post) => setModal({ type: "edit-post", data: post }),
-          onDeletePost: handleDeletePost,
-        }}
+        callbacks={tabCallbacks}
       />
 
       {/* 4. Unified Modal Manager (Create, Edit & URL Detail Modals) */}
@@ -277,13 +342,7 @@ function UserProfileContent() {
         modal={modal}
         onCloseModal={closeModal}
         onSubmitPost={handleCreatePost}
-        detailModals={{
-          selectedShowcase,
-          selectedService,
-          selectedPost,
-          onCloseDetail: handleCloseDetailModal,
-          onDeletePost: handleDeletePost,
-        }}
+        detailModals={detailModals}
         currentUser={currentUser}
         isSelf={isSelf}
       />

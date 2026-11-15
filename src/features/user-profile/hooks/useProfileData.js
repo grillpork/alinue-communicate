@@ -48,12 +48,21 @@ export function useProfileData({
     data: profileData,
     isLoading: isProfileLoading,
     isError: isProfileError,
+    isSuccess: isProfileSuccess,
     error: profileError,
     refetch: refetchProfile,
   } = useUserProfileQuery(username, {
     enabled: Boolean(username),
   });
   const profile = profileData?.profile || null;
+
+  // แยกสถานะ Not Found (404) กับ Network Error ชัดเจน ไม่เดาจากความว่างเปล่า
+  const isProfileNotFound =
+    profileError?.status === 404 ||
+    profileError?.statusCode === 404 ||
+    (isProfileSuccess && !profile);
+
+  const isNetworkError = isProfileError && !isProfileNotFound;
 
   // Slugs parsed from URL
   const showcaseSlug = useMemo(
@@ -161,6 +170,8 @@ export function useProfileData({
     profile,
     isProfileLoading,
     isProfileError,
+    isProfileNotFound,
+    isNetworkError,
     profileError,
     refetchProfile,
     showcases,

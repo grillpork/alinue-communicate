@@ -85,6 +85,7 @@ export function ProfileModals({
           isOpen={Boolean(selectedPost)}
           onClose={onCloseDetail}
           onDelete={onDeletePost}
+          isDeleting={detailModals.isDeletingPost}
         />
       )}
     </>
