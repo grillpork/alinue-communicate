@@ -87,9 +87,8 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // ป้องกันการเปิด Image Modal เมื่อผู้ใช้ Drag สไลด์รูปใน Embla
+  // คลิกที่รูปภาพเพื่อเปิด Post Detail Modal
   const handleImageClick = (url, idx) => {
-    if (emblaApi && !emblaApi.clickAllowed()) return;
     onImageClick?.(url, idx);
   };
 
