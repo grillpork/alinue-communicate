@@ -1,29 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Briefcase, LayoutList, Grid, Heart, Bookmark } from "lucide-react";
-import { getActiveTabFromUrl, buildProfileTabUrl } from "../utils/profile-url";
 
-export function useProfileTabs({
-  username,
-  slugArray,
+/**
+ * สร้างรายการ Tabs พร้อมตัวเลขนับ (Badge) ตามเงื่อนไขและสิทธิ์ของผู้ใช้
+ */
+export function useProfileTabItems({
   profile,
   counts = {},
   isSelf = false,
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const activeTab = useMemo(() => {
-    return getActiveTabFromUrl(slugArray, searchParams);
-  }, [slugArray, searchParams]);
-
-  const changeTab = (tabId) => {
-    const url = buildProfileTabUrl(username, tabId);
-    router.replace(url, { scroll: false });
-  };
-
   const tabs = useMemo(() => {
     return [
       {
@@ -63,9 +50,5 @@ export function useProfileTabs({
     ];
   }, [counts, profile?.stats, isSelf]);
 
-  return {
-    activeTab,
-    changeTab,
-    tabs,
-  };
+  return { tabs };
 }

@@ -51,8 +51,26 @@ export function getPostSlug(slugArray) {
   return null;
 }
 
-export function buildProfileTabUrl(username, tabId) {
-  return `/${username}${tabId !== "showcases" ? `?tab=${tabId}` : ""}`;
+/**
+ * สร้าง Profile Tab URL โดยสามารถเก็บ Query Params อื่นๆ ที่มีอยู่ไว้ได้
+ */
+export function buildProfileTabUrl(username, tabId, existingSearchParams) {
+  const params = new URLSearchParams(
+    existingSearchParams ? existingSearchParams.toString() : "",
+  );
+
+  // ลบ detail params เมื่อสลับแท็บ
+  params.delete("showcase");
+  params.delete("service");
+
+  if (tabId && tabId !== "showcases") {
+    params.set("tab", tabId);
+  } else {
+    params.delete("tab");
+  }
+
+  const queryStr = params.toString();
+  return `/${username}${queryStr ? `?${queryStr}` : ""}`;
 }
 
 export function matchSlug(item, targetSlug) {

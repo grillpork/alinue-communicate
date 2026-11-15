@@ -23,7 +23,8 @@ export function useProfileData({
   searchParams,
   activeTab,
 }) {
-  const { currentUser, isSelf, isMeLoading } = useProfilePermissions(username);
+  const { currentUser, isSelf, isMeLoading, checkIsOwner } =
+    useProfilePermissions(username);
 
   // 1. User Profile Query
   const {
@@ -58,7 +59,7 @@ export function useProfileData({
     );
   const showcases = showcasesData?.showcases || [];
 
-  // 3. Services Query (Lazy loaded when services tab or detail active)
+  // 3. Services Query (รอจนกว่าจะยืนยัน isMeLoading ก่อนกำหนด status: all / active)
   const { data: servicesData, isLoading: isServicesLoading } = useServicesQuery(
     { username, status: isSelf ? "all" : "active" },
     {
@@ -70,7 +71,7 @@ export function useProfileData({
   );
   const services = servicesData?.services || [];
 
-  // 4. Posts Query (Guarded by profile.id and active tab/slug)
+  // 4. Posts Query (ต้องรอให้ได้ profile.id ที่แน่นอนก่อนเสมอ เพื่อไม่ให้สลับ Query Key)
   const { data: postsData, isLoading: isPostsLoading } = useUserPostsQuery(
     profile?.id,
     {
@@ -80,17 +81,21 @@ export function useProfileData({
   );
   const posts = postsData?.posts || [];
 
-  // 5. Liked Posts Query (Guarded by profile.id and active tab)
+  // 5. Liked Posts Query (ต้องรอให้ได้ profile.id และอยู่บน tab likes เท่านั้น)
   const { data: likedPostsData, isLoading: isLikedPostsLoading } =
     useUserLikedPostsQuery(profile?.id, {
       enabled: Boolean(profile?.id) && activeTab === "likes",
     });
   const likedPosts = likedPostsData?.posts || [];
 
-  // 6. Bookmarked Posts
-  const { bookmarks: bookmarkedPosts } = useBookmarks();
+  // 6. Bookmarked Posts: เฉพาะโปรไฟล์ของตัวเอง (isSelf) เท่านั้นที่จะเข้าถึงได้
+  const { bookmarks: allUserBookmarks } = useBookmarks();
+  const bookmarkedPosts = useMemo(() => {
+    if (!isSelf) return [];
+    return allUserBookmarks || [];
+  }, [isSelf, allUserBookmarks]);
 
-  // 7. Derived Details (No useState / useEffect)
+  // 7. Derived Details (ค้นหาจาก slug โดยไม่ต้องใช้ useEffect หรือ useState)
   const selectedShowcase = useMemo(() => {
     if (!showcaseSlug || showcases.length === 0) return null;
     return showcases.find((s) => matchSlug(s, showcaseSlug)) || null;
@@ -110,6 +115,7 @@ export function useProfileData({
     currentUser,
     isSelf,
     isMeLoading,
+    checkIsOwner,
     profile,
     isProfileLoading,
     isError,

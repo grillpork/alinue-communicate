@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { Loader2, UserX, ArrowLeft } from "lucide-react";
@@ -8,28 +8,20 @@ import {
   ProfileHeader,
   ProfileTabs,
   ProfileTabContent,
+  ProfileModals,
   useProfileData,
-  useProfileTabs,
+  useProfileNavigation,
+  useProfileTabItems,
   parseUsername,
   parseSlugArray,
   buildProfileTabUrl,
 } from "@/features/user-profile";
 import { useUpdateProfileMutation } from "@/features/user";
 import {
-  PostFormModal,
-  PostDetailModal,
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
 } from "@/features/post";
-import {
-  ShowcaseModal,
-  CreateShowcaseModal,
-} from "@/features/showcase";
-import {
-  ServiceDetailModal,
-  CreateServiceModal,
-} from "@/features/service";
 
 function UserProfileContent() {
   const router = useRouter();
@@ -46,13 +38,13 @@ function UserProfileContent() {
     [params?.slug],
   );
 
-  // 2. Tabs logic
-  const { activeTab, changeTab } = useProfileTabs({
+  // 2. Navigation Hook (Single Responsibility: Active Tab & URL)
+  const { activeTab, changeTab } = useProfileNavigation({
     username,
     slugArray,
   });
 
-  // 3. Data queries & derived detail states (Optimized with guarded fetching)
+  // 3. Data Query Hook (Protected & Lazy-loaded Queries)
   const profileData = useProfileData({
     username,
     slugArray,
@@ -76,10 +68,8 @@ function UserProfileContent() {
     selectedPost,
   } = profileData;
 
-  // Tabs with counts badge
-  const { tabs: computedTabs } = useProfileTabs({
-    username,
-    slugArray,
+  // 4. Tab Items Hook (Single Responsibility: Tab configuration & counts)
+  const { tabs } = useProfileTabItems({
     profile,
     counts: {
       showcases: showcases.length,
@@ -91,51 +81,91 @@ function UserProfileContent() {
     isSelf,
   });
 
-  // 4. Creation Modals & Post Editing
-  const [isShowcaseCreateOpen, setIsShowcaseCreateOpen] = useState(false);
-  const [isServiceCreateOpen, setIsServiceCreateOpen] = useState(false);
-  const [isPostCreateOpen, setIsPostCreateOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState(null);
+  // 5. Discriminated Modal State Management
+  const [modal, setModal] = useState({
+    type: null, // "create-showcase" | "create-service" | "create-post" | "edit-post"
+    data: null,
+  });
 
+  const closeModal = useCallback(() => {
+    setModal({ type: null, data: null });
+  }, []);
+
+  // Mutations
   const createPostMutation = useCreatePostMutation();
   const updatePostMutation = useUpdatePostMutation();
   const deletePostMutation = useDeletePostMutation();
   const updateProfileMutation = useUpdateProfileMutation();
 
+  // Post Submission Handler (Sanitized images, unified payload, error safety)
   const handleCreatePost = async (data) => {
-    const imageList = (data.images || []).map((img) =>
-      typeof img === "string" ? img : img.url,
-    );
-    if (editingPost) {
+    const imageList = (data.images || [])
+      .map((img) => (typeof img === "string" ? img : img?.url))
+      .filter(Boolean);
+
+    const payload = {
+      content: data.content,
+      images: imageList,
+      serviceId: data.serviceId || null,
+      serviceTitle: data.serviceTitle || null,
+    };
+
+    if (modal.type === "edit-post" && modal.data?.id) {
       await updatePostMutation.mutateAsync({
-        id: editingPost.id,
-        content: data.content,
-        images: imageList,
-        serviceId: data.serviceId || null,
-        serviceTitle: data.serviceTitle || null,
+        id: modal.data.id,
+        ...payload,
       });
-      setEditingPost(null);
     } else {
-      await createPostMutation.mutateAsync({
-        content: data.content,
-        images: imageList,
-        serviceId: data.serviceId || null,
-        serviceTitle: data.serviceTitle || null,
-      });
-      setIsPostCreateOpen(false);
+      await createPostMutation.mutateAsync(payload);
     }
+
+    closeModal();
   };
 
-  const handleDeletePost = (postId) => {
-    if (confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
-      deletePostMutation.mutate(postId);
-    }
-  };
-
-  const handleCloseDetailModal = () => {
-    const url = buildProfileTabUrl(username, activeTab);
+  const handleCloseDetailModal = useCallback(() => {
+    const url = buildProfileTabUrl(username, activeTab, searchParams);
     router.replace(url, { scroll: false });
-  };
+  }, [username, activeTab, searchParams, router]);
+
+  // Delete Post Handler (Confirm + execute mutation + close modal)
+  const handleDeletePost = useCallback(
+    (postId) => {
+      if (confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
+        deletePostMutation.mutate(postId);
+        if (selectedPost) {
+          handleCloseDetailModal();
+        }
+      }
+    },
+    [deletePostMutation, selectedPost, handleCloseDetailModal],
+  );
+
+  // Memoized User Object with correct isVerified default
+  const user = useMemo(() => {
+    if (!profile) return null;
+    return {
+      id: profile.id,
+      name: profile.name || profile.displayName || profile.username,
+      username: profile.username,
+      bio: profile.bio || "",
+      website: profile.website || "",
+      socialLinks: profile.socialLinks || {},
+      location: profile.location || "",
+      note: profile.note || "Tell there what you think.",
+      isVerified: Boolean(profile.isVerified ?? false), // Fixed bug: defaults to false
+      joinedDate: profile.joinedDate,
+      avatar: profile.avatar || profile.avatarUrl || null,
+      banner: profile.banner || "/empty/no-image.png",
+      stats: profile.stats || {
+        posts: posts.length,
+        followers: 0,
+        following: 0,
+        viewing: 0,
+        likes: 0,
+      },
+      isFollowing: profile.isFollowing,
+    };
+  }, [profile, posts.length]);
 
   // Loading state
   if (isProfileLoading) {
@@ -150,7 +180,7 @@ function UserProfileContent() {
   }
 
   // Not found state
-  if (isError || !profile) {
+  if (isError || !profile || !user) {
     return (
       <div className="rounded-3xl border border-gray-100 bg-white p-8 text-center shadow-xs my-8 max-w-md mx-auto">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-50 text-gray-400 mb-4">
@@ -171,29 +201,6 @@ function UserProfileContent() {
     );
   }
 
-  const user = {
-    id: profile.id,
-    name: profile.name || profile.displayName || profile.username,
-    username: profile.username,
-    bio: profile.bio || "",
-    website: profile.website || "",
-    socialLinks: profile.socialLinks || {},
-    location: profile.location || "",
-    note: profile.note || "Tell there what you think.",
-    isVerified: Boolean(profile.isVerified ?? true),
-    joinedDate: profile.joinedDate,
-    avatar: profile.avatar || profile.avatarUrl || null,
-    banner: profile.banner || "/empty/no-image.png",
-    stats: profile.stats || {
-      posts: posts.length,
-      followers: 0,
-      following: 0,
-      viewing: 0,
-      likes: 0,
-    },
-    isFollowing: profile.isFollowing,
-  };
-
   return (
     <div className="w-full pb-16">
       {/* 1. Profile Header */}
@@ -207,7 +214,7 @@ function UserProfileContent() {
 
       {/* 2. Navigation Tabs (Sticky Top) */}
       <ProfileTabs
-        tabs={computedTabs}
+        tabs={tabs}
         activeTab={activeTab}
         onChangeTab={changeTab}
       />
@@ -220,79 +227,29 @@ function UserProfileContent() {
         currentUser={currentUser}
         data={profileData}
         callbacks={{
-          onOpenCreateShowcase: () => setIsShowcaseCreateOpen(true),
-          onOpenCreateService: () => setIsServiceCreateOpen(true),
-          onOpenCreatePost: () => setIsPostCreateOpen(true),
-          onEditPost: (p) => setEditingPost(p),
+          onOpenCreateShowcase: () => setModal({ type: "create-showcase", data: null }),
+          onOpenCreateService: () => setModal({ type: "create-service", data: null }),
+          onOpenCreatePost: () => setModal({ type: "create-post", data: null }),
+          onEditPost: (post) => setModal({ type: "edit-post", data: post }),
           onDeletePost: handleDeletePost,
         }}
       />
 
-      {/* 4. Creation Modals */}
-      <CreateShowcaseModal
-        isOpen={isShowcaseCreateOpen}
-        onClose={() => setIsShowcaseCreateOpen(false)}
-      />
-
-      <CreateServiceModal
-        isOpen={isServiceCreateOpen}
-        onClose={() => setIsServiceCreateOpen(false)}
-      />
-
-      <PostFormModal
-        isOpen={isPostCreateOpen || Boolean(editingPost)}
-        isEdit={Boolean(editingPost)}
-        initialPost={editingPost}
-        onClose={() => {
-          setIsPostCreateOpen(false);
-          setEditingPost(null);
+      {/* 4. Unified Modal Manager (Create, Edit & URL Detail Modals) */}
+      <ProfileModals
+        modal={modal}
+        onCloseModal={closeModal}
+        onSubmitPost={handleCreatePost}
+        detailModals={{
+          selectedShowcase,
+          selectedService,
+          selectedPost,
+          onCloseDetail: handleCloseDetailModal,
+          onDeletePost: handleDeletePost,
         }}
-        onSubmit={handleCreatePost}
+        currentUser={currentUser}
+        isSelf={isSelf}
       />
-
-      {/* 5. URL-driven Detail Modals (URL is Single Source of Truth) */}
-      {selectedShowcase && (
-        <ShowcaseModal
-          showcase={selectedShowcase}
-          isOpen={Boolean(selectedShowcase)}
-          onClose={handleCloseDetailModal}
-          currentUserId={currentUser?.id}
-          isOwner={
-            isSelf ||
-            (currentUser &&
-              (Number(currentUser.id) ===
-                Number(selectedShowcase.userId || selectedShowcase.author?.id) ||
-                currentUser.username?.toLowerCase() ===
-                  selectedShowcase.author?.username?.toLowerCase()))
-          }
-        />
-      )}
-
-      {selectedService && (
-        <ServiceDetailModal
-          service={selectedService}
-          isOpen={Boolean(selectedService)}
-          onClose={handleCloseDetailModal}
-          currentUserId={currentUser?.id}
-          isOwner={
-            isSelf ||
-            (currentUser &&
-              (Number(currentUser.id) ===
-                Number(selectedService.userId || selectedService.author?.id) ||
-                currentUser.username?.toLowerCase() ===
-                  selectedService.author?.username?.toLowerCase()))
-          }
-        />
-      )}
-
-      {selectedPost && (
-        <PostDetailModal
-          post={selectedPost}
-          isOpen={Boolean(selectedPost)}
-          onClose={handleCloseDetailModal}
-          onDelete={handleCloseDetailModal}
-        />
-      )}
     </div>
   );
 }

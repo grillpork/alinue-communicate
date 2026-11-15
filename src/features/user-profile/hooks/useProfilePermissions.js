@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useMeQuery } from "@/features/auth";
+import { isContentOwner } from "../utils/profile-permissions";
 
 export function useProfilePermissions(username) {
   const { data: meData, isLoading: isMeLoading } = useMeQuery();
@@ -15,6 +16,14 @@ export function useProfilePermissions(username) {
     );
   }, [currentUser?.username, username]);
 
+  const checkIsOwner = useCallback(
+    (content) => {
+      if (isSelf) return true;
+      return isContentOwner(currentUser, content);
+    },
+    [isSelf, currentUser],
+  );
+
   return {
     currentUser,
     isSelf,
@@ -22,5 +31,6 @@ export function useProfilePermissions(username) {
     canEdit: isSelf,
     canPost: isSelf,
     canBookmark: isSelf,
+    checkIsOwner,
   };
 }
