@@ -109,7 +109,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
         ref={emblaRef}
         className="overflow-hidden cursor-grab active:cursor-grabbing"
       >
-        <div className="flex gap-2.5 px-3.5 sm:px-4">
+        <div className="flex gap-0.5 px-3.5 sm:px-4">
           {normalizedImages.map((img, idx) => (
             <div
               key={img.id || idx}
@@ -119,18 +119,44 @@ export default function PostImagesCarousel({ images, onImageClick }) {
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onImageClick?.(img.url, idx);
+                  handleImageClick(img.url, idx);
                 }
               }}
               aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-              className={`relative min-w-0 ${cardSizeClass} flex items-center justify-center overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/70 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black`}
+              className="
+      relative
+      flex-[0_0_auto]
+      w-fit
+      max-w-[82%]
+      sm:max-w-[78%]
+      min-w-0
+      overflow-hidden
+      rounded-2xl
+      border border-neutral-100
+      bg-gray-50/70
+      shadow-2xs
+      shrink-0
+      cursor-pointer
+      focus:outline-none
+      focus-visible:ring-2
+      focus-visible:ring-black
+    "
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}
                 alt={img.name || `Image ${idx + 1}`}
                 draggable={false}
-                className="h-full w-full object-contain pointer-events-auto transition-transform duration-300 hover:scale-[1.01] cursor-pointer"
+                className="
+                    block
+                    w-auto
+                    h-auto
+                    max-w-full
+                    max-h-[460px]
+                    object-contain
+                    pointer-events-none
+                    select-none
+                   "
               />
             </div>
           ))}
