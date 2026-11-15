@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Loader2,
@@ -25,7 +25,10 @@ import {
   useDeletePostMutation,
 } from "../hooks/use-posts";
 
-export default function PostFeed() {
+export default function PostFeed({ initialPostsPromise }) {
+  // แกะข้อมูลโพสต์ชุดแรกจาก Streaming Promise ด้วย React 19 use() ใต้ Suspense
+  const initialData = initialPostsPromise ? use(initialPostsPromise) : undefined;
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const sharedPostId = searchParams?.get("post");
@@ -48,8 +51,11 @@ export default function PostFeed() {
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user || null;
 
-  // 2. ดึงโพสต์จริงจาก Neon DB ผ่าน TanStack Query
-  const { data: postsData, isLoading } = usePostsQuery();
+  // 2. ดึงโพสต์จริงจาก Neon DB ผ่าน TanStack Query (ใช้ initialData เพื่อไม่ต้องรอ Loading บน Client)
+  const { data: postsData = initialData, isLoading } = usePostsQuery(
+    undefined,
+    initialData ? { initialData } : undefined,
+  );
 
   const createPostMutation = useCreatePostMutation();
   const updatePostMutation = useUpdatePostMutation();
