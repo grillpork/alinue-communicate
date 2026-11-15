@@ -1,9 +1,6 @@
-import React from 'react'
+import React from "react";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
-const loading = () => {
-  return (
-    <div>loading</div>
-  )
+export default function Loading() {
+  return <LoadingSpinner fullScreen text="กำลังโหลด..." />;
 }
-
-export default loading

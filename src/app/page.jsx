@@ -1,10 +1,10 @@
-import HomeHeader from "@/components/home/HomeHeader";
+import { PostFeed } from "@/features";
 import { Suspense } from "react";
 
 const page = () => {
   return (
     <Suspense>
-      <HomeHeader />
+     <PostFeed />
     </Suspense>
   );
 };

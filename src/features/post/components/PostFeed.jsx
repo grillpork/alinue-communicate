@@ -15,7 +15,7 @@ import {
 import PostCard from "./PostCard";
 import PostFormModal from "./PostFormModal";
 import PostDetailModal from "./PostDetailModal";
-import EmptyState from "@/components/shared/EmptyState";
+import EmptyState from "@/components/ui/empty-state";
 import { useMeQuery } from "@/features/auth";
 import {
   usePostsQuery,
