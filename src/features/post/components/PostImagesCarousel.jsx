@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 
 /**
  * Embla Carousel สำหรับเลื่อนดูรูปภาพใน PostCard (สไตล์ Threads / Card Peek สไลด์ด้วย Mouse Drag และ Touch)
- * ไม่มีปุ่มลูกศร (No Arrows) และใช้ระบบ Drag/Scroll ของ Embla แท้
+ * - แสดงผลภาพแบบ object-contain (ไม่ตัดขอบรูป)
+ * - ปรับสัดส่วนการ์ดตาม Aspect Ratio ของรูปภาพจริง (Landscape vs Portrait เหมือน Threads)
+ * - เลื่อนลื่นไหลด้วย Embla โดยไม่ต้องมีปุ่มลูกศร
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
@@ -14,6 +16,8 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     containScroll: "trimSnaps",
     duration: 25,
   });
+
+  const [aspectType, setAspectType] = useState("landscape"); // "landscape" | "portrait" | "square"
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -32,9 +36,35 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       .filter((img) => Boolean(img?.url));
   }, [images]);
 
+  // คำนวณ Aspect Ratio ของรูปแรกเพื่อปรับสัดส่วนกล่องแสดงผลตามแบบ Threads
+  useEffect(() => {
+    if (!normalizedImages[0]?.url) return;
+    const img = new Image();
+    img.src = normalizedImages[0].url;
+    img.onload = () => {
+      if (img.naturalWidth && img.naturalHeight) {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        if (ratio > 1.2) {
+          setAspectType("landscape");
+        } else if (ratio < 0.85) {
+          setAspectType("portrait");
+        } else {
+          setAspectType("square");
+        }
+      }
+    };
+  }, [normalizedImages]);
+
+  // สั่ง Embla ให้คำนวณตำแหน่งใหม่เมื่อ Aspect Ratio เปลี่ยน
+  useEffect(() => {
+    if (emblaApi) {
+      emblaApi.reInit();
+    }
+  }, [emblaApi, aspectType]);
+
   if (normalizedImages.length === 0) return null;
 
-  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ
+  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ (object-contain ไม่ตัดขอบ)
   if (normalizedImages.length === 1) {
     const singleImage = normalizedImages[0];
     return (
@@ -70,7 +100,15 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     onImageClick?.(url, idx);
   };
 
-  // กรณี 2 รูปขึ้นไป: Card Carousel แบบเห็นการ์ดถัดไปยื่นออกมา (Peek Style) ด้วย Embla Carousel
+  // ขนาดของการ์ดตามสัดส่วนภาพจริง (สไตล์ Threads)
+  const cardSizeClass =
+    aspectType === "landscape"
+      ? "flex-[0_0_82%] sm:flex-[0_0_78%] h-[240px] sm:h-[300px]" // แนวนอน (เช่น Screenshot)
+      : aspectType === "portrait"
+        ? "flex-[0_0_68%] sm:flex-[0_0_60%] h-[380px] sm:h-[460px]" // แนวตั้ง (เช่น Poster / Artwork)
+        : "flex-[0_0_72%] sm:flex-[0_0_66%] h-[320px] sm:h-[380px]"; // สี่เหลี่ยมจัตุรัส
+
+  // กรณี 2 รูปขึ้นไป: Card Peek Carousel ด้วย Embla Carousel และ object-contain
   return (
     <div className="relative mt-3 select-none">
       {/* Embla Viewport (ไม่มีปุ่มลูกศร เลื่อนด้วยเมาส์หรือทัช) */}
@@ -92,14 +130,14 @@ export default function PostImagesCarousel({ images, onImageClick }) {
                 }
               }}
               aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-              className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+              className={`relative min-w-0 ${cardSizeClass} flex items-center justify-center overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/70 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}
                 alt={img.name || `Image ${idx + 1}`}
                 draggable={false}
-                className="h-full w-full object-cover pointer-events-auto transition-transform duration-300 hover:scale-[1.02] cursor-pointer"
+                className="h-full w-full object-contain pointer-events-auto transition-transform duration-300 hover:scale-[1.01] cursor-pointer"
               />
             </div>
           ))}
