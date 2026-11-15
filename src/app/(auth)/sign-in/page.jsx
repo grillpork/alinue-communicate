@@ -1,4 +1,4 @@
-import AuthForm from "@/components/auth/AuthForm";
+import { AuthForm } from "@/features/auth";
 
 export const metadata = {
   title: "Sign In - Alinue",

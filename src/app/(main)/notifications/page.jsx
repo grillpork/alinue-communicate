@@ -16,15 +16,15 @@ import {
   User,
   ArrowRight,
 } from "lucide-react";
-import { useMeQuery } from "@/services/auth/auth";
+import { useMeQuery } from "@/features/auth";
 import {
   useNotificationsQuery,
   useMarkAllAsReadMutation,
   useMarkAsReadMutation,
-} from "@/services/notification/notification";
-import { useToggleFollowMutation } from "@/services/account/user";
+} from "@/features/notification";
+import { useToggleFollowMutation } from "@/features/user";
 import { formatRelativeTime } from "@/lib/date";
-import PostAuthorProfileTrigger from "@/components/post/PostAuthorProfileTrigger";
+import { PostAuthorProfileTrigger } from "@/features/post";
 
 const TABS = [
   { id: "all", label: "All" },

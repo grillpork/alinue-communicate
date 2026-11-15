@@ -12,7 +12,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { uploadToR2 } from "@/lib/upload";
-import { useCreateShowcaseMutation } from "@/services/showcase/showcase";
+import { useCreateShowcaseMutation } from "../hooks/use-showcase";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 import LinkServiceModal from "./LinkServiceModal";
 

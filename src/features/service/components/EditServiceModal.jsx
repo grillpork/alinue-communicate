@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Loader2, Tag, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { uploadToR2 } from "@/lib/upload";
-import { useUpdateServiceMutation } from "@/services/service/service";
+import { useUpdateServiceMutation } from "../hooks/use-services";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 
 const ALLOWED_MIME = [

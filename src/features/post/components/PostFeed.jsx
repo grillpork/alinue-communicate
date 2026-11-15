@@ -16,14 +16,14 @@ import PostCard from "./PostCard";
 import PostFormModal from "./PostFormModal";
 import PostDetailModal from "./PostDetailModal";
 import EmptyState from "@/components/shared/EmptyState";
-import { useMeQuery } from "@/services/auth/auth";
+import { useMeQuery } from "@/features/auth";
 import {
   usePostsQuery,
   usePostQuery,
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
-} from "@/services/post/post";
+} from "../hooks/use-posts";
 
 export default function PostFeed() {
   const router = useRouter();

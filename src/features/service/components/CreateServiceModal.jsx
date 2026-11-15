@@ -10,7 +10,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { uploadToR2 } from "@/lib/upload";
-import { useCreateServiceMutation } from "@/services/service/service";
+import { useCreateServiceMutation } from "../hooks/use-services";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 
 const ALLOWED_MIME = [

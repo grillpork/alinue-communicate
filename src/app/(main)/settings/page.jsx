@@ -25,8 +25,8 @@ import {
   Smartphone,
   Trash2,
 } from "lucide-react";
-import { useMeQuery, useSignOutMutation } from "@/services/auth/auth";
-import { useUpdateProfileMutation } from "@/services/account/user";
+import { useMeQuery, useSignOutMutation } from "@/features/auth";
+import { useUpdateProfileMutation } from "@/features/user";
 import { uploadToR2 } from "@/lib/upload";
 
 const TABS = [

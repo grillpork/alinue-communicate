@@ -4,11 +4,13 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
-import MiniProfilePopup from "@/components/profile/MiniProfilePopup";
-import ProfileModal from "@/components/profile/ProfileModal";
+import {
+  MiniProfilePopup,
+  ProfileModal,
+  useToggleFollowMutation,
+} from "@/features/user";
 import UserAvatar from "@/components/common/UserAvatar";
-import { useMeQuery } from "@/services/auth/auth";
-import { useToggleFollowMutation } from "@/services/account/user";
+import { useMeQuery } from "@/features/auth";
 
 /**
  * PostAuthorProfileTrigger

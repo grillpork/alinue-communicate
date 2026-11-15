@@ -20,7 +20,7 @@ import {
   useUserProfileQuery,
   useToggleFollowMutation,
 } from "@/features/user";
-import { useMeQuery } from "@/services/auth/auth";
+import { useMeQuery } from "@/features/auth";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 function formatStatNumber(num) {

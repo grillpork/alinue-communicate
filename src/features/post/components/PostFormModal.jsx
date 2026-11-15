@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 import React, { useState, useRef, useEffect } from "react";
 import { uploadToR2, submitModerationAppeal } from "@/lib/upload";
-import { useSuggestedUsersQuery } from "@/services/account/user";
-import { useMeQuery } from "@/services/auth/auth";
-import LinkServiceModal from "@/components/showcase/LinkServiceModal";
+import { useSuggestedUsersQuery } from "@/features/user";
+import { useMeQuery } from "@/features/auth";
+import { LinkServiceModal } from "@/features/showcase";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 export default function PostFormModal({

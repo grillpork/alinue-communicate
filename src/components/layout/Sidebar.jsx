@@ -16,8 +16,8 @@ import {
   Loader2,
   LayoutList,
 } from "lucide-react";
-import { useMeQuery, useSignOutMutation } from "@/services/auth/auth";
-import { useUnreadNotificationCountQuery } from "@/services/notification/notification";
+import { useMeQuery, useSignOutMutation } from "@/features/auth";
+import { useUnreadNotificationCountQuery } from "@/features/notification";
 
 export default function Sidebar() {
   const pathname = usePathname();

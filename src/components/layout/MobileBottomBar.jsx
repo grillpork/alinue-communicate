@@ -4,8 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, Bell, User } from "lucide-react";
-import { useMeQuery } from "@/services/auth/auth";
-import { useUnreadNotificationCountQuery } from "@/services/notification/notification";
+import { useMeQuery } from "@/features/auth";
+import { useUnreadNotificationCountQuery } from "@/features/notification";
 
 export default function MobileBottomBar() {
   const pathname = usePathname();

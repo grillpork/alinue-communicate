@@ -17,8 +17,8 @@ import {
 import {
   useToggleShowcaseLikeMutation,
   useDeleteShowcaseMutation,
-} from "@/services/showcase/showcase";
-import { useMeQuery } from "@/services/auth/auth";
+} from "../hooks/use-showcase";
+import { useMeQuery } from "@/features/auth";
 import ShowcaseModal from "./ShowcaseModal";
 import EditShowcaseModal from "./EditShowcaseModal";
 

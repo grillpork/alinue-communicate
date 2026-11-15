@@ -26,9 +26,9 @@ import {
   useCommentsQuery,
   useAddCommentMutation,
   useDeleteCommentMutation,
-} from "@/services/post/post";
-import { useMeQuery } from "@/services/auth/auth";
-import { useBookmarks } from "@/services/bookmark/bookmark";
+} from "../hooks/use-posts";
+import { useMeQuery } from "@/features/auth";
+import { useBookmarks } from "@/features/bookmark";
 import { formatRelativeTime, formatFullDateTime } from "@/lib/date";
 import PostDetailModal from "./PostDetailModal";
 import SharePostModal from "./SharePostModal";

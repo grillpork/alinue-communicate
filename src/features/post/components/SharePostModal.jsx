@@ -12,7 +12,7 @@ import {
   Globe,
   Sparkles,
 } from "lucide-react";
-import { useSharePostMutation } from "@/services/post/post";
+import { useSharePostMutation } from "../hooks/use-posts";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 
 /**

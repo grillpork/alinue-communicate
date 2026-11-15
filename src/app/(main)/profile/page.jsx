@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useMeQuery } from "@/services/auth/auth";
+import { useMeQuery } from "@/features/auth";
 
 /**
  * Route /profile จะทำการ Redirect อัตโนมัติไปยัง Path /[username] ของผู้ใช้ปัจจุบัน

@@ -23,14 +23,14 @@ import {
   Share2,
   Flag,
 } from "lucide-react";
-import { useBookmarks } from "@/services/bookmark/bookmark";
+import { useBookmarks } from "@/features/bookmark";
 import {
   useCommentsQuery,
   useAddCommentMutation,
   useDeleteCommentMutation,
   useToggleLikeMutation,
-} from "@/services/post/post";
-import { useMeQuery } from "@/services/auth/auth";
+} from "@/features/post";
+import { useMeQuery } from "@/features/auth";
 import { formatRelativeTime, formatFullDateTime } from "@/lib/date";
 import CommentPortfolioCard from "./CommentPortfolioCard";
 import PostAuthorProfileTrigger from "./PostAuthorProfileTrigger";

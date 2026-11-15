@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Search, Bell, Bookmark } from "lucide-react";
 import UserDropdown from "../common/UserDropdown";
-import { useMeQuery, useSignOutMutation } from "@/services/auth/auth";
+import { useMeQuery, useSignOutMutation } from "@/features/auth";
 
 const Navbar = () => {
   const { data: meData } = useMeQuery();

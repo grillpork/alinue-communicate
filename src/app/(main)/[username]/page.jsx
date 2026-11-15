@@ -14,30 +14,34 @@ import {
   Bookmark,
   LayoutList,
 } from "lucide-react";
-import ProfileHeader from "@/components/profile/ProfileHeader";
-import PostCard from "@/components/post/PostCard";
-import PostFormModal from "@/components/post/PostFormModal";
-import ShowcaseCard from "@/components/showcase/ShowcaseCard";
-import ShowcaseModal from "@/components/showcase/ShowcaseModal";
-import CreateShowcaseModal from "@/components/showcase/CreateShowcaseModal";
-import ServiceCard from "@/components/service/ServiceCard";
-import ServiceDetailModal from "@/components/service/ServiceDetailModal";
-import CreateServiceModal from "@/components/service/CreateServiceModal";
-import { useMeQuery } from "@/services/auth/auth";
 import {
+  ProfileHeader,
   useUserProfileQuery,
   useUserPostsQuery,
   useUserLikedPostsQuery,
   useUpdateProfileMutation,
-} from "@/services/account/user";
+} from "@/features/user";
 import {
+  PostCard,
+  PostFormModal,
   useCreatePostMutation,
   useUpdatePostMutation,
   useDeletePostMutation,
-} from "@/services/post/post";
-import { useShowcasesQuery } from "@/services/showcase/showcase";
-import { useServicesQuery } from "@/services/service/service";
-import { useBookmarks } from "@/services/bookmark/bookmark";
+} from "@/features/post";
+import {
+  ShowcaseCard,
+  ShowcaseModal,
+  CreateShowcaseModal,
+  useShowcasesQuery,
+} from "@/features/showcase";
+import {
+  ServiceCard,
+  ServiceDetailModal,
+  CreateServiceModal,
+  useServicesQuery,
+} from "@/features/service";
+import { useMeQuery } from "@/features/auth";
+import { useBookmarks } from "@/features/bookmark";
 
 function UserProfileContent() {
   const params = useParams();

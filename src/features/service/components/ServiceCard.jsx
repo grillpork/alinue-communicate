@@ -21,8 +21,8 @@ import {
   useDeleteServiceMutation,
   useRenewServiceMutation,
   useToggleServiceStatusMutation,
-} from "@/services/service/service";
-import { useMeQuery } from "@/services/auth/auth";
+} from "../hooks/use-services";
+import { useMeQuery } from "@/features/auth";
 import ServiceDetailModal from "./ServiceDetailModal";
 import EditServiceModal from "./EditServiceModal";
 

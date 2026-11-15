@@ -19,12 +19,10 @@ import {
   TrendingUp,
   LayoutList,
 } from "lucide-react";
-import { useSearchUsersQuery } from "@/services/account/user";
-import { usePostsQuery } from "@/services/post/post";
-import { useServicesQuery } from "@/services/service/service";
-import ServiceCard from "@/components/service/ServiceCard";
+import { useSearchUsersQuery } from "@/features/user";
+import { usePostsQuery, PostDetailModal } from "@/features/post";
+import { useServicesQuery, ServiceCard } from "@/features/service";
 import { formatRelativeTime } from "@/lib/date";
-import PostDetailModal from "@/components/post/PostDetailModal";
 import UserAvatar from "@/components/common/UserAvatar";
 
 const DEFAULT_HISTORY = [

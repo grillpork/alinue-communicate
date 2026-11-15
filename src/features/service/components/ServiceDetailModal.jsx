@@ -30,13 +30,13 @@ import {
   useDeleteServiceMutation,
   useRenewServiceMutation,
   useToggleServiceStatusMutation,
-} from "@/services/service/service";
-import { useMeQuery } from "@/services/auth/auth";
-import { useUserProfileQuery } from "@/services/account/user";
+} from "../hooks/use-services";
+import { useMeQuery } from "@/features/auth";
+import { useUserProfileQuery } from "@/features/user";
 import {
   getPlatformInfo,
   formatPlatformUrl,
-} from "@/components/profile/SocialLinksModal";
+} from "@/features/user/components/SocialLinksModal";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 import useEmblaCarousel from "embla-carousel-react";
 import EditServiceModal from "./EditServiceModal";

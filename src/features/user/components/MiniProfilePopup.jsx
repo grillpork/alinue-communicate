@@ -15,7 +15,7 @@ import {
   useUserProfileQuery,
   useToggleFollowMutation,
 } from "@/features/user";
-import { useMeQuery } from "@/services/auth/auth";
+import { useMeQuery } from "@/features/auth";
 
 function formatStatNumber(num) {
   const n = typeof num === "number" ? num : parseInt(num, 10) || 0;

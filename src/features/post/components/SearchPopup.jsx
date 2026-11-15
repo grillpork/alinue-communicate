@@ -17,7 +17,7 @@ import {
 import {
   useSuggestedUsersQuery,
   useSearchUsersQuery,
-} from "@/services/account/user";
+} from "@/features/user";
 import { formatRelativeTime } from "@/lib/date";
 import UserAvatar from "@/components/common/UserAvatar";
 

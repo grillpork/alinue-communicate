@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { X, Search, Check, Layers, Loader2 } from "lucide-react";
-import { useMyServicesQuery } from "@/services/service/service";
+import { useMyServicesQuery } from "@/features/service";
 import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 
 export default function LinkServiceModal({
