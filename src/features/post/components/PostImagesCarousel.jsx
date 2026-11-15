@@ -185,32 +185,34 @@ export default function PostImagesCarousel({
     const img = normalizedImages[0];
 
     return (
-      <button
-        type="button"
-        onClick={() => handleImageClick(img.url, 0)}
-        aria-label="ดูรูปภาพที่ 1"
-        className="
-          block
-          max-w-full
-          overflow-hidden
-          rounded-xl
-          cursor-pointer
-        "
-      >
-        <img
-          src={img.url}
-          alt={img.name}
-          onLoad={(event) => handleImageLoad(event, img.id)}
+      <div className="mt-3 px-3.5 sm:px-4 flex">
+        <button
+          type="button"
+          onClick={() => handleImageClick(img.url, 0)}
+          aria-label="ดูรูปภาพที่ 1"
           className="
             block
-            h-auto
-            max-h-[400px]
-            sm:max-h-[460px]
             max-w-full
-            object-contain
+            overflow-hidden
+            rounded-xl
+            cursor-pointer
           "
-        />
-      </button>
+        >
+          <img
+            src={img.url}
+            alt={img.name}
+            onLoad={(event) => handleImageLoad(event, img.id)}
+            className="
+              block
+              h-auto
+              max-h-[400px]
+              sm:max-h-[460px]
+              max-w-full
+              object-contain
+            "
+          />
+        </button>
+      </div>
     );
   }
 
@@ -220,10 +222,9 @@ export default function PostImagesCarousel({
       className="
         w-full
         overflow-hidden
-        px-3.5
-        sm:px-4
         touch-pan-y
         select-none
+        mt-3
       "
     >
       <motion.div
@@ -243,6 +244,8 @@ export default function PostImagesCarousel({
           items-center
           gap-2.5
           sm:gap-3
+          px-3.5
+          sm:px-4
           cursor-grab
           active:cursor-grabbing
         "
