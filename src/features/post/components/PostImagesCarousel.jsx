@@ -1,166 +1,326 @@
+
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
-import useEmblaCarousel from "embla-carousel-react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import { motion } from "framer-motion";
 
-export default function PostImagesCarousel({ images, onImageClick }) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    loop: false,
-    dragFree: true, // ปิดการ Snap ให้เลื่อนได้อย่างอิสระและนุ่มนวล (Free scroll without snapping)
-    containScroll: "trimSnaps",
-  });
+export default function PostImagesCarousel({
+  images = [],
+  onImageClick,
+}) {
+  const viewportRef = useRef(null);
+  const trackRef = useRef(null);
 
-  const [aspectType, setAspectType] = useState("landscape"); // "landscape" | "portrait" | "square"
+  // ใช้ตรวจสอบว่าผู้ใช้กำลังลากอยู่หรือไม่
+  const isDragging = useRef(false);
+  const dragTimer = useRef(null);
 
-  // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
+  // เก็บ Aspect Ratio ของแต่ละภาพ
+  const [imageRatios, setImageRatios] = useState({});
+
+  // ความกว้างของพื้นที่แสดงผล
+  const [viewportWidth, setViewportWidth] = useState(0);
+
+  // ระยะที่ Carousel สามารถลากไปทางซ้ายได้
+  const [dragLimit, setDragLimit] = useState(0);
+
+  // Normalize images รองรับทั้ง String และ Object
   const normalizedImages = useMemo(() => {
-    return (images || [])
+    if (!Array.isArray(images)) return [];
+
+    return images
       .map((img, idx) => {
-        if (!img) return null;
         if (typeof img === "string") {
-          return { id: String(idx), url: img, name: "Post image" };
+          return {
+            id: String(idx),
+            url: img,
+            name: `Post image ${idx + 1}`,
+          };
         }
+
         return {
-          id: img.id || String(idx),
-          url: img.url || "",
-          name: img.name || "Post image",
+          id: img?.id ?? String(idx),
+          url: img?.url ?? "",
+          name: img?.name ?? `Post image ${idx + 1}`,
         };
       })
-      .filter((img) => Boolean(img?.url));
+      .filter((img) => img.url);
   }, [images]);
 
-  // คำนวณ Aspect Ratio ของรูปแรกเพื่อปรับสัดส่วนกล่องแสดงผลตามแบบ Threads
+  // ความสูงของ Card
+  const cardHeight = viewportWidth >= 640 ? 420 : 380;
+
+  // จำกัดความกว้างสูงสุดของ Card
+  const maxCardWidth = viewportWidth
+    ? viewportWidth * 0.82
+    : 300;
+
+  // คำนวณความกว้างจาก Aspect Ratio
+  const getCardWidth = useCallback(
+    (ratio) => {
+      const width = cardHeight * ratio;
+
+      return Math.min(width, maxCardWidth);
+    },
+    [cardHeight, maxCardWidth]
+  );
+
+  // บันทึก Aspect Ratio เมื่อโหลดภาพสำเร็จ
+  const handleImageLoad = useCallback((event, id) => {
+    const { naturalWidth, naturalHeight } = event.currentTarget;
+
+    if (!naturalWidth || !naturalHeight) return;
+
+    const ratio = naturalWidth / naturalHeight;
+
+    setImageRatios((prev) => {
+      if (prev[id] === ratio) return prev;
+
+      return {
+        ...prev,
+        [id]: ratio,
+      };
+    });
+  }, []);
+
+  // วัดขนาด Viewport
   useEffect(() => {
-    if (!normalizedImages[0]?.url) return;
-    const img = new Image();
-    img.src = normalizedImages[0].url;
-    img.onload = () => {
-      if (img.naturalWidth && img.naturalHeight) {
-        const ratio = img.naturalWidth / img.naturalHeight;
-        if (ratio > 1.2) {
-          setAspectType("landscape");
-        } else if (ratio < 0.85) {
-          setAspectType("portrait");
-        } else {
-          setAspectType("square");
-        }
+    const viewport = viewportRef.current;
+
+    if (!viewport) return;
+
+    const updateSize = () => {
+      setViewportWidth(viewport.clientWidth);
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(updateSize);
+
+    observer.observe(viewport);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // คำนวณขอบเขตการลาก
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+
+    if (!viewport || !track) return;
+
+    const updateDragLimit = () => {
+      // คำนวณระยะที่ Content ล้นออกจาก Viewport (Overflow)
+      const overflow = track.scrollWidth - viewport.clientWidth;
+      setDragLimit(Math.max(0, overflow));
+    };
+
+    updateDragLimit();
+
+    const observer = new ResizeObserver(updateDragLimit);
+
+    observer.observe(viewport);
+    observer.observe(track);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [normalizedImages, imageRatios, viewportWidth]);
+
+  // เริ่มต้นการลาก
+  const handleDragStart = useCallback(() => {
+    isDragging.current = true;
+
+    if (dragTimer.current) {
+      clearTimeout(dragTimer.current);
+    }
+  }, []);
+
+  // สิ้นสุดการลาก
+  const handleDragEnd = useCallback(() => {
+    if (dragTimer.current) {
+      clearTimeout(dragTimer.current);
+    }
+
+    // ป้องกัน Click ที่เกิดตามหลัง Drag
+    dragTimer.current = setTimeout(() => {
+      isDragging.current = false;
+    }, 150);
+  }, []);
+
+  // เปิดรูปภาพ
+  const handleImageClick = useCallback(
+    (url, idx) => {
+      if (isDragging.current) return;
+
+      onImageClick?.(url, idx);
+    },
+    [onImageClick]
+  );
+
+  // Cleanup Timer
+  useEffect(() => {
+    return () => {
+      if (dragTimer.current) {
+        clearTimeout(dragTimer.current);
       }
     };
-  }, [normalizedImages]);
+  }, []);
 
-  // สั่ง Embla ให้คำนวณตำแหน่งใหม่เมื่อ Aspect Ratio เปลี่ยน
-  useEffect(() => {
-    if (emblaApi) {
-      emblaApi.reInit();
-    }
-  }, [emblaApi, aspectType]);
+  // ไม่มีรูปภาพ
+  if (!normalizedImages.length) {
+    return null;
+  }
 
-  if (normalizedImages.length === 0) return null;
-
-  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ (object-contain ไม่ตัดขอบ)
+  // รูปภาพเดียว
   if (normalizedImages.length === 1) {
-    const singleImage = normalizedImages[0];
+    const img = normalizedImages[0];
+
     return (
-      <div className="mt-3 px-3.5 sm:px-4 flex">
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={() => onImageClick?.(singleImage.url, 0)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              onImageClick?.(singleImage.url, 0);
-            }
-          }}
-          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-          aria-label="ดูรูปภาพขนาดเต็ม"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={singleImage.url}
-            alt={singleImage.name || "Post image"}
-            draggable={false}
-            className="block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
-          />
-        </div>
-      </div>
+      <button
+        type="button"
+        onClick={() => handleImageClick(img.url, 0)}
+        aria-label="ดูรูปภาพที่ 1"
+        className="
+          block
+          max-w-full
+          overflow-hidden
+          rounded-xl
+          cursor-pointer
+        "
+      >
+        <img
+          src={img.url}
+          alt={img.name}
+          onLoad={(event) => handleImageLoad(event, img.id)}
+          className="
+            block
+            h-auto
+            max-h-[400px]
+            sm:max-h-[460px]
+            max-w-full
+            object-contain
+          "
+        />
+      </button>
     );
   }
 
-  // คลิกที่รูปภาพเพื่อเปิด Post Detail Modal
-  const handleImageClick = (url, idx) => {
-    onImageClick?.(url, idx);
-  };
-
-  // ขนาดของการ์ดตามสัดส่วนภาพจริง (สไตล์ Threads)
-  const cardSizeClass =
-    aspectType === "landscape"
-      ? "flex-[0_0_82%] sm:flex-[0_0_78%] h-[240px] sm:h-[300px]" // แนวนอน (เช่น Screenshot)
-      : aspectType === "portrait"
-        ? "flex-[0_0_68%] sm:flex-[0_0_60%] h-[380px] sm:h-[460px]" // แนวตั้ง (เช่น Poster / Artwork)
-        : "flex-[0_0_72%] sm:flex-[0_0_66%] h-[320px] sm:h-[380px]"; // สี่เหลี่ยมจัตุรัส
-
-  // กรณี 2 รูปขึ้นไป: Card Peek Carousel ด้วย Embla Carousel และ object-contain
   return (
-    <div className="relative mt-3 select-none">
-      {/* Embla Viewport (ไม่มีปุ่มลูกศร เลื่อนด้วยเมาส์หรือทัช) */}
-      <div
-        ref={emblaRef}
-        className="overflow-hidden cursor-grab active:cursor-grabbing"
+    <div
+      ref={viewportRef}
+      className="
+        w-full
+        overflow-hidden
+        px-3.5
+        sm:px-4
+        touch-pan-y
+        select-none
+      "
+    >
+      <motion.div
+        ref={trackRef}
+        drag="x"
+        dragConstraints={{
+          left: -dragLimit,
+          right: 0,
+        }}
+        dragElastic={0.12}
+        dragMomentum={true}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        className="
+          flex
+          w-max
+          items-center
+          gap-2.5
+          sm:gap-3
+          cursor-grab
+          active:cursor-grabbing
+        "
+        style={{
+          touchAction: "pan-y",
+        }}
       >
-        <div className="flex gap-0.5 px-3.5 sm:px-4">
-          {normalizedImages.map((img, idx) => (
-            <div
-              key={img.id || idx}
-              role="button"
-              tabIndex={0}
+        {normalizedImages.map((img, idx) => {
+          const ratio = imageRatios[img.id] || 1;
+
+          const cardWidth = getCardWidth(ratio);
+
+          return (
+            <motion.button
+              key={img.id}
+              type="button"
               onClick={() => handleImageClick(img.url, idx)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleImageClick(img.url, idx);
-                }
-              }}
               aria-label={`ดูรูปภาพที่ ${idx + 1}`}
+              whileTap={{
+                scale: 0.97,
+                transition: {
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25,
+                },
+              }}
               className="
-      relative
-      flex-[0_0_auto]
-      w-fit
-      max-w-[82%]
-      sm:max-w-[78%]
-      min-w-0
-      overflow-hidden
-      rounded-2xl
-      border border-neutral-100
-      bg-gray-50/70
-      shadow-2xs
-      shrink-0
-      cursor-pointer
-      focus:outline-none
-      focus-visible:ring-2
-      focus-visible:ring-black
-    "
+                relative
+                flex-none
+                overflow-hidden
+                rounded-xl
+                bg-neutral-100
+                dark:bg-neutral-900
+                cursor-pointer
+                outline-none
+              "
+              style={{
+                width: `${cardWidth}px`,
+                height: `${cardHeight}px`,
+              }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}
-                alt={img.name || `Image ${idx + 1}`}
+                alt={img.name}
                 draggable={false}
+                onLoad={(event) =>
+                  handleImageLoad(event, img.id)
+                }
                 className="
-                    block
-                    w-auto
-                    h-auto
-                    max-w-full
-                    max-h-[460px]
-                    object-contain
-                    pointer-events-none
-                    select-none
-                   "
+                  block
+                  h-full
+                  w-full
+                  object-contain
+                  pointer-events-none
+                "
               />
-            </div>
-          ))}
-        </div>
-      </div>
+
+              {/* Image Index */}
+              <span
+                className="
+                  absolute
+                  bottom-2
+                  right-2
+                  rounded-full
+                  bg-black/50
+                  px-2
+                  py-1
+                  text-xs
+                  text-white
+                  pointer-events-none
+                "
+              >
+                {idx + 1}/{normalizedImages.length}
+              </span>
+            </motion.button>
+          );
+        })}
+      </motion.div>
     </div>
   );
 }
