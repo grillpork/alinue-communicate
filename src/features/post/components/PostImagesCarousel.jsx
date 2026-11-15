@@ -3,18 +3,11 @@
 import React, { useMemo, useState, useEffect } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 
-/**
- * Embla Carousel สำหรับเลื่อนดูรูปภาพใน PostCard (สไตล์ Threads / Card Peek สไลด์ด้วย Mouse Drag และ Touch)
- * - แสดงผลภาพแบบ object-contain (ไม่ตัดขอบรูป)
- * - ปรับสัดส่วนการ์ดตาม Aspect Ratio ของรูปภาพจริง (Landscape vs Portrait เหมือน Threads)
- * - เลื่อนลื่นไหลด้วย Embla โดยไม่ต้องมีปุ่มลูกศร
- */
 export default function PostImagesCarousel({ images, onImageClick }) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
-    align: "start",
+    dragFree: true, // ปิดการ Snap ให้เลื่อนได้อย่างอิสระและนุ่มนวล (Free scroll without snapping)
     containScroll: "trimSnaps",
-    duration: 25,
   });
 
   const [aspectType, setAspectType] = useState("landscape"); // "landscape" | "portrait" | "square"
