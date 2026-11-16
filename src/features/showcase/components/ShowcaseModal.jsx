@@ -450,20 +450,16 @@ export default function ShowcaseModal({
 
           {/* B. Showcase Content Body */}
           <div className="flex-1 p-4 sm:p-5 space-y-4">
-            {/* Title & Commission Badge */}
+            {/* Title & Date */}
             <div>
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="flex items-center gap-1 rounded-md bg-[#a3e635] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-black">
-                  <span>OPEN</span>
-                  <Check className="h-3 w-3 stroke-[3]" />
-                </span>
-                {createdAt && (
+              {createdAt && (
+                <div className="flex items-center gap-2 mb-1.5">
                   <span className="flex items-center gap-1 text-[11px] text-gray-400">
                     <Calendar className="h-3 w-3" />
                     <span>{formatRelativeTime(createdAt)}</span>
                   </span>
-                )}
-              </div>
+                </div>
+              )}
               <h2 className="text-base sm:text-lg font-bold text-gray-950 leading-snug">
                 {showcase.title}
               </h2>

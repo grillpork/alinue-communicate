@@ -230,20 +230,15 @@ export default function ShowcaseCard({
           </div>
         )}
 
-        {/* Top-Left Badges: OPEN with Checkmark & Multi-image count */}
-        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
-          <div className="flex items-center gap-1 rounded-md bg-[#a3e635] px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-black shadow-xs">
-            <span>OPEN</span>
-            <Check className="h-3 w-3 stroke-[3]" />
-          </div>
-
-          {mediaList.length > 1 && (
+        {/* Top-Left Badge: Multi-image count */}
+        {mediaList.length > 1 && (
+          <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
             <div className="flex items-center gap-1 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-md">
               <Images className="h-3 w-3" />
               <span>{mediaList.length}</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Top-Right: Dropdown Menu (•••) */}
         <div ref={menuRef} className="absolute top-2.5 right-2.5 z-20">
