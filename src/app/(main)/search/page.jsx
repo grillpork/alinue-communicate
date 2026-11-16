@@ -1,28 +1,34 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronLeft,
+  ChevronDown,
+  ChevronRight,
   Search,
   X,
   Clock,
   Flame,
   RotateCw,
-  User,
-  FileText,
-  Heart,
-  MessageCircle,
   Loader2,
-  ChevronRight,
-  TrendingUp,
-  LayoutList,
+  SlidersHorizontal,
+  MoreHorizontal,
+  Check,
 } from "lucide-react";
-import { useSearchUsersQuery } from "@/features/user";
-import { usePostsQuery, PostDetailModal } from "@/features/post";
-import { useServicesQuery, ServiceCard } from "@/features/service";
-import { formatRelativeTime } from "@/lib/date";
+import { useMeQuery } from "@/features/auth";
+import {
+  useSearchUsersQuery,
+  useToggleFollowMutation,
+} from "@/features/user";
+import {
+  usePostsQuery,
+  useUpdatePostMutation,
+  useDeletePostMutation,
+  PostCard,
+  PostFormModal,
+} from "@/features/post";
 import UserAvatar from "@/components/common/UserAvatar";
 
 const DEFAULT_HISTORY = [
@@ -49,21 +55,133 @@ const INITIAL_RECOMMENDATIONS = [
   { tag: "Web development", count: "22,000" },
 ];
 
+/**
+ * การ์ดโปรไฟล์ที่เกี่ยวข้อง พร้อมปุ่ม ติดตาม / กำลังติดตาม (โทนสว่าง ไม่ใช้ bg-black)
+ */
+function RelatedUserCard({ user, currentUser, onFollowClick }) {
+  const [optimisticFollowing, setOptimisticFollowing] = useState(
+    Boolean(user.isFollowing),
+  );
+  const toggleFollowMutation = useToggleFollowMutation();
+
+  useEffect(() => {
+    setOptimisticFollowing(Boolean(user.isFollowing));
+  }, [user.isFollowing]);
+
+  const isSelf =
+    currentUser?.id && String(currentUser.id) === String(user.id);
+
+  const handleFollow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!currentUser) {
+      onFollowClick?.();
+      return;
+    }
+    const nextState = !optimisticFollowing;
+    setOptimisticFollowing(nextState);
+    toggleFollowMutation.mutate(user.id, {
+      onError: () => {
+        setOptimisticFollowing(!nextState);
+      },
+    });
+  };
+
+  return (
+    <Link
+      href={`/${user.username}`}
+      className="flex items-center justify-between rounded-2xl border border-gray-200/90 bg-white px-4 py-3.5 shadow-2xs hover:border-gray-300 hover:bg-gray-50/40 transition-all cursor-pointer group"
+    >
+      <div className="flex items-center gap-3 min-w-0 pr-3">
+        <UserAvatar
+          src={user.avatar}
+          alt={user.name || user.username}
+          size="lg"
+          className="h-11 w-11 ring-1 ring-gray-200 shrink-0"
+        />
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-gray-900 truncate leading-snug">
+            {user.name || user.username}
+          </p>
+          <p className="text-xs text-gray-400 truncate mt-0.5">
+            {user.username}
+          </p>
+        </div>
+      </div>
+
+      {!isSelf ? (
+        <button
+          type="button"
+          onClick={handleFollow}
+          disabled={toggleFollowMutation.isPending}
+          className={`shrink-0 rounded-xl px-5 py-1.5 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer ${
+            optimisticFollowing
+              ? "border border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
+              : "border border-gray-200 bg-white text-gray-900 shadow-2xs hover:bg-gray-50 hover:border-gray-300"
+          }`}
+        >
+          {optimisticFollowing ? "กำลังติดตาม" : "ติดตาม"}
+        </button>
+      ) : (
+        <span className="shrink-0 rounded-xl border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs font-semibold text-gray-600">
+          โปรไฟล์ของคุณ
+        </span>
+      )}
+    </Link>
+  );
+}
+
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") || "";
+  const urlQuery = searchParams.get("q") || "";
 
-  const [query, setQuery] = useState(initialQuery);
-  const [submittedQuery, setSubmittedQuery] = useState(initialQuery);
-  const [activeTab, setActiveTab] = useState("all"); // 'all' | 'users' | 'posts'
+  const [query, setQuery] = useState(urlQuery);
+  const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
+  const [sortBy, setSortBy] = useState("popular"); // 'popular' ('ยอดนิยม') | 'latest' ('ล่าสุด')
+  const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showAllProfiles, setShowAllProfiles] = useState(false);
   const [searchHistory, setSearchHistory] = useState(DEFAULT_HISTORY);
   const [recommendations, setRecommendations] = useState(
     INITIAL_RECOMMENDATIONS,
   );
   const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
-  const [activePost, setActivePost] = useState(null);
+  const [editingPost, setEditingPost] = useState(null);
+
   const inputRef = useRef(null);
+  const sortMenuRef = useRef(null);
+
+  const { data: meData } = useMeQuery();
+  const currentUser = meData?.user || null;
+
+  const updatePostMutation = useUpdatePostMutation();
+  const deletePostMutation = useDeletePostMutation();
+
+  // Sync URL query param (?q=...) when navigating via hashtag links
+  useEffect(() => {
+    setQuery(urlQuery);
+    setDebouncedQuery(urlQuery);
+    setShowAllProfiles(false);
+  }, [urlQuery]);
+
+  // Debounce live typing so typing immediately searches both users & posts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query.trim());
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Close sort dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) {
+        setShowSortMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Load history from localStorage
   useEffect(() => {
@@ -80,7 +198,6 @@ export default function SearchPage() {
     }
   }, []);
 
-  // Save history to localStorage
   const saveHistory = (items) => {
     setSearchHistory(items);
     try {
@@ -107,32 +224,48 @@ export default function SearchPage() {
     saveHistory([]);
   };
 
-  // Queries for live searching
-  const cleanQ = submittedQuery.trim();
+  // Active search query
+  const cleanQ = debouncedQuery.trim();
+  const hasSearched = Boolean(cleanQ);
 
+  // 1. ค้นหาผู้ใช้ / โปรไฟล์ที่เกี่ยวข้อง
   const { data: searchUsersData, isLoading: isLoadingUsers } =
     useSearchUsersQuery(cleanQ, {
-      enabled: Boolean(cleanQ),
+      enabled: hasSearched,
     });
   const matchedUsers = searchUsersData?.users || [];
 
+  // 2. ค้นหาโพสต์ที่เกี่ยวข้อง
   const { data: postsData, isLoading: isLoadingPosts } = usePostsQuery(
     { search: cleanQ },
-    { enabled: Boolean(cleanQ) },
+    { enabled: hasSearched },
   );
-  const matchedPosts = postsData?.posts || [];
+  const rawPosts = postsData?.posts || [];
 
-  const { data: servicesData, isLoading: isLoadingServices } = useServicesQuery(
-    { search: cleanQ },
-    { enabled: Boolean(cleanQ) },
-  );
-  const matchedServices = servicesData?.services || [];
+  // เรียงลำดับโพสต์ตามตัวเลือก ยอดนิยม / ล่าสุด
+  const sortedPosts = useMemo(() => {
+    if (sortBy === "popular") {
+      return [...rawPosts].sort((a, b) => {
+        const scoreA =
+          (Number(a.likesCount) || 0) * 2 + (Number(a.commentsCount) || 0);
+        const scoreB =
+          (Number(b.likesCount) || 0) * 2 + (Number(b.commentsCount) || 0);
+        return scoreB - scoreA;
+      });
+    }
+    return [...rawPosts].sort(
+      (a, b) =>
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime(),
+    );
+  }, [rawPosts, sortBy]);
 
   // Submit search
   const handleSearchSubmit = (term) => {
     const target = (term !== undefined ? term : query).trim();
-    setSubmittedQuery(target);
     setQuery(target);
+    setDebouncedQuery(target);
+    setShowAllProfiles(false);
     if (target) {
       handleAddHistory(target);
       router.replace(`/search?q=${encodeURIComponent(target)}`, {
@@ -152,31 +285,57 @@ export default function SearchPage() {
     }, 300);
   };
 
-  const hasSearched = Boolean(cleanQ);
+  // แก้ไข/ลบโพสต์ของตัวเองจากหน้าค้นหา
+  const handleUpdatePost = async (data) => {
+    if (!editingPost) return;
+    const imageList = (data.images || []).map((img) =>
+      typeof img === "string" ? img : img.url,
+    );
+    await updatePostMutation.mutateAsync({
+      id: editingPost.id,
+      content: data.content,
+      images: imageList,
+      serviceId: data.serviceId || null,
+      serviceTitle: data.serviceTitle || null,
+    });
+    setEditingPost(null);
+  };
+
+  const handleDeletePost = (postId) => {
+    if (confirm("คุณต้องการลบโพสต์นี้ใช่หรือไม่?")) {
+      deletePostMutation.mutate(postId);
+    }
+  };
+
+  const visibleProfiles = showAllProfiles
+    ? matchedUsers
+    : matchedUsers.slice(0, 1);
 
   return (
-    <div className="w-full max-w-2xl xl:max-w-3xl mx-auto px-3.5 sm:px-4 pt-3 sm:pt-4 pb-24">
-      {/* 1. TOP SEARCH BAR (ตรงตามรูปภาพอ้างอิง) */}
-      <div className="flex items-center gap-2 mb-5">
+    <div className="w-full max-w-2xl xl:max-w-3xl mx-auto bg-white min-h-screen pt-3 sm:pt-4 pb-24">
+      {/* 1. TOP SEARCH BAR (สไตล์ตัวอย่าง พื้นหลังขาว/สว่าง) */}
+      <div className="flex items-center gap-2 px-3.5 sm:px-4 mb-3">
         {/* Back Button */}
         <button
           type="button"
           onClick={() => {
-            if (hasSearched) {
-              setSubmittedQuery("");
+            if (showAllProfiles) {
+              setShowAllProfiles(false);
+            } else if (hasSearched || query) {
               setQuery("");
+              setDebouncedQuery("");
               router.replace("/search", { scroll: false });
             } else {
               router.back();
             }
           }}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200/90 text-gray-600 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
           aria-label="Go back"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
 
-        {/* Input Pill */}
+        {/* Search Input Pill */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -188,18 +347,24 @@ export default function SearchPage() {
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Searching witch you want..."
-            className="w-full rounded-full border border-gray-200/90 bg-white py-2.5 pl-4 pr-10 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (showAllProfiles) setShowAllProfiles(false);
+            }}
+            placeholder="ค้นหาโพสต์, ผู้ใช้ หรือ #แฮชแท็ก..."
+            className="w-full rounded-2xl border border-gray-200/80 bg-gray-100/80 py-2.5 pl-4 pr-9 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none transition-all"
           />
           {query && (
             <button
               type="button"
               onClick={() => {
                 setQuery("");
+                setDebouncedQuery("");
+                setShowAllProfiles(false);
+                router.replace("/search", { scroll: false });
                 inputRef.current?.focus();
               }}
-              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
               aria-label="Clear text"
             >
               <X className="h-4 w-4" />
@@ -207,21 +372,33 @@ export default function SearchPage() {
           )}
         </form>
 
-        {/* Search Circle Button */}
+        {/* Filter / Sort Icon Button */}
+        <button
+          type="button"
+          onClick={() => setShowSortMenu((prev) => !prev)}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
+          title="ตัวกรองและการเรียงลำดับ"
+          aria-label="Filter and sort"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </button>
+
+        {/* More Options Circle Button */}
         <button
           type="button"
           onClick={() => handleSearchSubmit()}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200/90 text-gray-600 hover:bg-black hover:text-white hover:border-black active:scale-95 transition-all cursor-pointer shadow-2xs"
-          aria-label="Search"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 active:scale-95 transition-all cursor-pointer"
+          title="ค้นหา"
+          aria-label="Search options"
         >
-          <Search className="h-4 w-4" />
+          <MoreHorizontal className="h-4 w-4" />
         </button>
       </div>
 
       {/* 2. MAIN CONTENT AREA */}
       {!hasSearched ? (
         /* ------------------ A. DEFAULT EXPLORE STATE (Search History & Recommendations) ------------------ */
-        <div className="space-y-6 animate-in fade-in duration-150">
+        <div className="px-3.5 sm:px-4 space-y-6 pt-2 animate-in fade-in duration-150">
           {/* Recent Searches (Search History) */}
           {searchHistory.length > 0 && (
             <div>
@@ -238,12 +415,12 @@ export default function SearchPage() {
                 </button>
               </div>
 
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-100">
                 {searchHistory.map((item) => (
                   <div
                     key={item}
                     onClick={() => handleSearchSubmit(item)}
-                    className="flex items-center justify-between py-2.5 px-2 rounded-xl text-xs sm:text-sm text-gray-500 hover:text-black hover:bg-gray-50/80 transition-colors cursor-pointer group"
+                    className="flex items-center justify-between py-2.5 px-2 rounded-xl text-xs sm:text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <Clock className="h-4 w-4 text-gray-400 shrink-0" />
@@ -263,7 +440,7 @@ export default function SearchPage() {
             </div>
           )}
 
-          {/* Recommend for you Section (ตรงตามรูปภาพอ้างอิง) */}
+          {/* Recommend for you Section */}
           <div className="pt-2">
             <div className="flex items-center justify-between px-1 mb-3">
               <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
@@ -272,7 +449,7 @@ export default function SearchPage() {
               <button
                 type="button"
                 onClick={handleRefreshRecommendations}
-                className="p-1.5 rounded-full text-gray-500 hover:text-black hover:bg-gray-100 transition-all cursor-pointer"
+                className="p-1.5 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all cursor-pointer"
                 title="สุ่มหัวข้อใหม่"
               >
                 <RotateCw
@@ -289,8 +466,8 @@ export default function SearchPage() {
                   className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <Flame className="h-4 w-4 text-gray-900 fill-black shrink-0" />
-                    <span className="text-xs sm:text-sm font-semibold text-gray-900 group-hover:text-black truncate">
+                    <Flame className="h-4 w-4 text-amber-500 shrink-0" />
+                    <span className="text-xs sm:text-sm font-semibold text-gray-800 group-hover:text-gray-950 truncate">
                       {rec.tag}
                     </span>
                   </div>
@@ -303,254 +480,125 @@ export default function SearchPage() {
           </div>
         </div>
       ) : (
-        /* ------------------ B. SEARCH RESULTS STATE (Users & Posts) ------------------ */
-        <div className="space-y-5 animate-in fade-in duration-150">
-          {/* Results Summary & Filter Tabs */}
-          <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-            <div className="flex items-center gap-1.5">
+        /* ------------------ B. SEARCH RESULTS STATE (แบบตัวอย่าง พื้นหลังขาว) ------------------ */
+        <div className="animate-in fade-in duration-150">
+          {/* Header Row: ยอดนิยม v  |  โปรไฟล์ที่เกี่ยวข้อง > */}
+          <div className="flex items-center justify-between px-3.5 sm:px-4 py-2">
+            {/* Sort Dropdown (ยอดนิยม / ล่าสุด) */}
+            <div ref={sortMenuRef} className="relative">
               <button
                 type="button"
-                onClick={() => setActiveTab("all")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "all"
-                    ? "bg-black text-white shadow-2xs"
-                    : "text-gray-500 hover:text-black bg-gray-50"
-                }`}
+                onClick={() => setShowSortMenu((prev) => !prev)}
+                className="flex items-center gap-1 text-sm font-bold text-gray-900 hover:text-gray-700 transition-colors cursor-pointer"
               >
-                All
+                <span>{sortBy === "popular" ? "ยอดนิยม" : "ล่าสุด"}</span>
+                <ChevronDown className="h-4 w-4 text-gray-500" />
               </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("services")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "services"
-                    ? "bg-black text-white shadow-2xs"
-                    : "text-gray-500 hover:text-black bg-gray-50"
-                }`}
-              >
-                Services ({matchedServices.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("users")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "users"
-                    ? "bg-black text-white shadow-2xs"
-                    : "text-gray-500 hover:text-black bg-gray-50"
-                }`}
-              >
-                Designers ({matchedUsers.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("posts")}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "posts"
-                    ? "bg-black text-white shadow-2xs"
-                    : "text-gray-500 hover:text-black bg-gray-50"
-                }`}
-              >
-                Posts ({matchedPosts.length})
-              </button>
+
+              {showSortMenu && (
+                <div className="absolute left-0 mt-1.5 w-36 rounded-2xl border border-gray-100 bg-white p-1.5 shadow-xl z-30">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy("popular");
+                      setShowSortMenu(false);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <span>ยอดนิยม</span>
+                    {sortBy === "popular" && (
+                      <Check className="h-3.5 w-3.5 text-gray-900" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSortBy("latest");
+                      setShowSortMenu(false);
+                    }}
+                    className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <span>ล่าสุด</span>
+                    {sortBy === "latest" && (
+                      <Check className="h-3.5 w-3.5 text-gray-900" />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <span className="text-xs text-gray-400 hidden sm:inline-block">
-              ผลการค้นหาสำหรับ &ldquo;{cleanQ}&rdquo;
-            </span>
+            {/* โปรไฟล์ที่เกี่ยวข้อง > */}
+            {matchedUsers.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowAllProfiles((prev) => !prev)}
+                className="flex items-center gap-0.5 text-xs sm:text-sm font-medium text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+              >
+                <span>
+                  {showAllProfiles
+                    ? "แสดงโพสต์ทั้งหมด"
+                    : `โปรไฟล์ที่เกี่ยวข้อง${matchedUsers.length > 1 ? ` (${matchedUsers.length})` : ""}`}
+                </span>
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
-          {/* Loading Indicator */}
-          {(isLoadingUsers || isLoadingPosts || isLoadingServices) && (
+          {/* Loading State */}
+          {isLoadingUsers && isLoadingPosts && (
             <div className="py-16 flex flex-col items-center justify-center text-gray-400 gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               <p className="text-xs">กำลังค้นหา...</p>
             </div>
           )}
 
-          {/* Results List */}
-          {!isLoadingUsers && !isLoadingPosts && !isLoadingServices && (
+          {/* Results Content */}
+          {(!isLoadingUsers || !isLoadingPosts) && (
             <>
-              {/* Case 1: Services Section */}
-              {(activeTab === "all" || activeTab === "services") &&
-                matchedServices.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 px-1 text-xs font-bold text-gray-900">
-                      <LayoutList className="h-3.5 w-3.5 text-gray-900" />
-                      <span>
-                        บริการรับงาน / Commissions ({matchedServices.length})
-                      </span>
-                    </div>
+              {/* 1. Related Profile Card(s) (แสดงด้านบนเหมือนในภาพตัวอย่าง) */}
+              {matchedUsers.length > 0 && (
+                <div className="px-3.5 sm:px-4 pt-1 pb-3 space-y-2.5">
+                  {visibleProfiles.map((user) => (
+                    <RelatedUserCard
+                      key={user.id}
+                      user={user}
+                      currentUser={currentUser}
+                      onFollowClick={() => router.push("/sign-in")}
+                    />
+                  ))}
+                </div>
+              )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {matchedServices.map((srv) => (
-                        <ServiceCard key={srv.id} service={srv} />
-                      ))}
-                    </div>
-                  </div>
-                )}
+              {/* 2. Full Posts Feed (แสดงโพสต์แบบเต็มเหมือนหน้า Feed ใต้การ์ดโปรไฟล์) */}
+              {!showAllProfiles && sortedPosts.length > 0 && (
+                <div className="divide-y divide-gray-100 border-t border-gray-100">
+                  {sortedPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onEdit={(p) => setEditingPost(p)}
+                      onDelete={handleDeletePost}
+                    />
+                  ))}
+                </div>
+              )}
 
-              {/* Case 2: Designers / Users Section */}
-              {(activeTab === "all" || activeTab === "users") &&
-                matchedUsers.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-1.5 px-1 text-xs font-bold text-gray-900">
-                      <User className="h-3.5 w-3.5 text-blue-500" />
-                      <span>
-                        ดีไซเนอร์ / ครีเอเตอร์ ({matchedUsers.length})
-                      </span>
-                    </div>
-
-                    <div className="space-y-1 bg-white rounded-2xl border border-gray-100 p-2 shadow-2xs">
-                      {matchedUsers.map((user) => (
-                        <Link
-                          key={user.id}
-                          href={`/${user.username}`}
-                          className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 transition-colors group cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <UserAvatar
-                              src={user.avatar}
-                              alt={user.name}
-                              size="md"
-                              className="ring-1 ring-gray-200"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-xs sm:text-sm font-bold text-gray-900 truncate group-hover:text-black">
-                                {user.name}
-                              </p>
-                              <p className="text-[11px] text-gray-400 truncate">
-                                @{user.username}
-                              </p>
-                              {user.bio && (
-                                <p className="text-[11px] text-gray-500 line-clamp-1 mt-0.5">
-                                  {user.bio}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-400 group-hover:text-black font-medium shrink-0 flex items-center gap-0.5">
-                            ดูโปรไฟล์
-                            <ChevronRight className="h-3.5 w-3.5" />
-                          </span>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              {/* Case 2: Related Posts Section */}
-              {(activeTab === "all" || activeTab === "posts") &&
-                matchedPosts.length > 0 && (
-                  <div className="space-y-2 pt-2">
-                    <div className="flex items-center gap-1.5 px-1 text-xs font-bold text-gray-900">
-                      <FileText className="h-3.5 w-3.5 text-blue-500" />
-                      <span>
-                        {matchedUsers.length === 0
-                          ? `ไม่พบผู้ใช้ — แสดงโพสต์ที่เกี่ยวข้อง (${matchedPosts.length})`
-                          : `โพสต์ที่เกี่ยวข้อง (${matchedPosts.length})`}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2">
-                      {matchedPosts.map((post) => {
-                        const media = post.images || post.media_urls || [];
-                        const thumb =
-                          typeof media[0] === "string"
-                            ? media[0]
-                            : media[0]?.url || null;
-
-                        return (
-                          <div
-                            key={post.id}
-                            onClick={() => setActivePost(post)}
-                            className="flex items-start justify-between p-3.5 rounded-2xl bg-white border border-gray-100 hover:border-gray-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer gap-3"
-                          >
-                            <div className="flex items-start gap-3 min-w-0 flex-1">
-                              {thumb ? (
-                                <div className="h-14 w-14 rounded-xl overflow-hidden bg-gray-100 shrink-0 border border-gray-100">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={thumb}
-                                    alt="Post media"
-                                    className="h-full w-full object-cover"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="h-14 w-14 rounded-xl bg-gray-100 text-gray-400 flex items-center justify-center shrink-0 border border-gray-100">
-                                  <FileText className="h-6 w-6 text-gray-400" />
-                                </div>
-                              )}
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mb-1">
-                                  <span className="font-semibold text-gray-800 truncate">
-                                    {post.author?.name ||
-                                      post.author?.username ||
-                                      "User"}
-                                  </span>
-                                  <span>•</span>
-                                  <span>
-                                    @{post.author?.username || "user"}
-                                  </span>
-                                  <span>•</span>
-                                  <span>
-                                    {formatRelativeTime(post.createdAt)}
-                                  </span>
-                                </div>
-
-                                <p className="text-xs sm:text-sm text-gray-800 line-clamp-2 leading-relaxed font-medium">
-                                  {post.caption ||
-                                    post.content ||
-                                    "ดูรายละเอียดโพสต์นี้"}
-                                </p>
-
-                                <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-400">
-                                  <span className="flex items-center gap-1">
-                                    <Heart className="h-3 w-3" />
-                                    {post.likesCount ?? 0}
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <MessageCircle className="h-3 w-3" />
-                                    {post.commentsCount ?? 0}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <ChevronRight className="h-4 w-4 text-gray-300 self-center shrink-0" />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-              {/* Case 4: Empty State */}
-              {matchedUsers.length === 0 &&
-                matchedPosts.length === 0 &&
-                matchedServices.length === 0 && (
-                  <div className="py-20 text-center">
+              {/* 3. Empty State (เมื่อไม่พบทั้งผู้ใช้และโพสต์) */}
+              {!isLoadingUsers &&
+                !isLoadingPosts &&
+                matchedUsers.length === 0 &&
+                sortedPosts.length === 0 && (
+                  <div className="py-20 px-4 text-center">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-gray-50 text-gray-300 mb-3 ring-1 ring-gray-100">
                       <Search className="h-7 w-7" />
                     </div>
                     <h3 className="text-sm font-bold text-gray-900">
-                      ไม่พบผลลัพธ์ที่ตรงกับ &ldquo;{cleanQ}&rdquo;
+                      ไม่พบผู้ใช้หรือโพสต์ที่ตรงกับ &ldquo;{cleanQ}&rdquo;
                     </h3>
                     <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
                       ลองค้นหาด้วยชื่อผู้ใช้, แฮชแท็ก
-                      หรือลองเลือกดูหัวข้อแนะนำด้านบน
+                      หรือคำสำคัญอื่น
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSubmittedQuery("");
-                        setQuery("");
-                        router.replace("/search", { scroll: false });
-                      }}
-                      className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-black px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-gray-800 transition-colors cursor-pointer"
-                    >
-                      <span>กลับไปหน้าค้นหาหลัก</span>
-                    </button>
                   </div>
                 )}
             </>
@@ -558,14 +606,14 @@ export default function SearchPage() {
         </div>
       )}
 
-      {/* Post Detail Modal (เมื่อคลิกโพสต์ในผลการค้นหา) */}
-      {activePost && (
-        <PostDetailModal
-          post={activePost}
-          isOpen={Boolean(activePost)}
-          onClose={() => setActivePost(null)}
-        />
-      )}
+      {/* Modal แก้ไขโพสต์ (กรณีเป็นเจ้าของโพสต์) */}
+      <PostFormModal
+        isOpen={Boolean(editingPost)}
+        isEdit={Boolean(editingPost)}
+        initialPost={editingPost}
+        onClose={() => setEditingPost(null)}
+        onSubmit={handleUpdatePost}
+      />
     </div>
   );
 }

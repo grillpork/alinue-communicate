@@ -1,24 +1,41 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 
 /**
- * แปลงข้อความที่มี #hashtag หรือ @user ให้เป็นสีฟ้า
+ * แปลงข้อความที่มี #hashtag หรือ @user ให้เป็นลิงก์คลิกได้
  */
 function renderPostText(text) {
   if (!text) return null;
-  const regex = /(#[^\s]+|@[^\s]+)/g;
+  const regex = /(#[^\s#.,!?]+|@[^\s@.,!?]+)/g;
   const parts = text.split(regex);
 
   return parts.map((part, index) => {
-    if (part.startsWith("#") || part.startsWith("@")) {
+    if (part.startsWith("#")) {
+      const tag = part.slice(1);
       return (
-        <span
+        <Link
           key={index}
+          href={`/search?q=${encodeURIComponent(tag)}`}
+          onClick={(e) => e.stopPropagation()}
           className="text-blue-500 font-medium hover:underline cursor-pointer transition-colors"
         >
           {part}
-        </span>
+        </Link>
+      );
+    }
+    if (part.startsWith("@")) {
+      const username = part.slice(1);
+      return (
+        <Link
+          key={index}
+          href={`/${username}`}
+          onClick={(e) => e.stopPropagation()}
+          className="text-blue-500 font-medium hover:underline cursor-pointer transition-colors"
+        >
+          {part}
+        </Link>
       );
     }
     return <span key={index}>{part}</span>;
