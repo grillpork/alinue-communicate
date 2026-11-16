@@ -7,10 +7,16 @@ import { usePostDisplayMode } from "@/hooks/usePostDisplayMode";
  * แสดงรูปภาพใน PostCard รองรับ 2 โหมดการแสดงผล:
  * 1. "carousel" (สไลด์): Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum & Scale Motion)
  * 2. "grid" (ตาราง Facebook Auto-Aspect Grid):
- *    - คำนวณสัดส่วนภาพแรกอัตโนมัติ (Portrait / Landscape / Square)
- *    - 4 รูป (Portrait): ซ้าย 1 รูปใหญ่ (2/3) + ขวาเรียงตั้ง 3 รูปจัตุรัส (1/3)
- *    - 4 รูป (Landscape): บน 1 รูปใหญ่ (2/3) + ล่างเรียงนอน 3 รูปจัตุรัส (1/3)
- *    - 4 รูป (Square): ตาราง 2x2 จัตุรัสเท่ากัน
+ *    - ตรวจสอบสัดส่วนภาพอัตโนมัติ (Portrait / Landscape / Wide Banner / Square)
+ *    - 2 รูป: แบ่ง 2 คอลัมน์ซ้าย-ขวา หรือเรียงซ้อน 2 แถวแนวนอน
+ *    - 3 รูป:
+ *      - ภาพแนวนอน/แบนเนอร์ยาว (Wide / All-Landscape): เรียงซ้อน 3 แถวเต็มความกว้าง (3 Full-Width Rows)
+ *      - ภาพแรกแนวตั้ง (Portrait): ซ้าย 1 รูปใหญ่ (2/3) + ขวาเรียงตั้ง 2 รูป (1/3)
+ *      - ภาพแรกจัตุรัส/แนวนอนทั่วไป: บน 1 รูปใหญ่ (2/3) + ล่างเรียงคู่ 2 รูป (1/3)
+ *    - 4 รูป:
+ *      - ภาพแรกแนวตั้ง (Portrait): ซ้าย 1 รูปใหญ่ (2/3) + ขวาเรียงตั้ง 3 รูปจัตุรัส (1/3)
+ *      - ภาพแรกแนวนอน (Landscape): บน 1 รูปใหญ่ (2/3) + ล่างเรียงนอน 3 รูปจัตุรัส (1/3)
+ *      - ภาพแรกจัตุรัส (Square): ตาราง 2x2 จัตุรัสเท่ากัน
  *    - 5+ รูป: แถวบน 2 รูปจัตุรัส + แถวล่าง 3 รูปจัตุรัส พร้อม Overlay +N
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
@@ -28,7 +34,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
   });
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [pressedIdx, setPressedIdx] = useState(null);
-  const [firstAspect, setFirstAspect] = useState("square"); // "portrait" | "landscape" | "square"
+  const [imageRatios, setImageRatios] = useState({});
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -47,41 +53,48 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       .filter((img) => Boolean(img?.url));
   }, [images]);
 
-  const classifyAspect = useCallback((width, height) => {
+  const recordRatio = useCallback((idx, width, height) => {
     if (!width || !height) return;
     const ratio = width / height;
-    if (ratio < 0.88) {
-      setFirstAspect("portrait");
-    } else if (ratio > 1.15) {
-      setFirstAspect("landscape");
-    } else {
-      setFirstAspect("square");
-    }
+    setImageRatios((prev) => {
+      if (prev[idx] && Math.abs(prev[idx] - ratio) < 0.01) return prev;
+      return { ...prev, [idx]: ratio };
+    });
   }, []);
 
-  // ตรวจสอบสัดส่วนของรูปภาพแรกอัตโนมัติเพื่อจัด Layout ตารางแบบ Facebook
+  // โหลดสัดส่วนของรูปภาพ 4 รูปแรกล่วงหน้าเพื่อจัด Layout ตารางแบบ Facebook อัตโนมัติ
   useEffect(() => {
-    const firstUrl = normalizedImages[0]?.url;
-    if (!firstUrl || typeof window === "undefined") return;
+    if (typeof window === "undefined" || normalizedImages.length <= 1) return;
 
     let isActive = true;
-    const img = new window.Image();
-    img.src = firstUrl;
+    normalizedImages.slice(0, 4).forEach((item, idx) => {
+      if (!item?.url) return;
+      const img = new window.Image();
+      img.src = item.url;
 
-    if (img.complete && img.naturalWidth && img.naturalHeight) {
-      classifyAspect(img.naturalWidth, img.naturalHeight);
-    } else {
-      img.onload = () => {
-        if (isActive) {
-          classifyAspect(img.naturalWidth, img.naturalHeight);
-        }
-      };
-    }
+      if (img.complete && img.naturalWidth && img.naturalHeight) {
+        recordRatio(idx, img.naturalWidth, img.naturalHeight);
+      } else {
+        img.onload = () => {
+          if (isActive) {
+            recordRatio(idx, img.naturalWidth, img.naturalHeight);
+          }
+        };
+      }
+    });
 
     return () => {
       isActive = false;
     };
-  }, [normalizedImages, classifyAspect]);
+  }, [normalizedImages, recordRatio]);
+
+  const firstAspect = useMemo(() => {
+    const r0 = imageRatios[0];
+    if (!r0) return "square";
+    if (r0 < 0.88) return "portrait";
+    if (r0 > 1.15) return "landscape";
+    return "square";
+  }, [imageRatios]);
 
   // ล้าง animation frame เมื่อ unmount
   useEffect(() => {
@@ -242,14 +255,12 @@ export default function PostImagesCarousel({ images, onImageClick }) {
         src={img.url}
         alt={img.name || `Image ${idx + 1}`}
         draggable={false}
-        onLoad={
-          idx === 0
-            ? (e) =>
-                classifyAspect(
-                  e.currentTarget.naturalWidth,
-                  e.currentTarget.naturalHeight,
-                )
-            : undefined
+        onLoad={(e) =>
+          recordRatio(
+            idx,
+            e.currentTarget.naturalWidth,
+            e.currentTarget.naturalHeight,
+          )
         }
         className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
       />
@@ -285,8 +296,29 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       );
     }
 
-    // 2) กรณี 3 รูป: ปรับตามสัดส่วนรูปแรก (Portrait = ซ้าย 1 ใหญ่ + ขวา 2 ย่อย, Landscape/Square = บน 1 ใหญ่ + ล่าง 2 ย่อย)
+    // 2) กรณี 3 รูป:
+    // - หากเป็นภาพแนวนอนกว้าง (Wide Banner > 1.35) หรือเป็นแนวนอนทั้ง 3 ภาพ: เรียงซ้อน 3 แถวเต็มความกว้าง (ตามภาพตัวอย่าง Full CG)
+    // - หากรูปแรกเป็นแนวตั้ง (Portrait): ซ้าย 1 ใหญ่ + ขวา 2 ย่อย
+    // - กรณีทั่วไป: บน 1 ใหญ่ + ล่าง 2 ย่อย
     if (count === 3) {
+      const r0 = imageRatios[0] || 1;
+      const r1 = imageRatios[1] || 1;
+      const r2 = imageRatios[2] || 1;
+      const isThreeWideStack =
+        r0 > 1.35 || (r0 > 1.15 && r1 > 1.15 && r2 > 1.15);
+
+      if (isThreeWideStack) {
+        return (
+          <div className="mt-3 px-3.5 sm:px-4">
+            <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100">
+              {renderGridCell(normalizedImages[0], 0, "h-full w-full")}
+              {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
+              {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
+            </div>
+          </div>
+        );
+      }
+
       if (firstAspect === "portrait") {
         return (
           <div className="mt-3 px-3.5 sm:px-4">
