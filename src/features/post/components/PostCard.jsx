@@ -12,6 +12,7 @@ import PostActions from "./PostActions";
 import PostComments from "./PostComments";
 import SharePostModal from "./SharePostModal";
 import PostDetailModal from "./PostDetailModal";
+import PostImageLightbox from "./PostImageLightbox";
 import LinkedServiceCard from "@/components/common/LinkedServiceCard";
 
 /**
@@ -27,6 +28,7 @@ export default function PostCard({
 }) {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [initialImageIndex, setInitialImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const previousUrlRef = useRef(null);
@@ -73,13 +75,22 @@ export default function PostCard({
     if (onLike) onLike(post.id, nextState);
   };
 
-  // 6. เปิดหน้าดูโพสต์เต็มจอ (Full-Screen Page View) พร้อมซิงค์ URL โดยไม่มี /media และย้อนกลับหน้า Feed ได้ทันที
-  const handleOpenDetailModal = useCallback(
+  // 6. คลิกที่รูปภาพ: ขยายรูปใหญ่เต็มจอทันที (PostImageLightbox พื้นหลังสีขาว)
+  const handleImageClick = useCallback(
     (imageUrl, imageIndex) => {
       if (onImageClick) {
         onImageClick(imageUrl, imageIndex);
         return;
       }
+      setInitialImageIndex(typeof imageIndex === "number" ? imageIndex : 0);
+      setIsLightboxOpen(true);
+    },
+    [onImageClick],
+  );
+
+  // 7. เปิดหน้าดูรายละเอียดโพสต์และความคิดเห็นทั้งหมด (เมื่อกด "ดูทั้งหมด")
+  const handleOpenDetailModal = useCallback(
+    (imageUrl, imageIndex) => {
       setInitialImageIndex(typeof imageIndex === "number" ? imageIndex : 0);
       setIsDetailModalOpen(true);
 
@@ -90,7 +101,7 @@ export default function PostCard({
         window.history.pushState({ postView: post?.id }, "", postPath);
       }
     },
-    [onImageClick, postAuthorUsername, post],
+    [postAuthorUsername, post],
   );
 
   const handleCloseDetailModal = useCallback(() => {
@@ -112,7 +123,7 @@ export default function PostCard({
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isDetailModalOpen]);
 
-  // 7. คัดลอกลิงก์โพสต์ด้วย async Clipboard API
+  // 8. คัดลอกลิงก์โพสต์ด้วย async Clipboard API
   const handleCopyLink = async () => {
     try {
       if (typeof window !== "undefined") {
@@ -141,10 +152,10 @@ export default function PostCard({
       {/* 2. เนื้อหาข้อความโพสต์ */}
       <PostContent content={post?.content} />
 
-      {/* 3. Carousel / Grid รูปภาพโพสต์ */}
+      {/* 3. Carousel / Grid รูปภาพโพสต์ (คลิกแล้วขยายรูปใหญ่เต็มจอทันที) */}
       <PostImagesCarousel
         images={post?.images}
-        onImageClick={handleOpenDetailModal}
+        onImageClick={handleImageClick}
       />
 
       {/* 4. การ์ดบริการที่แนบมา (Linked Service) */}
@@ -193,7 +204,17 @@ export default function PostCard({
         post={{ ...post, sharesCount }}
       />
 
-      {/* 8. หน้าดูโพสต์และรูปภาพเต็มจอแบบ Threads.com (เฉพาะเมื่อถูกเปิดใช้งาน) */}
+      {/* 8. ขยายรูปภาพเต็มจอทันทีเมื่อคลิกที่รูป (พื้นหลังสีขาว ไม่ใช้สีดำ) */}
+      {isLightboxOpen && (
+        <PostImageLightbox
+          images={post?.images}
+          initialIndex={initialImageIndex}
+          isOpen={isLightboxOpen}
+          onClose={() => setIsLightboxOpen(false)}
+        />
+      )}
+
+      {/* 9. หน้าดูโพสต์และความคิดเห็นทั้งหมดแบบเต็มจอ */}
       {isDetailModalOpen && (
         <PostDetailModal
           post={post}

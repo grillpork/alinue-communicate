@@ -10,6 +10,7 @@ export { default as PostActions } from "./components/PostActions";
 export { default as PostComments } from "./components/PostComments";
 export { default as PostMenu } from "./components/PostMenu";
 export { default as PostDetailModal } from "./components/PostDetailModal";
+export { default as PostImageLightbox } from "./components/PostImageLightbox";
 export { default as PostFeed } from "./components/PostFeed";
 export { default as PostFormModal } from "./components/PostFormModal";
 export { default as SearchPopup } from "./components/SearchPopup";
