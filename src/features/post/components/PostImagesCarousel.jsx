@@ -1,329 +1,213 @@
-
 "use client";
 
-import React, {
-  useState,
-  useRef,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
-import { motion } from "framer-motion";
+import React, { useRef, useState, useMemo, useEffect, useCallback } from "react";
 
-export default function PostImagesCarousel({
-  images = [],
-  onImageClick,
-}) {
-  const viewportRef = useRef(null);
-  const trackRef = useRef(null);
+/**
+ * แสดงรูปภาพใน PostCard ด้วย Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum แบบ Threads.com)
+ */
+export default function PostImagesCarousel({ images, onImageClick }) {
+  const scrollRef = useRef(null);
+  const dragState = useRef({
+    isDown: false,
+    isDragging: false,
+    startX: 0,
+    scrollLeft: 0,
+    lastX: 0,
+    lastTime: 0,
+    velocity: 0,
+    rafId: null,
+  });
+  const [isGrabbing, setIsGrabbing] = useState(false);
 
-  // ใช้ตรวจสอบว่าผู้ใช้กำลังลากอยู่หรือไม่
-  const isDragging = useRef(false);
-  const dragTimer = useRef(null);
-
-  // เก็บ Aspect Ratio ของแต่ละภาพ
-  const [imageRatios, setImageRatios] = useState({});
-
-  // ความกว้างของพื้นที่แสดงผล
-  const [viewportWidth, setViewportWidth] = useState(0);
-
-  // ระยะที่ Carousel สามารถลากไปทางซ้ายได้
-  const [dragLimit, setDragLimit] = useState(0);
-
-  // Normalize images รองรับทั้ง String และ Object
+  // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
-    if (!Array.isArray(images)) return [];
-
-    return images
+    return (images || [])
       .map((img, idx) => {
+        if (!img) return null;
         if (typeof img === "string") {
-          return {
-            id: String(idx),
-            url: img,
-            name: `Post image ${idx + 1}`,
-          };
+          return { id: String(idx), url: img, name: "Post image" };
         }
-
         return {
-          id: img?.id ?? String(idx),
-          url: img?.url ?? "",
-          name: img?.name ?? `Post image ${idx + 1}`,
+          id: img.id || String(idx),
+          url: img.url || "",
+          name: img.name || "Post image",
         };
       })
-      .filter((img) => img.url);
+      .filter((img) => Boolean(img?.url));
   }, [images]);
 
-  // ความสูงของ Card
-  const cardHeight = viewportWidth >= 640 ? 420 : 380;
-
-  // จำกัดความกว้างสูงสุดของ Card
-  const maxCardWidth = viewportWidth
-    ? viewportWidth * 0.82
-    : 300;
-
-  // คำนวณความกว้างจาก Aspect Ratio
-  const getCardWidth = useCallback(
-    (ratio) => {
-      const width = cardHeight * ratio;
-
-      return Math.min(width, maxCardWidth);
-    },
-    [cardHeight, maxCardWidth]
-  );
-
-  // บันทึก Aspect Ratio เมื่อโหลดภาพสำเร็จ
-  const handleImageLoad = useCallback((event, id) => {
-    const { naturalWidth, naturalHeight } = event.currentTarget;
-
-    if (!naturalWidth || !naturalHeight) return;
-
-    const ratio = naturalWidth / naturalHeight;
-
-    setImageRatios((prev) => {
-      if (prev[id] === ratio) return prev;
-
-      return {
-        ...prev,
-        [id]: ratio,
-      };
-    });
-  }, []);
-
-  // วัดขนาด Viewport
+  // ล้าง animation frame เมื่อ unmount
   useEffect(() => {
-    const viewport = viewportRef.current;
-
-    if (!viewport) return;
-
-    const updateSize = () => {
-      setViewportWidth(viewport.clientWidth);
-    };
-
-    updateSize();
-
-    const observer = new ResizeObserver(updateSize);
-
-    observer.observe(viewport);
-
+    const state = dragState.current;
     return () => {
-      observer.disconnect();
+      if (state.rafId) cancelAnimationFrame(state.rafId);
     };
   }, []);
 
-  // คำนวณขอบเขตการลาก
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
-
-    if (!viewport || !track) return;
-
-    const updateDragLimit = () => {
-      // คำนวณระยะที่ Content ล้นออกจาก Viewport (Overflow)
-      const overflow = track.scrollWidth - viewport.clientWidth;
-      setDragLimit(Math.max(0, overflow));
-    };
-
-    updateDragLimit();
-
-    const observer = new ResizeObserver(updateDragLimit);
-
-    observer.observe(viewport);
-    observer.observe(track);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [normalizedImages, imageRatios, viewportWidth]);
-
-  // เริ่มต้นการลาก
-  const handleDragStart = useCallback(() => {
-    isDragging.current = true;
-
-    if (dragTimer.current) {
-      clearTimeout(dragTimer.current);
+  const stopMomentum = useCallback(() => {
+    if (dragState.current.rafId) {
+      cancelAnimationFrame(dragState.current.rafId);
+      dragState.current.rafId = null;
     }
   }, []);
 
-  // สิ้นสุดการลาก
-  const handleDragEnd = useCallback(() => {
-    if (dragTimer.current) {
-      clearTimeout(dragTimer.current);
-    }
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return; // เฉพาะคลิกซ้าย
+    const container = scrollRef.current;
+    if (!container) return;
 
-    // ป้องกัน Click ที่เกิดตามหลัง Drag
-    dragTimer.current = setTimeout(() => {
-      isDragging.current = false;
-    }, 150);
-  }, []);
+    stopMomentum();
 
-  // เปิดรูปภาพ
-  const handleImageClick = useCallback(
-    (url, idx) => {
-      if (isDragging.current) return;
+    const s = dragState.current;
+    s.isDown = true;
+    s.isDragging = false;
+    s.startX = e.pageX - container.offsetLeft;
+    s.scrollLeft = container.scrollLeft;
+    s.lastX = e.pageX;
+    s.lastTime = performance.now();
+    s.velocity = 0;
+  };
 
-      onImageClick?.(url, idx);
-    },
-    [onImageClick]
-  );
+  const handleMouseMove = (e) => {
+    const s = dragState.current;
+    if (!s.isDown) return;
+    const container = scrollRef.current;
+    if (!container) return;
 
-  // Cleanup Timer
-  useEffect(() => {
-    return () => {
-      if (dragTimer.current) {
-        clearTimeout(dragTimer.current);
+    const now = performance.now();
+    const dt = now - s.lastTime;
+    const x = e.pageX - container.offsetLeft;
+    const walk = x - s.startX;
+
+    // หากลากเกิน 5px ให้เริ่มเข้าโหมด Drag
+    if (Math.abs(walk) > 5) {
+      if (!s.isDragging) {
+        s.isDragging = true;
+        setIsGrabbing(true);
       }
-    };
-  }, []);
+      e.preventDefault();
+      container.scrollLeft = s.scrollLeft - walk;
 
-  // ไม่มีรูปภาพ
-  if (!normalizedImages.length) {
-    return null;
-  }
+      if (dt > 0) {
+        const instantVel = (e.pageX - s.lastX) / dt;
+        // Smooth velocity ด้วย exponential moving average
+        s.velocity = s.velocity * 0.6 + instantVel * 0.4;
+        s.lastX = e.pageX;
+        s.lastTime = now;
+      }
+    }
+  };
 
-  // รูปภาพเดียว
+  const handleMouseUpOrLeave = () => {
+    const s = dragState.current;
+    if (!s.isDown) return;
+    s.isDown = false;
+    setIsGrabbing(false);
+
+    if (s.isDragging) {
+      const container = scrollRef.current;
+      // หากปล่อยเมาส์ไม่เกิน 60ms หลังขยับครั้งสุดท้าย ให้ส่งแรงเฉื่อย (Momentum) ต่อแบบ Threads
+      const timeSinceMove = performance.now() - s.lastTime;
+      let currentVel = timeSinceMove < 60 ? s.velocity * 16 : 0;
+
+      const stepMomentum = () => {
+        if (!container || Math.abs(currentVel) < 0.4) {
+          s.rafId = null;
+          return;
+        }
+        container.scrollLeft -= currentVel;
+        currentVel *= 0.94; // แรงเสียดทานค่อย ๆ ชะลอหยุดอย่างนุ่มนวล
+        s.rafId = requestAnimationFrame(stepMomentum);
+      };
+
+      if (Math.abs(currentVel) >= 0.4) {
+        s.rafId = requestAnimationFrame(stepMomentum);
+      }
+
+      // หน่วงเวลาสั้น ๆ เพื่อไม่ให้ event onClick ทำงานหลังปล่อยเมาส์จากการลาก
+      setTimeout(() => {
+        s.isDragging = false;
+      }, 50);
+    }
+  };
+
+  const handleImageClick = (url, idx) => {
+    if (dragState.current.isDragging) return;
+    onImageClick?.(url, idx);
+  };
+
+  if (normalizedImages.length === 0) return null;
+
+  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ
   if (normalizedImages.length === 1) {
-    const img = normalizedImages[0];
-
+    const singleImage = normalizedImages[0];
     return (
       <div className="mt-3 px-3.5 sm:px-4 flex">
-        <button
-          type="button"
-          onClick={() => handleImageClick(img.url, 0)}
-          aria-label="ดูรูปภาพที่ 1"
-          className="
-            block
-            max-w-full
-            overflow-hidden
-            rounded-xl
-            cursor-pointer
-          "
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onImageClick?.(singleImage.url, 0)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onImageClick?.(singleImage.url, 0);
+            }
+          }}
+          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          aria-label="ดูรูปภาพขนาดเต็ม"
         >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={img.url}
-            alt={img.name}
-            onLoad={(event) => handleImageLoad(event, img.id)}
-            className="
-              block
-              h-auto
-              max-h-[400px]
-              sm:max-h-[460px]
-              max-w-full
-              object-contain
-            "
+            src={singleImage.url}
+            alt={singleImage.name || "Post image"}
+            draggable={false}
+            className="block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
           />
-        </button>
+        </div>
       </div>
     );
   }
 
+  // กรณี 2 รูปขึ้นไป: Flex + Scroll-X + Drag to Scroll สไตล์ Threads.com
   return (
-    <div
-      ref={viewportRef}
-      className="
-        w-full
-        overflow-hidden
-        touch-pan-y
-        select-none
-        mt-3
-      "
-    >
-      <motion.div
-        ref={trackRef}
-        drag="x"
-        dragConstraints={{
-          left: -dragLimit,
-          right: 0,
-        }}
-        dragElastic={0.12}
-        dragMomentum={true}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        className="
-          flex
-          w-max
-          items-center
-          gap-2.5
-          sm:gap-3
-          px-3.5
-          sm:px-4
-          cursor-grab
-          active:cursor-grabbing
-        "
-        style={{
-          touchAction: "pan-y",
-        }}
+    <div className="relative mt-3 select-none">
+      <div
+        ref={scrollRef}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUpOrLeave}
+        onMouseLeave={handleMouseUpOrLeave}
+        onWheel={stopMomentum}
+        onTouchStart={stopMomentum}
+        className={`flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+          isGrabbing ? "cursor-grabbing select-none" : "cursor-grab"
+        }`}
       >
-        {normalizedImages.map((img, idx) => {
-          const ratio = imageRatios[img.id] || 1;
-
-          const cardWidth = getCardWidth(ratio);
-
-          return (
-            <motion.button
-              key={img.id}
-              type="button"
-              onClick={() => handleImageClick(img.url, idx)}
-              aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-              whileTap={{
-                scale: 0.97,
-                transition: {
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25,
-                },
-              }}
-              className="
-                relative
-                flex-none
-                overflow-hidden
-                rounded-xl
-                bg-neutral-100
-                dark:bg-neutral-900
-                cursor-pointer
-                outline-none
-              "
-              style={{
-                width: `${cardWidth}px`,
-                height: `${cardHeight}px`,
-              }}
-            >
-              <img
-                src={img.url}
-                alt={img.name}
-                draggable={false}
-                onLoad={(event) =>
-                  handleImageLoad(event, img.id)
-                }
-                className="
-                  block
-                  h-full
-                  w-full
-                  object-contain
-                  pointer-events-none
-                "
-              />
-
-              {/* Image Index */}
-              <span
-                className="
-                  absolute
-                  bottom-2
-                  right-2
-                  rounded-full
-                  bg-black/50
-                  px-2
-                  py-1
-                  text-xs
-                  text-white
-                  pointer-events-none
-                "
-              >
-                {idx + 1}/{normalizedImages.length}
-              </span>
-            </motion.button>
-          );
-        })}
-      </motion.div>
+        {normalizedImages.map((img, idx) => (
+          <div
+            key={img.id || idx}
+            role="button"
+            tabIndex={0}
+            onClick={() => handleImageClick(img.url, idx)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onImageClick?.(img.url, idx);
+              }
+            }}
+            aria-label={`ดูรูปภาพที่ ${idx + 1}`}
+            className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={img.url}
+              alt={img.name || `Image ${idx + 1}`}
+              draggable={false}
+              className="h-full w-full object-cover pointer-events-none select-none transition-transform duration-300 hover:scale-[1.02]"
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
