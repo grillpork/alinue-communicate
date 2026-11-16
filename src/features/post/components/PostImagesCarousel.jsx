@@ -225,7 +225,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
             draggable={false}
             className={
               isGridMode
-                ? "block w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                ? "block w-full h-auto max-h-[420px] sm:max-h-[480px] object-cover transition-transform duration-300 group-hover:scale-[1.01]"
                 : "block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
             }
           />
