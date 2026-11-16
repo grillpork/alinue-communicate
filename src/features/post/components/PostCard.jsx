@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useToggleLikeMutation } from "../hooks/use-posts";
 import { useMeQuery } from "@/features/auth";
 import { useBookmarks } from "@/features/bookmark";
@@ -12,6 +11,7 @@ import PostImagesCarousel from "./PostImagesCarousel";
 import PostActions from "./PostActions";
 import PostComments from "./PostComments";
 import SharePostModal from "./SharePostModal";
+import PostDetailModal from "./PostDetailModal";
 import LinkedServiceCard from "@/components/common/LinkedServiceCard";
 
 /**
@@ -25,9 +25,11 @@ export default function PostCard({
   onDelete,
   onImageClick,
 }) {
-  const router = useRouter();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [initialImageIndex, setInitialImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
+  const previousUrlRef = useRef(null);
 
   // 1. ดึงข้อมูลผู้ใช้งานปัจจุบัน
   const { data: meData } = useMeQuery();
@@ -71,15 +73,44 @@ export default function PostCard({
     if (onLike) onLike(post.id, nextState);
   };
 
-  // 6. ส่งต่อ imageUrl และ index ไปยัง onImageClick หรือนำทางไปยังหน้า Detail
-  const handleOpenDetailModal = (imageUrl, imageIndex) => {
-    if (onImageClick) {
-      onImageClick(imageUrl, imageIndex);
-      return;
+  // 6. เปิดหน้าดูโพสต์เต็มจอ (Full-Screen Page View) พร้อมซิงค์ URL โดยไม่มี /media และย้อนกลับหน้า Feed ได้ทันที
+  const handleOpenDetailModal = useCallback(
+    (imageUrl, imageIndex) => {
+      if (onImageClick) {
+        onImageClick(imageUrl, imageIndex);
+        return;
+      }
+      setInitialImageIndex(typeof imageIndex === "number" ? imageIndex : 0);
+      setIsDetailModalOpen(true);
+
+      if (typeof window !== "undefined") {
+        previousUrlRef.current =
+          window.location.pathname + window.location.search;
+        const postPath = getPostPath(postAuthorUsername, post);
+        window.history.pushState({ postView: post?.id }, "", postPath);
+      }
+    },
+    [onImageClick, postAuthorUsername, post],
+  );
+
+  const handleCloseDetailModal = useCallback(() => {
+    setIsDetailModalOpen(false);
+    if (typeof window !== "undefined" && previousUrlRef.current) {
+      window.history.replaceState({}, "", previousUrlRef.current);
+      previousUrlRef.current = null;
     }
-    const path = getPostPath(postAuthorUsername, post);
-    router.push(path, { scroll: false });
-  };
+  }, []);
+
+  // รองรับการกดปุ่ม Back ของเบราว์เซอร์ขณะเปิดหน้าดูโพสต์เต็มจอ
+  useEffect(() => {
+    if (!isDetailModalOpen) return;
+    const handlePopState = () => {
+      setIsDetailModalOpen(false);
+      previousUrlRef.current = null;
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDetailModalOpen]);
 
   // 7. คัดลอกลิงก์โพสต์ด้วย async Clipboard API
   const handleCopyLink = async () => {
@@ -110,7 +141,7 @@ export default function PostCard({
       {/* 2. เนื้อหาข้อความโพสต์ */}
       <PostContent content={post?.content} />
 
-      {/* 3. Carousel รูปภาพโพสต์ */}
+      {/* 3. Carousel / Grid รูปภาพโพสต์ */}
       <PostImagesCarousel
         images={post?.images}
         onImageClick={handleOpenDetailModal}
@@ -151,7 +182,7 @@ export default function PostCard({
           commentsCount={commentsCount}
           currentUser={currentUser}
           postAuthorId={post?.author?.id ?? post?.userId}
-          onOpenDetail={() => handleOpenDetailModal()}
+          onOpenDetail={() => handleOpenDetailModal(undefined, 0)}
         />
       )}
 
@@ -161,6 +192,18 @@ export default function PostCard({
         onClose={() => setIsShareModalOpen(false)}
         post={{ ...post, sharesCount }}
       />
+
+      {/* 8. หน้าดูโพสต์และรูปภาพเต็มจอแบบ Threads.com (เฉพาะเมื่อถูกเปิดใช้งาน) */}
+      {isDetailModalOpen && (
+        <PostDetailModal
+          post={post}
+          isOpen={isDetailModalOpen}
+          initialImageIndex={initialImageIndex}
+          onClose={handleCloseDetailModal}
+          onEdit={onEdit ? () => onEdit(post) : undefined}
+          onDelete={onDelete ? () => onDelete(post.id) : undefined}
+        />
+      )}
     </article>
   );
 }
