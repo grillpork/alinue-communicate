@@ -28,6 +28,7 @@ import {
 import { useMeQuery, useSignOutMutation } from "@/features/auth";
 import { useUpdateProfileMutation } from "@/features/user";
 import { uploadToR2 } from "@/lib/upload";
+import { setPostDisplayMode } from "@/hooks/usePostDisplayMode";
 
 const TABS = [
   { id: "profile", label: "Profile & Account", icon: User },
@@ -201,6 +202,9 @@ export default function SettingsPage() {
       } catch {}
       return updated;
     });
+    if (key === "feedMediaPreview") {
+      setPostDisplayMode(value === "compact" ? "grid" : "carousel");
+    }
   };
 
   // If loading auth state

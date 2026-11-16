@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useRef, useState, useMemo, useEffect, useCallback } from "react";
+import { usePostDisplayMode } from "@/hooks/usePostDisplayMode";
 
 /**
- * แสดงรูปภาพใน PostCard ด้วย Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum & Scale Motion)
+ * แสดงรูปภาพใน PostCard รองรับ 2 โหมดการแสดงผล:
+ * 1. "carousel" (สไลด์): Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum & Scale Motion)
+ * 2. "grid" (ตาราง): Collage Grid Layout (1 รูปใหญ่ด้านบน + รูปล่างเรียงเป็นตาราง)
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
+  const [displayMode] = usePostDisplayMode();
   const scrollRef = useRef(null);
   const dragState = useRef({
     isDown: false,
@@ -18,7 +22,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     rafId: null,
   });
   const [isGrabbing, setIsGrabbing] = useState(false);
-  const [pressedIdx, setPressedIdx] = useState(null); // เก็บ index ของรูปที่กำลังถูกกด/ลาก
+  const [pressedIdx, setPressedIdx] = useState(null);
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -167,7 +171,125 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: ความสูงเท่ากัน + สัดส่วนเดิม + Motion ย่อขนาดขณะ Drag
+  // โหมด "grid" (ตาราง Collage แบบ 1 รูปใหญ่ด้านบน + แถวล่างเรียงกัน)
+  if (displayMode === "grid") {
+    const count = normalizedImages.length;
+
+    // กรณี 2 รูป: แบ่ง 2 คอลัมน์ซ้าย-ขวา
+    if (count === 2) {
+      return (
+        <div className="mt-3 px-3.5 sm:px-4">
+          <div className="grid grid-cols-2 gap-1 overflow-hidden rounded-xl border border-neutral-100 bg-gray-50 shadow-2xs">
+            {normalizedImages.map((img, idx) => (
+              <div
+                key={img.id || idx}
+                role="button"
+                tabIndex={0}
+                onClick={() => onImageClick?.(img.url, idx)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onImageClick?.(img.url, idx);
+                  }
+                }}
+                aria-label={`ดูรูปภาพที่ ${idx + 1}`}
+                className="relative aspect-square overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.url}
+                  alt={img.name || `Image ${idx + 1}`}
+                  draggable={false}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // กรณี 3 รูปขึ้นไป: รูปแรกอยู่ด้านบนเต็มความกว้าง + รูปที่เหลือเรียงด้านล่าง (2 หรือ 3 คอลัมน์ตามภาพตัวอย่าง)
+    const heroImage = normalizedImages[0];
+    const bottomImages = normalizedImages.slice(1, 4);
+    const extraCount = count - 4;
+
+    return (
+      <div className="mt-3 px-3.5 sm:px-4">
+        <div className="flex flex-col gap-1 overflow-hidden rounded-xl border border-neutral-100 bg-gray-50 shadow-2xs">
+          {/* รูปหลักด้านบน (Hero Image) */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => onImageClick?.(heroImage.url, 0)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onImageClick?.(heroImage.url, 0);
+              }
+            }}
+            aria-label="ดูรูปภาพที่ 1"
+            className="relative w-full max-h-[380px] sm:max-h-[440px] overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage.url}
+              alt={heroImage.name || "Image 1"}
+              draggable={false}
+              className="block w-full h-full max-h-[380px] sm:max-h-[440px] object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+            />
+          </div>
+
+          {/* แถวรูปด้านล่าง (2 คอลัมน์เมื่อมี 3 รูป, 3 คอลัมน์เมื่อมี 4 รูปขึ้นไป) */}
+          <div
+            className={`grid gap-1 ${
+              bottomImages.length === 2 ? "grid-cols-2" : "grid-cols-3"
+            }`}
+          >
+            {bottomImages.map((img, i) => {
+              const actualIdx = i + 1;
+              const isLastWithExtra = i === 2 && extraCount > 0;
+
+              return (
+                <div
+                  key={img.id || actualIdx}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onImageClick?.(img.url, actualIdx)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onImageClick?.(img.url, actualIdx);
+                    }
+                  }}
+                  aria-label={`ดูรูปภาพที่ ${actualIdx + 1}`}
+                  className="relative aspect-square overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={img.name || `Image ${actualIdx + 1}`}
+                    draggable={false}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  />
+
+                  {isLastWithExtra && (
+                    <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] flex items-center justify-center transition-colors group-hover:bg-black/65">
+                      <span className="text-white text-base sm:text-lg font-bold tracking-tight">
+                        +{extraCount}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // โหมด "carousel" (สไลด์): ความสูงเท่ากัน + สัดส่วนเดิม + Motion ย่อขนาดขณะ Drag
   return (
     <div className="relative mt-3 select-none">
       <div

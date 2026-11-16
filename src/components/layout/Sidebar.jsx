@@ -15,9 +15,12 @@ import {
   MoreHorizontal,
   Loader2,
   LayoutList,
+  GalleryHorizontalEnd,
+  LayoutGrid,
 } from "lucide-react";
 import { useMeQuery, useSignOutMutation } from "@/features/auth";
 import { useUnreadNotificationCountQuery } from "@/features/notification";
+import { usePostDisplayMode } from "@/hooks/usePostDisplayMode";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -25,6 +28,7 @@ export default function Sidebar() {
   const currentTab = searchParams?.get("tab");
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
+  const [displayMode, setDisplayMode] = usePostDisplayMode();
 
   // ดึงข้อมูลผู้ใช้จริงจาก Neon DB ผ่าน TanStack Query
   const { data: meData, isLoading } = useMeQuery();
@@ -234,6 +238,48 @@ export default function Sidebar() {
                   <p className="text-[11px] text-gray-400 truncate">
                     {user.email}
                   </p>
+                </div>
+
+                {/* Post Display Mode Tabs */}
+                <div className="border-b border-gray-100 px-2.5 py-2.5">
+                  <p className="px-0.5 mb-1.5 text-[11px] font-medium text-gray-500">
+                    การแสดงผลโพสต์ (Post Display)
+                  </p>
+                  <div
+                    role="tablist"
+                    aria-label="รูปแบบการแสดงผลโพสต์"
+                    className="grid grid-cols-2 gap-1 rounded-xl bg-gray-100/90 p-1"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={displayMode === "carousel"}
+                      onClick={() => setDisplayMode("carousel")}
+                      className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-2 text-[11px] font-semibold transition-all cursor-pointer ${
+                        displayMode === "carousel"
+                          ? "bg-white text-gray-900 shadow-2xs"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      <GalleryHorizontalEnd className="h-3.5 w-3.5 shrink-0" />
+                      <span>สไลด์</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={displayMode === "grid"}
+                      onClick={() => setDisplayMode("grid")}
+                      className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 px-2 text-[11px] font-semibold transition-all cursor-pointer ${
+                        displayMode === "grid"
+                          ? "bg-white text-gray-900 shadow-2xs"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
+                      <span>ตาราง</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="py-1">

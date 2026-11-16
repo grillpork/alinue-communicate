@@ -3,9 +3,26 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
+import { useMeQuery, useSignOutMutation } from '@/features/auth';
+import UserDropdown from '@/components/common/UserDropdown';
 
 export default function MobileNavbar() {
+  const router = useRouter();
+  const { data: meData } = useMeQuery();
+  const signOutMutation = useSignOutMutation();
+  const user = meData?.user || null;
+
+  const handleSignOut = async () => {
+    try {
+      await signOutMutation.mutateAsync();
+      router.push('/sign-in');
+    } catch {
+      router.push('/sign-in');
+    }
+  };
+
   return (
     <header className="sticky top-0 z-30 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md lg:hidden px-4 py-2.5 transition-all">
       <div className="flex items-center justify-between">
@@ -34,15 +51,19 @@ export default function MobileNavbar() {
           </div>
         </Link>
 
-        {/* Right: Search Icon Button (กดไปหน้า Search) */}
-        <Link
-          href="/search"
-          className="flex h-9 w-9 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
-          aria-label="Search"
-          title="ค้นหา"
-        >
-          <Search className="h-5 w-5 text-gray-800" />
-        </Link>
+        {/* Right: Search Icon Button + UserDropdown */}
+        <div className="flex items-center gap-2">
+          <Link
+            href="/search"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-gray-700 hover:bg-gray-100 active:scale-95 transition-all cursor-pointer"
+            aria-label="Search"
+            title="ค้นหา"
+          >
+            <Search className="h-5 w-5 text-gray-800" />
+          </Link>
+
+          {user && <UserDropdown user={user} onLogout={handleSignOut} />}
+        </div>
       </div>
     </header>
   );
