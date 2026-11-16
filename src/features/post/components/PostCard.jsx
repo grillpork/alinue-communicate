@@ -12,7 +12,6 @@ import PostImagesCarousel from "./PostImagesCarousel";
 import PostActions from "./PostActions";
 import PostComments from "./PostComments";
 import SharePostModal from "./SharePostModal";
-import PostDetailModal from "./PostDetailModal";
 import LinkedServiceCard from "@/components/common/LinkedServiceCard";
 
 /**
@@ -28,8 +27,6 @@ export default function PostCard({
 }) {
   const router = useRouter();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [initialImageIndex, setInitialImageIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
 
   // 1. ดึงข้อมูลผู้ใช้งานปัจจุบัน
@@ -74,14 +71,14 @@ export default function PostCard({
     if (onLike) onLike(post.id, nextState);
   };
 
-  // 6. ส่งต่อ imageUrl และ index ไปยัง onImageClick หรือเปิด PostDetailModal โดยตรง
+  // 6. ส่งต่อ imageUrl และ index ไปยัง onImageClick หรือนำทางไปยังหน้า Detail
   const handleOpenDetailModal = (imageUrl, imageIndex) => {
     if (onImageClick) {
       onImageClick(imageUrl, imageIndex);
       return;
     }
-    setInitialImageIndex(typeof imageIndex === "number" ? imageIndex : 0);
-    setIsDetailModalOpen(true);
+    const path = getPostPath(postAuthorUsername, post);
+    router.push(path, { scroll: false });
   };
 
   // 7. คัดลอกลิงก์โพสต์ด้วย async Clipboard API
@@ -164,18 +161,6 @@ export default function PostCard({
         onClose={() => setIsShareModalOpen(false)}
         post={{ ...post, sharesCount }}
       />
-
-      {/* 8. Modal ดูโพสต์แบบเต็มพร้อมความคิดเห็น (PostDetailModal) */}
-      {isDetailModalOpen && (
-        <PostDetailModal
-          post={post}
-          isOpen={isDetailModalOpen}
-          initialImageIndex={initialImageIndex}
-          onClose={() => setIsDetailModalOpen(false)}
-          onEdit={onEdit ? () => onEdit(post) : undefined}
-          onDelete={onDelete ? () => onDelete(post.id) : undefined}
-        />
-      )}
     </article>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useRef, useState, useMemo, useEffect, useCallback } from "react";
 
 /**
- * แสดงรูปภาพใน PostCard ด้วย Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum แบบ Threads.com)
+ * แสดงรูปภาพใน PostCard ด้วย Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum & Scale Motion)
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
   const scrollRef = useRef(null);
@@ -18,6 +18,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     rafId: null,
   });
   const [isGrabbing, setIsGrabbing] = useState(false);
+  const [pressedIdx, setPressedIdx] = useState(null); // เก็บ index ของรูปที่กำลังถูกกด/ลาก
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -90,7 +91,6 @@ export default function PostImagesCarousel({ images, onImageClick }) {
 
       if (dt > 0) {
         const instantVel = (e.pageX - s.lastX) / dt;
-        // Smooth velocity ด้วย exponential moving average
         s.velocity = s.velocity * 0.6 + instantVel * 0.4;
         s.lastX = e.pageX;
         s.lastTime = now;
@@ -103,10 +103,10 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     if (!s.isDown) return;
     s.isDown = false;
     setIsGrabbing(false);
+    setPressedIdx(null);
 
     if (s.isDragging) {
       const container = scrollRef.current;
-      // หากปล่อยเมาส์ไม่เกิน 60ms หลังขยับครั้งสุดท้าย ให้ส่งแรงเฉื่อย (Momentum) ต่อแบบ Threads
       const timeSinceMove = performance.now() - s.lastTime;
       let currentVel = timeSinceMove < 60 ? s.velocity * 16 : 0;
 
@@ -116,7 +116,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
           return;
         }
         container.scrollLeft -= currentVel;
-        currentVel *= 0.94; // แรงเสียดทานค่อย ๆ ชะลอหยุดอย่างนุ่มนวล
+        currentVel *= 0.94;
         s.rafId = requestAnimationFrame(stepMomentum);
       };
 
@@ -124,7 +124,6 @@ export default function PostImagesCarousel({ images, onImageClick }) {
         s.rafId = requestAnimationFrame(stepMomentum);
       }
 
-      // หน่วงเวลาสั้น ๆ เพื่อไม่ให้ event onClick ทำงานหลังปล่อยเมาส์จากการลาก
       setTimeout(() => {
         s.isDragging = false;
       }, 50);
@@ -153,7 +152,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
               onImageClick?.(singleImage.url, 0);
             }
           }}
-          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group transition-transform duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
           aria-label="ดูรูปภาพขนาดเต็ม"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -168,7 +167,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // กรณี 2 รูปขึ้นไป: Flex + Scroll-X + Drag to Scroll สไตล์ Threads.com
+  // กรณี 2 รูปขึ้นไป: ความสูงเท่ากัน + สัดส่วนเดิม + Motion ย่อขนาดขณะ Drag
   return (
     <div className="relative mt-3 select-none">
       <div
@@ -179,34 +178,53 @@ export default function PostImagesCarousel({ images, onImageClick }) {
         onMouseLeave={handleMouseUpOrLeave}
         onWheel={stopMomentum}
         onTouchStart={stopMomentum}
-        className={`flex gap-2.5 px-3.5 sm:px-4 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+        className={`flex items-center gap-2.5 px-3.5 sm:px-4 py-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
           isGrabbing ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
       >
-        {normalizedImages.map((img, idx) => (
-          <div
-            key={img.id || idx}
-            role="button"
-            tabIndex={0}
-            onClick={() => handleImageClick(img.url, idx)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onImageClick?.(img.url, idx);
-              }
-            }}
-            aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-            className="relative min-w-0 flex-[0_0_72%] sm:flex-[0_0_66%] h-[360px] sm:h-[440px] overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={img.url}
-              alt={img.name || `Image ${idx + 1}`}
-              draggable={false}
-              className="h-full w-full object-cover pointer-events-none select-none transition-transform duration-300 hover:scale-[1.02]"
-            />
-          </div>
-        ))}
+        {normalizedImages.map((img, idx) => {
+          // คำนวณ Scale:
+          // - ถ้ารูปใบนี้ถูกจับลากอยู่ (isGrabbing && pressedIdx === idx) -> ย่อลงเป็น scale-[0.96]
+          // - ถ้ากำลังลากอยู่แต่เป็นรูปใบข้างๆ -> ย่อลงนิดเดียวเป็น scale-[0.985] ให้ดูมีมิติทั้งแถว
+          // - ถ้าแค่กดแช่แต่ยังไม่ลาก -> ย่อลงเบาๆ scale-[0.98]
+          const isTargetCard = pressedIdx === idx;
+          let scaleClass = "scale-100";
+          if (isGrabbing) {
+            scaleClass = isTargetCard ? "scale-[0.96]" : "scale-[0.985]";
+          } else if (isTargetCard) {
+            scaleClass = "scale-[0.98]";
+          }
+
+          return (
+            <div
+              key={img.id || idx}
+              role="button"
+              tabIndex={0}
+              onMouseDown={() => setPressedIdx(idx)}
+              onTouchStart={() => setPressedIdx(idx)}
+              onTouchEnd={() => setPressedIdx(null)}
+              onClick={() => handleImageClick(img.url, idx)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onImageClick?.(img.url, idx);
+                }
+              }}
+              aria-label={`ดูรูปภาพที่ ${idx + 1}`}
+              className={`relative h-[280px] sm:h-[360px] w-auto shrink-0 overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs group transition-transform duration-300 ease-out will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-black ${scaleClass}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={img.url}
+                alt={img.name || `Image ${idx + 1}`}
+                draggable={false}
+                className={`block h-full w-auto max-w-none pointer-events-none select-none transition-transform duration-300 ease-out ${
+                  isGrabbing ? "scale-100" : "group-hover:scale-[1.02]"
+                }`}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
