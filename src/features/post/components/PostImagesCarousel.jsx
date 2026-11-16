@@ -266,7 +266,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       return (
         <div className="mt-3 px-3.5 sm:px-4">
           <div
-            className={`grid gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900 ${
+            className={`grid gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100 ${
               firstAspect === "landscape" ? "grid-rows-2" : "grid-cols-2"
             }`}
           >
@@ -282,7 +282,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       if (firstAspect === "portrait") {
         return (
           <div className="mt-3 px-3.5 sm:px-4">
-            <div className="grid grid-cols-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+            <div className="grid grid-cols-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100">
               {renderGridCell(normalizedImages[0], 0, "col-span-2 h-full w-full")}
               <div className="col-span-1 grid grid-rows-2 gap-0.5 h-full w-full">
                 {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
@@ -295,7 +295,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
 
       return (
         <div className="mt-3 px-3.5 sm:px-4">
-          <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+          <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100">
             {renderGridCell(normalizedImages[0], 0, "row-span-2 h-full w-full")}
             <div className="row-span-1 grid grid-cols-2 gap-0.5 h-full w-full">
               {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
@@ -312,7 +312,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       if (firstAspect === "portrait") {
         return (
           <div className="mt-3 px-3.5 sm:px-4">
-            <div className="grid grid-cols-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+            <div className="grid grid-cols-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100">
               {renderGridCell(normalizedImages[0], 0, "col-span-2 h-full w-full")}
               <div className="col-span-1 grid grid-rows-3 gap-0.5 h-full w-full">
                 {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
@@ -328,7 +328,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       if (firstAspect === "landscape") {
         return (
           <div className="mt-3 px-3.5 sm:px-4">
-            <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+            <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100">
               {renderGridCell(normalizedImages[0], 0, "row-span-2 h-full w-full")}
               <div className="row-span-1 grid grid-cols-3 gap-0.5 h-full w-full">
                 {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
@@ -343,7 +343,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       // 3.3 รูปแรกเป็นสี่เหลี่ยมจัตุรัส (Square): ตาราง 2x2 จัตุรัสเท่ากันทั้ง 4 ช่อง
       return (
         <div className="mt-3 px-3.5 sm:px-4">
-          <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+          <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-100">
             {renderGridCell(normalizedImages[0], 0, "h-full w-full")}
             {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
             {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
@@ -357,7 +357,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     const extraCount = count - 5;
     return (
       <div className="mt-3 px-3.5 sm:px-4">
-        <div className="flex flex-col gap-0.5 w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+        <div className="flex flex-col gap-0.5 w-full overflow-hidden rounded-xl border border-neutral-100">
           {/* แถวบน 2 รูป */}
           <div className="grid grid-cols-2 gap-0.5 w-full">
             {renderGridCell(normalizedImages[0], 0, "aspect-square w-full")}
