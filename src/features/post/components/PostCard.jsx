@@ -176,9 +176,9 @@ export default function PostCard({
         commentsCount={commentsCount}
         sharesCount={sharesCount}
         bookmarked={bookmarked}
-        showComments={showComments}
+        showComments={isDetailModalOpen}
         onLike={handleLike}
-        onToggleComments={() => setShowComments((prev) => !prev)}
+        onToggleComments={() => handleOpenDetailModal(undefined, 0)}
         onShare={() => setIsShareModalOpen(true)}
         onToggleBookmark={(e) => {
           e.stopPropagation();
