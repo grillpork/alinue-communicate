@@ -6,7 +6,12 @@ import { usePostDisplayMode } from "@/hooks/usePostDisplayMode";
 /**
  * แสดงรูปภาพใน PostCard รองรับ 2 โหมดการแสดงผล:
  * 1. "carousel" (สไลด์): Flex + Scroll-X + Drag to Scroll (พร้อม Inertia Momentum & Scale Motion)
- * 2. "grid" (ตาราง): Collage Grid Layout (1 รูปใหญ่ด้านบน + รูปล่างเรียงเป็นตาราง)
+ * 2. "grid" (ตาราง Facebook Auto-Aspect Grid):
+ *    - คำนวณสัดส่วนภาพแรกอัตโนมัติ (Portrait / Landscape / Square)
+ *    - 4 รูป (Portrait): ซ้าย 1 รูปใหญ่ (2/3) + ขวาเรียงตั้ง 3 รูปจัตุรัส (1/3)
+ *    - 4 รูป (Landscape): บน 1 รูปใหญ่ (2/3) + ล่างเรียงนอน 3 รูปจัตุรัส (1/3)
+ *    - 4 รูป (Square): ตาราง 2x2 จัตุรัสเท่ากัน
+ *    - 5+ รูป: แถวบน 2 รูปจัตุรัส + แถวล่าง 3 รูปจัตุรัส พร้อม Overlay +N
  */
 export default function PostImagesCarousel({ images, onImageClick }) {
   const [displayMode] = usePostDisplayMode();
@@ -23,6 +28,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
   });
   const [isGrabbing, setIsGrabbing] = useState(false);
   const [pressedIdx, setPressedIdx] = useState(null);
+  const [firstAspect, setFirstAspect] = useState("square"); // "portrait" | "landscape" | "square"
 
   // ปรับรูปภาพให้อยู่ใน Format { id, url, name } เสมอ
   const normalizedImages = useMemo(() => {
@@ -40,6 +46,42 @@ export default function PostImagesCarousel({ images, onImageClick }) {
       })
       .filter((img) => Boolean(img?.url));
   }, [images]);
+
+  const classifyAspect = useCallback((width, height) => {
+    if (!width || !height) return;
+    const ratio = width / height;
+    if (ratio < 0.88) {
+      setFirstAspect("portrait");
+    } else if (ratio > 1.15) {
+      setFirstAspect("landscape");
+    } else {
+      setFirstAspect("square");
+    }
+  }, []);
+
+  // ตรวจสอบสัดส่วนของรูปภาพแรกอัตโนมัติเพื่อจัด Layout ตารางแบบ Facebook
+  useEffect(() => {
+    const firstUrl = normalizedImages[0]?.url;
+    if (!firstUrl || typeof window === "undefined") return;
+
+    let isActive = true;
+    const img = new window.Image();
+    img.src = firstUrl;
+
+    if (img.complete && img.naturalWidth && img.naturalHeight) {
+      classifyAspect(img.naturalWidth, img.naturalHeight);
+    } else {
+      img.onload = () => {
+        if (isActive) {
+          classifyAspect(img.naturalWidth, img.naturalHeight);
+        }
+      };
+    }
+
+    return () => {
+      isActive = false;
+    };
+  }, [normalizedImages, classifyAspect]);
 
   // ล้าง animation frame เมื่อ unmount
   useEffect(() => {
@@ -171,125 +213,176 @@ export default function PostImagesCarousel({ images, onImageClick }) {
     );
   }
 
-  // โหมด "grid" (ตาราง Collage แบบ 1 รูปใหญ่ด้านบน + แถวล่างเรียงกัน)
+  // Helper เรนเดอร์แต่ละช่องรูปภาพในโหมด Grid
+  const renderGridCell = (img, idx, className = "", extraOverlayCount = 0) => (
+    <div
+      key={img.id || idx}
+      role="button"
+      tabIndex={0}
+      onClick={() => onImageClick?.(img.url, idx)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onImageClick?.(img.url, idx);
+        }
+      }}
+      aria-label={`ดูรูปภาพที่ ${idx + 1}`}
+      className={`relative overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none ${className}`}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={img.url}
+        alt={img.name || `Image ${idx + 1}`}
+        draggable={false}
+        onLoad={
+          idx === 0
+            ? (e) =>
+                classifyAspect(
+                  e.currentTarget.naturalWidth,
+                  e.currentTarget.naturalHeight,
+                )
+            : undefined
+        }
+        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+      />
+      {extraOverlayCount > 0 && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center transition-colors group-hover:bg-black/60">
+          <span className="text-white text-lg sm:text-xl font-bold tracking-tight">
+            +{extraOverlayCount}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+
+  // ============================================================================
+  // โหมด "grid": Facebook Auto-Aspect Grid
+  // ============================================================================
   if (displayMode === "grid") {
     const count = normalizedImages.length;
 
-    // กรณี 2 รูป: แบ่ง 2 คอลัมน์ซ้าย-ขวา
+    // 1) กรณี 2 รูป: แบ่ง 2 คอลัมน์ซ้าย-ขวา (หรือบน-ล่างหากรูปแรกเป็นแนวนอนยาว)
     if (count === 2) {
       return (
         <div className="mt-3 px-3.5 sm:px-4">
-          <div className="grid grid-cols-2 gap-1 overflow-hidden rounded-xl border border-neutral-100 bg-gray-50 shadow-2xs">
-            {normalizedImages.map((img, idx) => (
-              <div
-                key={img.id || idx}
-                role="button"
-                tabIndex={0}
-                onClick={() => onImageClick?.(img.url, idx)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    onImageClick?.(img.url, idx);
-                  }
-                }}
-                aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-                className="relative aspect-square overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.url}
-                  alt={img.name || `Image ${idx + 1}`}
-                  draggable={false}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-              </div>
-            ))}
+          <div
+            className={`grid gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900 ${
+              firstAspect === "landscape" ? "grid-rows-2" : "grid-cols-2"
+            }`}
+          >
+            {renderGridCell(normalizedImages[0], 0, "h-full w-full")}
+            {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
           </div>
         </div>
       );
     }
 
-    // กรณี 3 รูปขึ้นไป: รูปแรกอยู่ด้านบนเต็มความกว้าง + รูปที่เหลือเรียงด้านล่าง (2 หรือ 3 คอลัมน์ตามภาพตัวอย่าง)
-    const heroImage = normalizedImages[0];
-    const bottomImages = normalizedImages.slice(1, 4);
-    const extraCount = count - 4;
+    // 2) กรณี 3 รูป: ปรับตามสัดส่วนรูปแรก (Portrait = ซ้าย 1 ใหญ่ + ขวา 2 ย่อย, Landscape/Square = บน 1 ใหญ่ + ล่าง 2 ย่อย)
+    if (count === 3) {
+      if (firstAspect === "portrait") {
+        return (
+          <div className="mt-3 px-3.5 sm:px-4">
+            <div className="grid grid-cols-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+              {renderGridCell(normalizedImages[0], 0, "col-span-2 h-full w-full")}
+              <div className="col-span-1 grid grid-rows-2 gap-0.5 h-full w-full">
+                {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
+                {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
+              </div>
+            </div>
+          </div>
+        );
+      }
 
+      return (
+        <div className="mt-3 px-3.5 sm:px-4">
+          <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+            {renderGridCell(normalizedImages[0], 0, "row-span-2 h-full w-full")}
+            <div className="row-span-1 grid grid-cols-2 gap-0.5 h-full w-full">
+              {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
+              {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3) กรณี 4 รูป: แยก 3 รูปแบบอัตโนมัติตามสัดส่วนรูปแรกเหมือน Facebook
+    if (count === 4) {
+      // 3.1 รูปแรกเป็นแนวตั้ง (Portrait): ซ้าย 1 รูปใหญ่ (2/3) + ขวาเรียงตั้ง 3 รูปจัตุรัส (1/3)
+      if (firstAspect === "portrait") {
+        return (
+          <div className="mt-3 px-3.5 sm:px-4">
+            <div className="grid grid-cols-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+              {renderGridCell(normalizedImages[0], 0, "col-span-2 h-full w-full")}
+              <div className="col-span-1 grid grid-rows-3 gap-0.5 h-full w-full">
+                {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
+                {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
+                {renderGridCell(normalizedImages[3], 3, "h-full w-full")}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 3.2 รูปแรกเป็นแนวนอน (Landscape): บน 1 รูปใหญ่ (2/3) + ล่างเรียงนอน 3 รูปจัตุรัส (1/3)
+      if (firstAspect === "landscape") {
+        return (
+          <div className="mt-3 px-3.5 sm:px-4">
+            <div className="grid grid-rows-3 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+              {renderGridCell(normalizedImages[0], 0, "row-span-2 h-full w-full")}
+              <div className="row-span-1 grid grid-cols-3 gap-0.5 h-full w-full">
+                {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
+                {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
+                {renderGridCell(normalizedImages[3], 3, "h-full w-full")}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // 3.3 รูปแรกเป็นสี่เหลี่ยมจัตุรัส (Square): ตาราง 2x2 จัตุรัสเท่ากันทั้ง 4 ช่อง
+      return (
+        <div className="mt-3 px-3.5 sm:px-4">
+          <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-square w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+            {renderGridCell(normalizedImages[0], 0, "h-full w-full")}
+            {renderGridCell(normalizedImages[1], 1, "h-full w-full")}
+            {renderGridCell(normalizedImages[2], 2, "h-full w-full")}
+            {renderGridCell(normalizedImages[3], 3, "h-full w-full")}
+          </div>
+        </div>
+      );
+    }
+
+    // 4) กรณี 5 รูปขึ้นไป: แถวบน 2 รูปจัตุรัส + แถวล่าง 3 รูปจัตุรัส พร้อม +N ในช่องที่ 5
+    const extraCount = count - 5;
     return (
       <div className="mt-3 px-3.5 sm:px-4">
-        <div className="flex flex-col gap-1 overflow-hidden rounded-xl border border-neutral-100 bg-gray-50 shadow-2xs">
-          {/* รูปหลักด้านบน (Hero Image) */}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onImageClick?.(heroImage.url, 0)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onImageClick?.(heroImage.url, 0);
-              }
-            }}
-            aria-label="ดูรูปภาพที่ 1"
-            className="relative w-full max-h-[380px] sm:max-h-[440px] overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={heroImage.url}
-              alt={heroImage.name || "Image 1"}
-              draggable={false}
-              className="block w-full h-full max-h-[380px] sm:max-h-[440px] object-cover transition-transform duration-300 group-hover:scale-[1.01]"
-            />
+        <div className="flex flex-col gap-0.5 w-full overflow-hidden rounded-xl border border-neutral-200 bg-neutral-900">
+          {/* แถวบน 2 รูป */}
+          <div className="grid grid-cols-2 gap-0.5 w-full">
+            {renderGridCell(normalizedImages[0], 0, "aspect-square w-full")}
+            {renderGridCell(normalizedImages[1], 1, "aspect-square w-full")}
           </div>
 
-          {/* แถวรูปด้านล่าง (2 คอลัมน์เมื่อมี 3 รูป, 3 คอลัมน์เมื่อมี 4 รูปขึ้นไป) */}
-          <div
-            className={`grid gap-1 ${
-              bottomImages.length === 2 ? "grid-cols-2" : "grid-cols-3"
-            }`}
-          >
-            {bottomImages.map((img, i) => {
-              const actualIdx = i + 1;
-              const isLastWithExtra = i === 2 && extraCount > 0;
-
-              return (
-                <div
-                  key={img.id || actualIdx}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => onImageClick?.(img.url, actualIdx)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      onImageClick?.(img.url, actualIdx);
-                    }
-                  }}
-                  aria-label={`ดูรูปภาพที่ ${actualIdx + 1}`}
-                  className="relative aspect-square overflow-hidden bg-gray-100 cursor-pointer group focus:outline-none"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={img.url}
-                    alt={img.name || `Image ${actualIdx + 1}`}
-                    draggable={false}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                  />
-
-                  {isLastWithExtra && (
-                    <div className="absolute inset-0 bg-black/55 backdrop-blur-[1px] flex items-center justify-center transition-colors group-hover:bg-black/65">
-                      <span className="text-white text-base sm:text-lg font-bold tracking-tight">
-                        +{extraCount}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          {/* แถวล่าง 3 รูป */}
+          <div className="grid grid-cols-3 gap-0.5 w-full">
+            {renderGridCell(normalizedImages[2], 2, "aspect-square w-full")}
+            {renderGridCell(normalizedImages[3], 3, "aspect-square w-full")}
+            {renderGridCell(
+              normalizedImages[4],
+              4,
+              "aspect-square w-full",
+              extraCount > 0 ? extraCount : 0,
+            )}
           </div>
         </div>
       </div>
     );
   }
 
+  // ============================================================================
   // โหมด "carousel" (สไลด์): ความสูงเท่ากัน + สัดส่วนเดิม + Motion ย่อขนาดขณะ Drag
+  // ============================================================================
   return (
     <div className="relative mt-3 select-none">
       <div
