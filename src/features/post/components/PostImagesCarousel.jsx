@@ -152,7 +152,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
               onImageClick?.(singleImage.url, 0);
             }
           }}
-          className="relative inline-block max-w-full overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group transition-transform duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className="relative inline-block max-w-full overflow-hidden rounded-xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group transition-transform duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
           aria-label="ดูรูปภาพขนาดเต็ม"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -178,15 +178,11 @@ export default function PostImagesCarousel({ images, onImageClick }) {
         onMouseLeave={handleMouseUpOrLeave}
         onWheel={stopMomentum}
         onTouchStart={stopMomentum}
-        className={`flex items-center gap-2.5 px-3.5 sm:px-4 py-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
+        className={`flex items-center gap-0.5 px-3.5 sm:px-4 py-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden ${
           isGrabbing ? "cursor-grabbing select-none" : "cursor-grab"
         }`}
       >
         {normalizedImages.map((img, idx) => {
-          // คำนวณ Scale:
-          // - ถ้ารูปใบนี้ถูกจับลากอยู่ (isGrabbing && pressedIdx === idx) -> ย่อลงเป็น scale-[0.96]
-          // - ถ้ากำลังลากอยู่แต่เป็นรูปใบข้างๆ -> ย่อลงนิดเดียวเป็น scale-[0.985] ให้ดูมีมิติทั้งแถว
-          // - ถ้าแค่กดแช่แต่ยังไม่ลาก -> ย่อลงเบาๆ scale-[0.98]
           const isTargetCard = pressedIdx === idx;
           let scaleClass = "scale-100";
           if (isGrabbing) {
@@ -211,7 +207,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
                 }
               }}
               aria-label={`ดูรูปภาพที่ ${idx + 1}`}
-              className={`relative h-[280px] sm:h-[360px] w-auto shrink-0 overflow-hidden rounded-2xl border border-neutral-100 bg-gray-50 shadow-2xs group transition-transform duration-300 ease-out will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-black ${scaleClass}`}
+              className={`relative h-[280px] sm:h-[360px] w-auto shrink-0 overflow-hidden rounded-xl border border-neutral-100 bg-gray-50 shadow-2xs group transition-transform duration-300 ease-out will-change-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-black ${scaleClass}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -219,7 +215,7 @@ export default function PostImagesCarousel({ images, onImageClick }) {
                 alt={img.name || `Image ${idx + 1}`}
                 draggable={false}
                 className={`block h-full w-auto max-w-none pointer-events-none select-none transition-transform duration-300 ease-out ${
-                  isGrabbing ? "scale-100" : "group-hover:scale-[1.02]"
+                  isGrabbing ? "scale-100" : ""
                 }`}
               />
             </div>
