@@ -183,9 +183,11 @@ export default function PostImagesCarousel({ images, onImageClick }) {
 
   if (normalizedImages.length === 0) return null;
 
-  // กรณี 1 รูป: แสดงตามสัดส่วนจริงของภาพ
+  // กรณี 1 รูป: โหมด grid แสดงเต็มความกว้างโพสต์, โหมด carousel แสดงตามสัดส่วนจริง
   if (normalizedImages.length === 1) {
     const singleImage = normalizedImages[0];
+    const isGridMode = displayMode === "grid";
+
     return (
       <div className="mt-3 px-3.5 sm:px-4 flex">
         <div
@@ -198,7 +200,9 @@ export default function PostImagesCarousel({ images, onImageClick }) {
               onImageClick?.(singleImage.url, 0);
             }
           }}
-          className="relative inline-block max-w-full overflow-hidden rounded-xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group transition-transform duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className={`relative overflow-hidden rounded-xl border border-neutral-100 bg-gray-50/50 shadow-2xs cursor-pointer group transition-transform duration-200 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-black ${
+            isGridMode ? "w-full" : "inline-block max-w-full"
+          }`}
           aria-label="ดูรูปภาพขนาดเต็ม"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -206,7 +210,11 @@ export default function PostImagesCarousel({ images, onImageClick }) {
             src={singleImage.url}
             alt={singleImage.name || "Post image"}
             draggable={false}
-            className="block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+            className={
+              isGridMode
+                ? "block w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+                : "block h-auto max-h-[400px] sm:max-h-[460px] w-auto max-w-full object-contain transition-transform duration-300 group-hover:scale-[1.01]"
+            }
           />
         </div>
       </div>
