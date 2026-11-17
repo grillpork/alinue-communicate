@@ -411,7 +411,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
               maxLength={150}
               required
               disabled={isUploading}
-              className="w-full rounded-2xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+              className="w-full rounded-2xl border border-gray-200 px-4 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
             />
           </div>
 
@@ -422,7 +422,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                 ราคาเริ่มต้น (บาท)
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400">
                   ฿
                 </span>
                 <input
@@ -433,7 +433,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                   onChange={(e) => setMinPrice(e.target.value)}
                   placeholder="500"
                   disabled={isUploading}
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-2xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+                  className="w-full pl-8 pr-3.5 py-2.5 rounded-2xl border border-gray-200 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
                 />
               </div>
             </div>
@@ -443,7 +443,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                 ราคาสูงสุด (บาท)
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base text-gray-400">
                   ฿
                 </span>
                 <input
@@ -454,7 +454,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                   onChange={(e) => setMaxPrice(e.target.value)}
                   placeholder="3000"
                   disabled={isUploading}
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-2xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+                  className="w-full pl-8 pr-3.5 py-2.5 rounded-2xl border border-gray-200 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
                 />
               </div>
             </div>
@@ -472,7 +472,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
               rows={3}
               maxLength={2000}
               disabled={isUploading}
-              className="w-full rounded-2xl border border-gray-200 p-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
+              className="w-full rounded-2xl border border-gray-200 p-3.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
             />
             <div className="flex justify-end">
               <span className="text-xs text-gray-400 font-medium">
@@ -522,7 +522,7 @@ export default function CreateServiceModal({ isOpen, onClose }) {
                         ? "พิมพ์แท็กแล้วกด Enter..."
                         : "พิมพ์แท็กเพิ่ม..."
                     }
-                    className="w-full text-xs text-gray-900 placeholder:text-gray-400 focus:outline-hidden bg-transparent"
+                    className="w-full text-base text-gray-900 placeholder:text-gray-400 focus:outline-hidden bg-transparent"
                     disabled={isUploading}
                   />
                 </div>

@@ -298,7 +298,7 @@ export default function SharePostModal({
               type="text"
               readOnly
               value={shareUrl}
-              className="text-xs text-gray-700 bg-transparent flex-1 outline-hidden truncate select-all"
+              className="text-base text-gray-700 bg-transparent flex-1 outline-hidden truncate select-all"
             />
             <button
               type="button"

@@ -46,7 +46,7 @@ const Navbar = () => {
             <input
               type="text"
               placeholder="Search Designers"
-              className="w-full rounded-full border border-gray-200/80 bg-gray-50/70 py-1.5 sm:py-2 pl-9 pr-4 text-xs sm:text-sm text-gray-800 placeholder:text-gray-400 focus:border-gray-900 focus:bg-white focus:outline-none transition-all shadow-2xs"
+              className="w-full rounded-full border border-gray-200/80 bg-gray-50/70 py-1.5 sm:py-2 pl-9 pr-4 text-base text-gray-800 placeholder:text-gray-400 focus:border-gray-900 focus:bg-white focus:outline-none transition-all shadow-2xs"
             />
           </div>
         </div>

@@ -405,7 +405,7 @@ export default function SettingsPage() {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="เช่น Katsumoto Hana"
-                    className="w-full rounded-2xl border border-gray-200 px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
+                    className="w-full rounded-2xl border border-gray-200 px-3.5 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
                   />
                 </div>
 
@@ -415,7 +415,7 @@ export default function SettingsPage() {
                     ชื่อผู้ใช้ (Username) *
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 text-xs sm:text-sm font-medium">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400 text-base font-medium">
                       @
                     </span>
                     <input
@@ -424,7 +424,7 @@ export default function SettingsPage() {
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       placeholder="username"
-                      className="w-full rounded-2xl border border-gray-200 pl-8 pr-3.5 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
+                      className="w-full rounded-2xl border border-gray-200 pl-8 pr-3.5 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
                     />
                   </div>
                   <p className="mt-1 text-[11px] text-gray-400">
@@ -449,7 +449,7 @@ export default function SettingsPage() {
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
                     placeholder="แนะนำตัวเองสั้นๆ เกี่ยวกับผลงาน สไตล์ หรือคอมมิชชันของคุณ..."
-                    className="w-full rounded-2xl border border-gray-200 p-3.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs resize-none"
+                    className="w-full rounded-2xl border border-gray-200 p-3.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs resize-none"
                   />
                 </div>
 
@@ -469,7 +469,7 @@ export default function SettingsPage() {
                         value={website}
                         onChange={(e) => setWebsite(e.target.value)}
                         placeholder="https://..."
-                        className="w-full rounded-2xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
+                        className="w-full rounded-2xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
                       />
                     </div>
                   </div>
@@ -488,7 +488,7 @@ export default function SettingsPage() {
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         placeholder="เช่น Bangkok, Thailand"
-                        className="w-full rounded-2xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
+                        className="w-full rounded-2xl border border-gray-200 pl-10 pr-3.5 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none transition-all shadow-2xs"
                       />
                     </div>
                   </div>

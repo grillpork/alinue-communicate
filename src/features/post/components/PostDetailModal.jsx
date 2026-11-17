@@ -662,7 +662,7 @@ export default function PostDetailModal({
                       value={commentText}
                       disabled={!currentUser || addCommentMutation.isPending}
                       onChange={(e) => setCommentText(e.target.value)}
-                      className="w-full rounded-full bg-gray-100/80 hover:bg-gray-100 focus:bg-white border border-transparent focus:border-gray-300 py-2 pl-3.5 pr-16 text-xs sm:text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all"
+                      className="w-full rounded-full bg-gray-100/80 hover:bg-gray-100 focus:bg-white border border-transparent focus:border-gray-300 py-2 pl-3.5 pr-16 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all"
                     />
                     <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
                       {currentUser && (

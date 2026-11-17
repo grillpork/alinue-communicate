@@ -365,7 +365,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               maxLength={200}
               required
               disabled={isUploading}
-              className="w-full rounded-2xl border border-gray-200 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
+              className="w-full rounded-2xl border border-gray-200 px-4 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors"
             />
           </div>
 
@@ -381,7 +381,7 @@ export default function EditShowcaseModal({ showcase, isOpen, onClose }) {
               rows={3}
               maxLength={2000}
               disabled={isUploading}
-              className="w-full rounded-2xl border border-gray-200 p-3.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
+              className="w-full rounded-2xl border border-gray-200 p-3.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-hidden transition-colors resize-none"
             />
             <div className="flex justify-end">
               <span className="text-xs text-gray-400 font-medium">

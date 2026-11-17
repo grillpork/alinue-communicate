@@ -82,7 +82,7 @@ export default function LinkServiceModal({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search service name"
-              className="w-full rounded-2xl border border-gray-200 pl-10 pr-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
+              className="w-full rounded-2xl border border-gray-200 pl-10 pr-4 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black transition-all"
             />
           </div>
         </div>

@@ -190,7 +190,7 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="John Doe"
-                  className="w-full rounded-xl border border-gray-200 bg-transparent py-2.5 pl-9 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+                  className="w-full rounded-xl border border-gray-200 bg-transparent py-2.5 pl-9 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
                 />
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="name@example.com"
-                className="w-full rounded-xl border border-gray-200 bg-transparent py-2.5 pl-9 pr-3 text-xs text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+                className="w-full rounded-xl border border-gray-200 bg-transparent py-2.5 pl-9 pr-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-gray-200 bg-transparent py-2.5 pl-9 pr-9 text-xs text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
+                className="w-full rounded-xl border border-gray-200 bg-transparent py-2.5 pl-9 pr-9 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:outline-none transition-colors"
               />
               <button
                 type="button"

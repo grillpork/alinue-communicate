@@ -131,7 +131,7 @@ export default function PostComments({
                 setCommentText(e.target.value);
                 if (errorMessage) setErrorMessage("");
               }}
-              className="w-full rounded-full bg-gray-50/90 hover:bg-gray-100/70 focus:bg-white border border-gray-200/80 focus:border-gray-400 py-2.5 sm:py-3 pl-4 sm:pl-5 pr-20 sm:pr-24 text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all shadow-2xs"
+              className="w-full rounded-full bg-gray-50/90 hover:bg-gray-100/70 focus:bg-white border border-gray-200/80 focus:border-gray-400 py-2.5 sm:py-3 pl-4 sm:pl-5 pr-20 sm:pr-24 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none transition-all shadow-2xs"
             />
             <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
               {currentUser && (

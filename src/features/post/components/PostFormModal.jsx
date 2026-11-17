@@ -876,7 +876,7 @@ export default function PostFormModal({
                                       setAppealReason(e.target.value)
                                     }
                                     placeholder="ระบุเหตุผล เช่น เป็นภาพวาดศิลปะ ไม่ได้มีเจตนาอนาจาร"
-                                    className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-xs text-gray-800 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none shadow-2xs"
+                                    className="flex-1 rounded-xl border border-rose-200 bg-white px-3 py-1.5 text-base text-gray-800 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none shadow-2xs"
                                   />
                                   <button
                                     type="button"

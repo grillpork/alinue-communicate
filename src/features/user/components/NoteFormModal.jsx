@@ -138,7 +138,7 @@ export default function NoteFormModal({
               maxLength={MAX_LENGTH}
               onChange={(e) => setNoteText(e.target.value)}
               placeholder="แชร์สิ่งที่อยู่ในใจ..."
-              className="w-full rounded-2xl bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200/90 focus:border-gray-900 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all shadow-2xs"
+              className="w-full rounded-2xl bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200/90 focus:border-gray-900 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 outline-none transition-all shadow-2xs"
             />
             <span
               className={`absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium ${

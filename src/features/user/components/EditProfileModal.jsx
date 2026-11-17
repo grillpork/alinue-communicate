@@ -257,7 +257,7 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
                 Username
               </label>
               <div className="flex items-center rounded-2xl bg-gray-100/90 px-3.5 py-2.5">
-                <span className="text-xs sm:text-sm font-medium text-gray-400 select-none">
+                <span className="text-base font-medium text-gray-400 select-none">
                   Alinue.com/
                 </span>
                 <input
@@ -271,7 +271,7 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
                     )
                   }
                   placeholder="username"
-                  className="w-full bg-transparent pl-1.5 text-xs sm:text-sm font-bold text-gray-900 outline-none"
+                  className="w-full bg-transparent pl-1.5 text-base font-bold text-gray-900 outline-none"
                   maxLength={30}
                 />
               </div>
@@ -293,7 +293,7 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Your display name"
-              className="w-full rounded-2xl bg-gray-100/90 px-4 py-3 text-xs sm:text-sm font-semibold text-gray-900 outline-none placeholder:text-gray-400"
+              className="w-full rounded-2xl bg-gray-100/90 px-4 py-3 text-base font-semibold text-gray-900 outline-none placeholder:text-gray-400"
               maxLength={50}
             />
           </div>
@@ -308,7 +308,7 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Write some things"
               rows={3}
-              className="w-full rounded-2xl bg-gray-100/90 p-4 text-xs sm:text-sm text-gray-800 outline-none placeholder:text-gray-400 resize-none leading-relaxed"
+              className="w-full rounded-2xl bg-gray-100/90 p-4 text-base text-gray-800 outline-none placeholder:text-gray-400 resize-none leading-relaxed"
               maxLength={300}
             />
           </div>
@@ -360,7 +360,7 @@ export default function EditProfileModal({ isOpen, onClose, user }) {
                   value={newLanguageInput}
                   onChange={(e) => setNewLanguageInput(e.target.value)}
                   placeholder="e.g. Japanese, Mandarin, French"
-                  className="flex-1 rounded-full bg-gray-100 px-4 py-2 text-xs text-gray-800 outline-none"
+                  className="flex-1 rounded-full bg-gray-100 px-4 py-2 text-base text-gray-800 outline-none"
                   autoFocus
                 />
                 <button

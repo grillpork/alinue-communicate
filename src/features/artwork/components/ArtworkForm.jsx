@@ -29,13 +29,21 @@ export function ArtworkForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
-      <input {...form.register("title")} placeholder="Artwork title" />
+      <input
+        {...form.register("title")}
+        placeholder="Artwork title"
+        className="text-base"
+      />
 
       {form.formState.errors.title && (
         <p>{form.formState.errors.title.message}</p>
       )}
 
-      <textarea {...form.register("description")} placeholder="Description" />
+      <textarea
+        {...form.register("description")}
+        placeholder="Description"
+        className="text-base"
+      />
 
       {form.formState.errors.description && (
         <p>{form.formState.errors.description.message}</p>

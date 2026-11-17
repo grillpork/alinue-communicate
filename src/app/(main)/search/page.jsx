@@ -352,7 +352,7 @@ export default function SearchPage() {
               if (showAllProfiles) setShowAllProfiles(false);
             }}
             placeholder="ค้นหาโพสต์, ผู้ใช้ หรือ #แฮชแท็ก..."
-            className="w-full rounded-2xl border border-gray-200/80 bg-gray-100/80 py-2.5 pl-4 pr-9 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none transition-all"
+            className="w-full rounded-2xl border border-gray-200/80 bg-gray-100/80 py-2.5 pl-4 pr-9 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none transition-all"
           />
           {query && (
             <button

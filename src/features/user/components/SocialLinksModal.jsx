@@ -234,7 +234,7 @@ export default function SocialLinksModal({
                     onChange={(e) => handleUpdateValue(idx, e.target.value)}
                     placeholder={info.placeholder || 'Enter link or handle'}
                     autoFocus={idx === linksList.length - 1 && item.value === ''}
-                    className="flex-1 min-w-0 bg-transparent text-sm font-normal text-gray-900 focus:outline-none placeholder:text-gray-400"
+                    className="flex-1 min-w-0 bg-transparent text-base font-normal text-gray-900 focus:outline-none placeholder:text-gray-400"
                   />
                   <button
                     type="button"
