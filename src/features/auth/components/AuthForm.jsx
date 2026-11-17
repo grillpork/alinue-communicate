@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Eye,
   EyeOff,
@@ -12,6 +12,7 @@ import {
   User,
   ArrowRight,
   Loader2,
+  Gift,
 } from "lucide-react";
 import {
   useSignInMutation,
@@ -28,7 +29,23 @@ import {
  */
 export default function AuthForm({ type = "sign-in", onSubmit }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isSignIn = type === "sign-in";
+
+  const urlRef = (searchParams?.get("ref") || "").trim().replace(/^@/, "");
+  const [referralCode, setReferralCode] = useState(urlRef);
+
+  useEffect(() => {
+    try {
+      if (urlRef) {
+        localStorage.setItem("alinue_ref", urlRef);
+        setReferralCode(urlRef);
+      } else {
+        const storedRef = localStorage.getItem("alinue_ref");
+        if (storedRef) setReferralCode(storedRef);
+      }
+    } catch {}
+  }, [urlRef]);
 
   // ตรวจสอบสถานะการ Login: หากมี session อยู่แล้วให้ redirect ไปหน้าแรกทันที
   const { data: meData, isLoading: isMeLoading } = useMeQuery();
@@ -59,6 +76,9 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
 
   const signUpMutation = useSignUpMutation({
     onSuccess: () => {
+      try {
+        localStorage.removeItem("alinue_ref");
+      } catch {}
       router.push("/");
     },
     onError: (err) => {
@@ -89,7 +109,7 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
 
     if (onSubmit) {
       try {
-        await onSubmit(formData);
+        await onSubmit({ ...formData, ref: referralCode || undefined });
       } catch (err) {
         setError(err?.message || "Something went wrong");
       }
@@ -106,13 +126,14 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        ref: referralCode || undefined,
       });
     }
   };
 
   const handleGoogleLogin = async () => {
     try {
-      const apiUrl = authService.getGoogleAuthUrl();
+      const apiUrl = authService.getGoogleAuthUrl(referralCode || undefined);
       const res = await fetch(apiUrl, {
         headers: { Accept: "application/json" },
       });
@@ -123,7 +144,9 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
         window.location.href = apiUrl;
       }
     } catch {
-      window.location.href = authService.getGoogleAuthUrl();
+      window.location.href = authService.getGoogleAuthUrl(
+        referralCode || undefined,
+      );
     }
   };
 
@@ -166,6 +189,23 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
 
       {/* Main Card */}
       <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-xs">
+        {/* Referral Bonus Banner */}
+        {referralCode && (
+          <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 mt-0.5">
+              <Gift className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="font-bold text-emerald-950">
+                ได้รับคำเชิญจาก @{referralCode}
+              </p>
+              <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
+                สมัครสมาชิกวันนี้ รับโควตาโพสต์รับงานเพิ่มจาก 1 เป็นสูงสุด 2 โพสต์ทันที (ได้ทั้งคุณและเพื่อน!)
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Error Alert */}
         {error && (
           <div className="mb-4 rounded-xl bg-red-50 border border-red-100 p-3 text-xs font-medium text-red-600 animate-in fade-in duration-150">

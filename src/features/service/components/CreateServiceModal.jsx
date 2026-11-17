@@ -302,7 +302,9 @@ export default function CreateServiceModal({ isOpen, onClose }) {
           {/* Subtle Notice Pill */}
           <div className="flex items-center gap-2 rounded-2xl bg-amber-50/80 border border-amber-200/50 px-3.5 py-2 text-amber-900 text-xs">
             <Clock className="h-3.5 w-3.5 shrink-0 text-amber-600" />
-            <span>โพสต์รับงานมีอายุ 30 วัน (ต่ออายุได้ตลอดเวลา)</span>
+            <span>
+              โพสต์รับงานมีอายุ 30 วัน • โพสต์ได้สูงสุด 1 โพสต์ (ชวนเพื่อนสมัครเว็บเพิ่มเป็น 2 โพสต์)
+            </span>
           </div>
 
           {error && (

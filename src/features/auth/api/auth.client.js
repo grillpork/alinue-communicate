@@ -37,11 +37,20 @@ export const authService = {
     });
   },
 
+  // รับสิทธิ์จากการชวนเพื่อน (ปลดล็อกโควตา Service เป็น 2 โพสต์ทั้งคนชวนและคนถูกชวน)
+  claimReferral: async (ref) => {
+    return fetchApi('/api/auth/claim-referral', {
+      method: 'POST',
+      body: JSON.stringify({ ref }),
+    });
+  },
+
   // URL สำหรับ Google OAuth Redirect (single slash guaranteed)
-  getGoogleAuthUrl: () => {
+  getGoogleAuthUrl: (ref) => {
     const cleanBase = (
       process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'
     ).replace(/\/+$/, '');
-    return `${cleanBase}/api/auth/google`;
+    const qs = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+    return `${cleanBase}/api/auth/google${qs}`;
   },
 };
