@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,38 @@ export default function MobileNavbar() {
   const signOutMutation = useSignOutMutation();
   const user = meData?.user || null;
 
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const prevScrollY = lastScrollYRef.current;
+      const diff = currentScrollY - prevScrollY;
+
+      // แสดงเสมอเมื่ออยู่ใกล้บนสุดของหน้า
+      if (currentScrollY <= 20) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      // เลื่อนลงเกินระยะ threshold -> ซ่อน Navbar
+      if (diff > 8 && currentScrollY > 56) {
+        setIsVisible(false);
+        lastScrollYRef.current = currentScrollY;
+      }
+      // เลื่อนขึ้นเกินระยะ threshold -> แสดง Navbar
+      else if (diff < -8) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const handleSignOut = async () => {
     try {
       await signOutMutation.mutateAsync();
@@ -24,7 +56,11 @@ export default function MobileNavbar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md lg:hidden px-4 py-2.5 transition-all">
+    <header
+      className={`sticky top-0 z-30 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md lg:hidden px-4 py-2.5 transition-transform duration-300 ease-in-out ${
+        isVisible ? 'translate-y-0' : '-translate-y-full'
+      }`}
+    >
       <div className="flex items-center justify-between">
         {/* Left: Brand Logo + Site Subtitle */}
         <Link

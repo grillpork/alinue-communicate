@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, Bell, Bookmark } from "lucide-react";
@@ -14,8 +14,40 @@ const Navbar = () => {
   const user = meData?.user;
   const isLogin = Boolean(user);
 
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const prevScrollY = lastScrollYRef.current;
+      const diff = currentScrollY - prevScrollY;
+
+      if (currentScrollY <= 20) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      if (diff > 8 && currentScrollY > 64) {
+        setIsVisible(false);
+        lastScrollYRef.current = currentScrollY;
+      } else if (diff < -8) {
+        setIsVisible(true);
+        lastScrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-gray-100 bg-white/90 backdrop-blur-md transition-all">
+    <header
+      className={`sticky top-0 z-40 w-full border-b border-gray-100 bg-white/90 backdrop-blur-md transition-transform duration-300 ease-in-out ${
+        isVisible ? "translate-y-0" : "-translate-y-full"
+      }`}
+    >
       <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Left: Brand Logo + Name */}
         <Link
