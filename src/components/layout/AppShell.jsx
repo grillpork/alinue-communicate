@@ -5,13 +5,17 @@ import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Rightbar from './Rightbar';
 import MobileBottomBar from './MobileBottomBar';
+import { PendingInviteListener } from '@/features/auth';
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/sign-in' || pathname === '/sign-up';
+  const isFullScreenPage =
+    pathname === '/sign-in' ||
+    pathname === '/sign-up' ||
+    pathname?.startsWith('/join/');
 
-  // หน้า Auth (Sign-in / Sign-up) แสดงผลเต็มหน้าจอ
-  if (isAuthPage) {
+  // หน้า Auth และหน้า /join/[code] แสดงผลเต็มหน้าจอ
+  if (isFullScreenPage) {
     return <main className="min-h-screen w-full">{children}</main>;
   }
 
@@ -33,6 +37,9 @@ export default function AppShell({ children }) {
 
       {/* 3. Mobile Bottom Navigation Bar (แสดงเฉพาะบน Mobile / Tablet: lg:hidden) */}
       <MobileBottomBar />
+
+      {/* 4. ตัวตรวจจับ One-Time Invite Code ที่ค้างอยู่หลัง Login */}
+      <PendingInviteListener />
     </div>
   );
 }

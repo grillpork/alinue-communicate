@@ -32,20 +32,26 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
   const searchParams = useSearchParams();
   const isSignIn = type === "sign-in";
 
+  const urlInvite = (searchParams?.get("invite") || "").trim().toUpperCase();
   const urlRef = (searchParams?.get("ref") || "").trim().replace(/^@/, "");
-  const [referralCode, setReferralCode] = useState(urlRef);
+  const [referralCode, setReferralCode] = useState(urlInvite || urlRef);
 
   useEffect(() => {
     try {
-      if (urlRef) {
+      if (urlInvite) {
+        localStorage.setItem("alinue_pending_invite_code", urlInvite);
+        setReferralCode(urlInvite);
+      } else if (urlRef) {
         localStorage.setItem("alinue_ref", urlRef);
         setReferralCode(urlRef);
       } else {
+        const pendingInvite = localStorage.getItem("alinue_pending_invite_code");
         const storedRef = localStorage.getItem("alinue_ref");
-        if (storedRef) setReferralCode(storedRef);
+        if (pendingInvite) setReferralCode(pendingInvite);
+        else if (storedRef) setReferralCode(storedRef);
       }
     } catch {}
-  }, [urlRef]);
+  }, [urlInvite, urlRef]);
 
   // ตรวจสอบสถานะการ Login: หากมี session อยู่แล้วให้ redirect ไปหน้าแรกทันที
   const { data: meData, isLoading: isMeLoading } = useMeQuery();
@@ -189,7 +195,7 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
 
       {/* Main Card */}
       <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-xs">
-        {/* Referral Bonus Banner */}
+        {/* Referral / One-Time Invite Bonus Banner */}
         {referralCode && (
           <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs text-emerald-900">
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 mt-0.5">
@@ -197,10 +203,14 @@ export default function AuthForm({ type = "sign-in", onSubmit }) {
             </div>
             <div>
               <p className="font-bold text-emerald-950">
-                ได้รับคำเชิญจาก @{referralCode}
+                {/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(referralCode)
+                  ? `โค้ดคำเชิญ: ${referralCode.toUpperCase()}`
+                  : `ได้รับคำเชิญจาก @${referralCode}`}
               </p>
               <p className="text-[11px] text-emerald-700 mt-0.5 leading-relaxed">
-                สมัครสมาชิกวันนี้ รับโควตาโพสต์รับงานเพิ่มจาก 1 เป็นสูงสุด 2 โพสต์ทันที (ได้ทั้งคุณและเพื่อน!)
+                {isSignIn
+                  ? "เข้าสู่ระบบเพื่อยืนยันโค้ดและรับโควตาโพสต์รับงานเพิ่มเป็นสูงสุด 2 โพสต์ทันที!"
+                  : "สมัครสมาชิกวันนี้ รับโควตาโพสต์รับงานเพิ่มจาก 1 เป็นสูงสุด 2 โพสต์ทันที (ได้ทั้งคุณและเพื่อน!)"}
               </p>
             </div>
           </div>

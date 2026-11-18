@@ -37,11 +37,21 @@ export const authService = {
     });
   },
 
-  // รับสิทธิ์จากการชวนเพื่อน (ปลดล็อกโควตา Service เป็น 2 โพสต์ทั้งคนชวนและคนถูกชวน)
-  claimReferral: async (ref) => {
+  // ดึง One-Time Invite Code ของผู้ใช้ปัจจุบัน
+  getInviteCode: async () => {
+    return fetchApi('/api/auth/invite-code');
+  },
+
+  // ตรวจสอบความถูกต้องของ One-Time Invite Code (Public)
+  inspectInviteCode: async (code) => {
+    return fetchApi(`/api/auth/invite/${encodeURIComponent(String(code || '').trim().toUpperCase())}`);
+  },
+
+  // รับสิทธิ์จากการชวนเพื่อนด้วย One-Time Invite Code (ปลดล็อกโควตา Service เป็น 2 โพสต์ทั้งคนชวนและคนถูกชวน)
+  claimReferral: async (code) => {
     return fetchApi('/api/auth/claim-referral', {
       method: 'POST',
-      body: JSON.stringify({ ref }),
+      body: JSON.stringify({ code, ref: code }),
     });
   },
 
