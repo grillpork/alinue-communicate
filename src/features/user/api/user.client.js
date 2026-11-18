@@ -6,6 +6,11 @@ export const userService = {
     return fetchApi('/api/users/suggested');
   },
 
+  // ดึงโน้ตของตัวเองและเพื่อน (คนที่ติดตามหรือติดตามเรา)
+  getNotes: async () => {
+    return fetchApi('/api/users/notes');
+  },
+
   // ดึงข้อมูลโปรไฟล์สาธารณะตาม Username
   getUserProfile: async (username) => {
     return fetchApi(`/api/users/profile/${username}`);

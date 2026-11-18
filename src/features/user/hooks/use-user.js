@@ -17,6 +17,18 @@ export function useSuggestedUsersQuery(options = {}) {
 }
 
 /**
+ * Hook ดึงโน้ตของตัวเองและเพื่อนสำหรับแถบ Notes ด้านบน Feed
+ */
+export function useNotesQuery(options = {}) {
+  return useQuery({
+    queryKey: userKeys.notes(),
+    queryFn: userService.getNotes,
+    staleTime: 1000 * 60, // 1 นาที
+    ...options,
+  });
+}
+
+/**
  * Hook ดึงข้อมูลโปรไฟล์ผู้ใช้ตาม Username
  */
 export function useUserProfileQuery(username, options = {}) {

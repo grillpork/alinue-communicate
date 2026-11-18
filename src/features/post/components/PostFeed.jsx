@@ -1,22 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, use } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Loader2,
-  User,
-  Image as ImageIcon,
-  Video,
-  Smile,
-  AlignLeft,
-  MapPin,
-  Music,
-} from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import PostCard from "./PostCard";
 import PostFormModal from "./PostFormModal";
 import PostDetailModal from "./PostDetailModal";
 import EmptyState from "@/components/ui/empty-state";
-import { useMeQuery } from "@/features/auth";
+import { NotesBar } from "@/features/user";
 import {
   usePostsQuery,
   usePostQuery,
@@ -29,10 +19,8 @@ export default function PostFeed({ initialPostsPromise }) {
   // แกะข้อมูลโพสต์ชุดแรกจาก Streaming Promise ด้วย React 19 use() ใต้ Suspense
   const initialData = initialPostsPromise ? use(initialPostsPromise) : undefined;
 
-  const router = useRouter();
   const searchParams = useSearchParams();
   const sharedPostId = searchParams?.get("post");
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [activeSharedPost, setActiveSharedPost] = useState(null);
 
@@ -47,11 +35,7 @@ export default function PostFeed({ initialPostsPromise }) {
     }
   }, [sharedPostData?.post]);
 
-  // 1. ดึงข้อมูล User จริงจาก Neon DB
-  const { data: meData } = useMeQuery();
-  const currentUser = meData?.user || null;
-
-  // 2. ดึงโพสต์จริงจาก Neon DB ผ่าน TanStack Query (ใช้ initialData เพื่อไม่ต้องรอ Loading บน Client)
+  // ดึงโพสต์จริงจาก Neon DB ผ่าน TanStack Query (ใช้ initialData เพื่อไม่ต้องรอ Loading บน Client)
   const { data: postsData = initialData, isLoading } = usePostsQuery(
     undefined,
     initialData ? { initialData } : undefined,
@@ -62,15 +46,6 @@ export default function PostFeed({ initialPostsPromise }) {
   const deletePostMutation = useDeletePostMutation();
 
   const posts = postsData?.posts || [];
-
-  // คลิกแถบเปิดสร้างโพสต์
-  const handleOpenPostModal = () => {
-    if (!currentUser) {
-      router.push("/sign-in");
-      return;
-    }
-    setIsModalOpen(true);
-  };
 
   // สร้างหรือแก้ไขโพสต์ลง Neon DB ผ่าน TanStack Query Mutation
   const handleCreatePost = async (data) => {
@@ -95,7 +70,6 @@ export default function PostFeed({ initialPostsPromise }) {
           serviceId: data.serviceId || null,
           serviceTitle: data.serviceTitle || null,
         });
-        setIsModalOpen(false);
       }
     } catch (err) {
       console.error("Failed to submit post:", err);
@@ -114,113 +88,11 @@ export default function PostFeed({ initialPostsPromise }) {
   };
 
   return (
-    <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-0 pt-2 sm:pt-4 pb-12">
-      {/* 1. Top Post Input Trigger (แสดง User จริง หรือปุ่มชวนเข้าสู่ระบบ พร้อม Icon บาร์ Image, GIF, Video สไตล์ Threads) */}
-      <div className="px-3 sm:px-4 mb-4">
-        <div
-          onClick={handleOpenPostModal}
-          className="rounded-2xl border border-gray-100 bg-white py-3 px-3 sm:px-4 cursor-pointer hover:bg-gray-50/50 transition-colors shadow-2xs"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-full ring-2 ring-gray-100 bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
-                {currentUser?.avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={currentUser.avatarUrl}
-                    alt={currentUser.displayName || currentUser.username}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-5 w-5 text-gray-400" />
-                )}
-              </div>
-              <span className="text-xs sm:text-sm text-gray-400 font-normal truncate">
-                {currentUser
-                  ? `${currentUser.displayName || currentUser.username}, มีอะไรใหม่...`
-                  : "Sign in to share your design..."}
-              </span>
-            </div>
+    <div className="w-full mx-auto max-w-2xl xl:max-w-3xl px-0 pt-1 sm:pt-2 pb-12">
+      {/* 1. แถบโน้ตสไตล์ Profile (แสดงโน้ตของตัวเองและเพื่อน) */}
+      <NotesBar />
 
-            {/* Posts Button */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPostModal();
-              }}
-              className="rounded-full bg-black hover:bg-gray-800 text-white text-xs sm:text-sm font-medium px-4 py-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer shrink-0"
-            >
-              {currentUser ? "Posts" : "Sign in"}
-            </button>
-          </div>
-
-          {/* Media Icons Bar: Image, Smile, Poll, Location, Music (สไตล์ Threads) */}
-          <div className="mt-3 pt-2.5 border-t border-gray-100/70 flex items-center gap-1 sm:gap-2 text-gray-400">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPostModal();
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="เพิ่มรูปภาพ (JPG, PNG, WebP)"
-            >
-              <ImageIcon className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPostModal();
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="อิโมจิ"
-            >
-              <Smile className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPostModal();
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="รายการ / โพลล์"
-            >
-              <AlignLeft className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPostModal();
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="สถานที่"
-            >
-              <MapPin className="h-4 w-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenPostModal();
-              }}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="เพลง / เสียง"
-            >
-              <Music className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Feed List (ดึงจาก Neon DB จริง) */}
+      {/* 2. Feed List (ดึงจาก Neon DB จริง) */}
       <div className="divide-y divide-gray-100">
         {/* Pending Post Skeleton (แสดงทันทีกำลังสร้างโพสต์) */}
         {createPostMutation.isPending && (
@@ -261,13 +133,7 @@ export default function PostFeed({ initialPostsPromise }) {
             ))}
           </div>
         ) : posts.length === 0 ? (
-          searchQuery.trim() ? (
-            <div className="py-16 text-center text-xs text-gray-400">
-              No posts found matching &ldquo;{searchQuery}&rdquo;
-            </div>
-          ) : (
-            <EmptyState imageSrc="/empty/no-content.png" />
-          )
+          <EmptyState imageSrc="/empty/no-content.png" />
         ) : (
           posts.map((post) => (
             <PostCard
@@ -280,15 +146,12 @@ export default function PostFeed({ initialPostsPromise }) {
         )}
       </div>
 
-      {/* Modal สร้างโพสต์ (PostFormModal) */}
+      {/* Modal แก้ไขโพสต์ (PostFormModal) */}
       <PostFormModal
-        isOpen={isModalOpen || Boolean(editingPost)}
+        isOpen={Boolean(editingPost)}
         isEdit={Boolean(editingPost)}
         initialPost={editingPost}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingPost(null);
-        }}
+        onClose={() => setEditingPost(null)}
         onSubmit={handleCreatePost}
       />
 
