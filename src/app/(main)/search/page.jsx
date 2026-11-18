@@ -26,6 +26,7 @@ import {
   PostCard,
   PostFormModal,
 } from "@/features/post";
+import { useServicesQuery, ServiceCard } from "@/features/service";
 import UserAvatar from "@/components/common/UserAvatar";
 
 /**
@@ -112,6 +113,7 @@ export default function SearchPage() {
   const [query, setQuery] = useState(urlQuery);
   const [debouncedQuery, setDebouncedQuery] = useState(urlQuery);
   const [sortBy, setSortBy] = useState("popular"); // 'popular' ('ยอดนิยม') | 'latest' ('ล่าสุด')
+  const [exploreTab, setExploreTab] = useState("all"); // 'all' | 'services' | 'posts'
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAllProfiles, setShowAllProfiles] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
@@ -162,12 +164,63 @@ export default function SearchPage() {
     });
   const matchedUsers = searchUsersData?.users || [];
 
-  // 2. ค้นหาโพสต์ที่เกี่ยวข้อง
+  // 2. ค้นหาบริการที่เกี่ยวข้อง
+  const { data: searchServicesData, isLoading: isLoadingSearchServices } =
+    useServicesQuery(
+      { search: cleanQ, status: "active", limit: 6 },
+      { enabled: hasSearched },
+    );
+  const matchedServices = searchServicesData?.services || [];
+
+  // 3. ค้นหาโพสต์ที่เกี่ยวข้อง
   const { data: postsData, isLoading: isLoadingPosts } = usePostsQuery(
     { search: cleanQ },
     { enabled: hasSearched },
   );
   const rawPosts = postsData?.posts || [];
+
+  // 4. บริการแนะนำ (เมื่อยังไม่ได้ค้นหา)
+  const { data: recServicesData, isLoading: isLoadingRecServices } =
+    useServicesQuery(
+      { status: "active", limit: 8 },
+      { enabled: !hasSearched },
+    );
+  const recommendedServices = useMemo(() => {
+    const list = recServicesData?.services || [];
+    return [...list].sort((a, b) => {
+      const scoreA =
+        (Number(a.likesCount) || 0) * 3 +
+        (Number(a.viewsCount ?? a.views_count) || 0);
+      const scoreB =
+        (Number(b.likesCount) || 0) * 3 +
+        (Number(b.viewsCount ?? b.views_count) || 0);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime()
+      );
+    });
+  }, [recServicesData]);
+
+  // 5. โพสต์แนะนำ (เมื่อยังไม่ได้ค้นหา)
+  const { data: recPostsData, isLoading: isLoadingRecPosts } = usePostsQuery(
+    { limit: 12 },
+    { enabled: !hasSearched },
+  );
+  const recommendedPosts = useMemo(() => {
+    const list = recPostsData?.posts || [];
+    return [...list].sort((a, b) => {
+      const scoreA =
+        (Number(a.likesCount) || 0) * 2 + (Number(a.commentsCount) || 0);
+      const scoreB =
+        (Number(b.likesCount) || 0) * 2 + (Number(b.commentsCount) || 0);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime()
+      );
+    });
+  }, [recPostsData]);
 
   // เรียงลำดับโพสต์ตามตัวเลือก ยอดนิยม / ล่าสุด
   const sortedPosts = useMemo(() => {
@@ -268,7 +321,7 @@ export default function SearchPage() {
               setQuery(e.target.value);
               if (showAllProfiles) setShowAllProfiles(false);
             }}
-            placeholder="ค้นหาโพสต์, ผู้ใช้ หรือ #แฮชแท็ก..."
+            placeholder="ค้นหาโพสต์, บริการ, ผู้ใช้ หรือ #แฮชแท็ก..."
             className="w-full rounded-2xl border border-gray-200/80 bg-gray-100/80 py-2.5 pl-4 pr-9 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-300 focus:bg-white focus:outline-none transition-all"
           />
           {query && (
@@ -313,8 +366,135 @@ export default function SearchPage() {
       </div>
 
       {/* 2. MAIN CONTENT AREA */}
-      {hasSearched && (
-        /* ------------------ SEARCH RESULTS STATE ------------------ */
+      {!hasSearched ? (
+        /* ------------------ A. RECOMMENDED EXPLORE STATE (Services & Posts) ------------------ */
+        <div className="animate-in fade-in duration-150">
+          {/* Minimal Filter Pills */}
+          <div className="flex items-center gap-1.5 px-3.5 sm:px-4 pt-1 pb-3">
+            {[
+              { id: "all", label: "ทั้งหมด" },
+              { id: "services", label: "บริการแนะนำ" },
+              { id: "posts", label: "โพสต์แนะนำ" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setExploreTab(tab.id)}
+                className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  exploreTab === tab.id
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 1. บริการแนะนำ (Recommended Services) */}
+          {(exploreTab === "all" || exploreTab === "services") && (
+            <section className="px-3.5 sm:px-4 pb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight">
+                  บริการแนะนำ
+                </h2>
+                {exploreTab === "all" && recommendedServices.length > 4 && (
+                  <button
+                    type="button"
+                    onClick={() => setExploreTab("services")}
+                    className="flex items-center gap-0.5 text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors cursor-pointer"
+                  >
+                    <span>ดูทั้งหมด</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {isLoadingRecServices ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-3xl border border-gray-100 bg-white p-1.5 animate-pulse"
+                    >
+                      <div className="aspect-4/3 w-full rounded-2xl bg-gray-100" />
+                      <div className="p-2 space-y-2">
+                        <div className="h-3.5 w-3/4 rounded-full bg-gray-100" />
+                        <div className="h-3 w-1/2 rounded-full bg-gray-100" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : recommendedServices.length > 0 ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {(exploreTab === "all"
+                    ? recommendedServices.slice(0, 4)
+                    : recommendedServices
+                  ).map((service) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      currentUserId={currentUser?.id}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="py-6 text-center text-xs text-gray-400">
+                  ยังไม่มีบริการแนะนำในขณะนี้
+                </p>
+              )}
+            </section>
+          )}
+
+          {/* 2. โพสต์แนะนำ (Recommended Posts) */}
+          {(exploreTab === "all" || exploreTab === "posts") && (
+            <section>
+              <div className="flex items-center justify-between px-3.5 sm:px-4 mb-2">
+                <h2 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight">
+                  โพสต์แนะนำ
+                </h2>
+              </div>
+
+              {isLoadingRecPosts ? (
+                <div className="divide-y divide-gray-100 border-t border-gray-100">
+                  {[0, 1, 2].map((idx) => (
+                    <div
+                      key={idx}
+                      className="px-4 py-5 space-y-3 animate-pulse bg-white"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gray-100" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-3 w-28 rounded-full bg-gray-100" />
+                          <div className="h-2.5 w-16 rounded-full bg-gray-100" />
+                        </div>
+                      </div>
+                      <div className="h-3.5 w-5/6 rounded-full bg-gray-100" />
+                      <div className="h-44 w-full rounded-2xl bg-gray-100" />
+                    </div>
+                  ))}
+                </div>
+              ) : recommendedPosts.length > 0 ? (
+                <div className="divide-y divide-gray-100 border-t border-gray-100">
+                  {recommendedPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onEdit={(p) => setEditingPost(p)}
+                      onDelete={handleDeletePost}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="py-10 text-center text-xs text-gray-400">
+                  ยังไม่มีโพสต์แนะนำในขณะนี้
+                </p>
+              )}
+            </section>
+          )}
+        </div>
+      ) : (
+        /* ------------------ B. SEARCH RESULTS STATE ------------------ */
         <div className="animate-in fade-in duration-150">
           {/* Header Row: ยอดนิยม v  |  โปรไฟล์ที่เกี่ยวข้อง > */}
           <div className="flex items-center justify-between px-3.5 sm:px-4 py-2">
@@ -379,7 +559,7 @@ export default function SearchPage() {
           </div>
 
           {/* Loading State */}
-          {isLoadingUsers && isLoadingPosts && (
+          {isLoadingUsers && isLoadingPosts && isLoadingSearchServices && (
             <div className="py-16 flex flex-col items-center justify-center text-gray-400 gap-2">
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
               <p className="text-xs">กำลังค้นหา...</p>
@@ -387,9 +567,9 @@ export default function SearchPage() {
           )}
 
           {/* Results Content */}
-          {(!isLoadingUsers || !isLoadingPosts) && (
+          {(!isLoadingUsers || !isLoadingPosts || !isLoadingSearchServices) && (
             <>
-              {/* 1. Related Profile Card(s) (แสดงด้านบนเหมือนในภาพตัวอย่าง) */}
+              {/* 1. Related Profile Card(s) */}
               {matchedUsers.length > 0 && (
                 <div className="px-3.5 sm:px-4 pt-1 pb-3 space-y-2.5">
                   {visibleProfiles.map((user) => (
@@ -403,7 +583,25 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* 2. Full Posts Feed (แสดงโพสต์แบบเต็มเหมือนหน้า Feed ใต้การ์ดโปรไฟล์) */}
+              {/* 2. Matching Services */}
+              {!showAllProfiles && matchedServices.length > 0 && (
+                <div className="px-3.5 sm:px-4 pt-1 pb-4">
+                  <p className="text-xs font-semibold text-gray-400 mb-2.5">
+                    บริการที่เกี่ยวข้อง
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {matchedServices.map((service) => (
+                      <ServiceCard
+                        key={service.id}
+                        service={service}
+                        currentUserId={currentUser?.id}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Full Posts Feed */}
               {!showAllProfiles && sortedPosts.length > 0 && (
                 <div className="divide-y divide-gray-100 border-t border-gray-100">
                   {sortedPosts.map((post) => (
@@ -417,21 +615,22 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* 3. Empty State (เมื่อไม่พบทั้งผู้ใช้และโพสต์) */}
+              {/* 4. Empty State */}
               {!isLoadingUsers &&
                 !isLoadingPosts &&
+                !isLoadingSearchServices &&
                 matchedUsers.length === 0 &&
+                matchedServices.length === 0 &&
                 sortedPosts.length === 0 && (
                   <div className="py-20 px-4 text-center">
                     <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-gray-50 text-gray-300 mb-3 ring-1 ring-gray-100">
                       <Search className="h-7 w-7" />
                     </div>
                     <h3 className="text-sm font-bold text-gray-900">
-                      ไม่พบผู้ใช้หรือโพสต์ที่ตรงกับ &ldquo;{cleanQ}&rdquo;
+                      ไม่พบผู้ใช้ บริการ หรือโพสต์ที่ตรงกับ &ldquo;{cleanQ}&rdquo;
                     </h3>
                     <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                      ลองค้นหาด้วยชื่อผู้ใช้, แฮชแท็ก
-                      หรือคำสำคัญอื่น
+                      ลองค้นหาด้วยชื่อผู้ใช้, บริการ, แฮชแท็ก หรือคำสำคัญอื่น
                     </p>
                   </div>
                 )}

@@ -38,6 +38,7 @@ export default function ServiceCard({
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
   const menuRef = useRef(null);
+  const previousUrlRef = useRef(null);
 
   const { data: meData } = useMeQuery();
   const currentUser = meData?.user;
@@ -108,6 +109,7 @@ export default function ServiceCard({
   const handleCardClick = () => {
     setIsDetailOpen(true);
     if (typeof window !== "undefined") {
+      previousUrlRef.current = window.location.pathname + window.location.search;
       const path = getServicePath(authorUsername, service);
       window.history.pushState({ modal: "service", id: service.id }, "", path);
     }
@@ -117,7 +119,9 @@ export default function ServiceCard({
     setIsDetailOpen(false);
     if (typeof window !== "undefined") {
       if (window.location.pathname.includes("/services/")) {
-        window.history.replaceState({}, "", `/${authorUsername}?tab=services`);
+        const fallbackUrl =
+          previousUrlRef.current || `/${authorUsername}?tab=services`;
+        window.history.replaceState({}, "", fallbackUrl);
       }
     }
   };
