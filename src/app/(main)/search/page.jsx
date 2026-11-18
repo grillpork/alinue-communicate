@@ -9,9 +9,6 @@ import {
   ChevronRight,
   Search,
   X,
-  Clock,
-  Flame,
-  RotateCw,
   Loader2,
   SlidersHorizontal,
   MoreHorizontal,
@@ -30,30 +27,6 @@ import {
   PostFormModal,
 } from "@/features/post";
 import UserAvatar from "@/components/common/UserAvatar";
-
-const DEFAULT_HISTORY = [
-  "Anime chibi",
-  "history",
-  "gaming",
-  "space exploration",
-  "sustainable energy",
-  "artificial intelligence",
-  "urban gardening",
-  "quantum computing",
-  "fantasy novels",
-];
-
-const INITIAL_RECOMMENDATIONS = [
-  { tag: "history", count: "12,000" },
-  { tag: "Anime chibi", count: "12,000" },
-  { tag: "Game design", count: "15,000" },
-  { tag: "Digital painting", count: "18,500" },
-  { tag: "Photography basics", count: "10,500" },
-  { tag: "3D modeling", count: "20,000" },
-  { tag: "UX/UI principles", count: "14,750" },
-  { tag: "Motion graphics", count: "16,200" },
-  { tag: "Web development", count: "22,000" },
-];
 
 /**
  * การ์ดโปรไฟล์ที่เกี่ยวข้อง พร้อมปุ่ม ติดตาม / กำลังติดตาม (โทนสว่าง ไม่ใช้ bg-black)
@@ -141,11 +114,6 @@ export default function SearchPage() {
   const [sortBy, setSortBy] = useState("popular"); // 'popular' ('ยอดนิยม') | 'latest' ('ล่าสุด')
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showAllProfiles, setShowAllProfiles] = useState(false);
-  const [searchHistory, setSearchHistory] = useState(DEFAULT_HISTORY);
-  const [recommendations, setRecommendations] = useState(
-    INITIAL_RECOMMENDATIONS,
-  );
-  const [isRefreshingRecs, setIsRefreshingRecs] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
 
   const inputRef = useRef(null);
@@ -182,47 +150,6 @@ export default function SearchPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Load history from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("alinue_search_history");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSearchHistory(parsed);
-        }
-      }
-    } catch {
-      // Ignore localStorage errors
-    }
-  }, []);
-
-  const saveHistory = (items) => {
-    setSearchHistory(items);
-    try {
-      localStorage.setItem("alinue_search_history", JSON.stringify(items));
-    } catch {}
-  };
-
-  const handleAddHistory = (term) => {
-    const clean = term.trim();
-    if (!clean) return;
-    const filtered = searchHistory.filter(
-      (h) => h.toLowerCase() !== clean.toLowerCase(),
-    );
-    saveHistory([clean, ...filtered].slice(0, 15));
-  };
-
-  const handleRemoveHistory = (e, termToRemove) => {
-    e.stopPropagation();
-    const updated = searchHistory.filter((h) => h !== termToRemove);
-    saveHistory(updated);
-  };
-
-  const handleClearAllHistory = () => {
-    saveHistory([]);
-  };
 
   // Active search query
   const cleanQ = debouncedQuery.trim();
@@ -267,22 +194,12 @@ export default function SearchPage() {
     setDebouncedQuery(target);
     setShowAllProfiles(false);
     if (target) {
-      handleAddHistory(target);
       router.replace(`/search?q=${encodeURIComponent(target)}`, {
         scroll: false,
       });
     } else {
       router.replace("/search", { scroll: false });
     }
-  };
-
-  // Refresh recommendation topics
-  const handleRefreshRecommendations = () => {
-    setIsRefreshingRecs(true);
-    setTimeout(() => {
-      setRecommendations((prev) => [...prev].sort(() => Math.random() - 0.5));
-      setIsRefreshingRecs(false);
-    }, 300);
   };
 
   // แก้ไข/ลบโพสต์ของตัวเองจากหน้าค้นหา
@@ -396,91 +313,8 @@ export default function SearchPage() {
       </div>
 
       {/* 2. MAIN CONTENT AREA */}
-      {!hasSearched ? (
-        /* ------------------ A. DEFAULT EXPLORE STATE (Search History & Recommendations) ------------------ */
-        <div className="px-3.5 sm:px-4 space-y-6 pt-2 animate-in fade-in duration-150">
-          {/* Recent Searches (Search History) */}
-          {searchHistory.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between px-1 mb-1">
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                  ประวัติการค้นหาล่าสุด
-                </span>
-                <button
-                  type="button"
-                  onClick={handleClearAllHistory}
-                  className="text-[11px] font-medium text-gray-400 hover:text-rose-500 transition-colors cursor-pointer"
-                >
-                  ล้างทั้งหมด
-                </button>
-              </div>
-
-              <div className="divide-y divide-gray-100">
-                {searchHistory.map((item) => (
-                  <div
-                    key={item}
-                    onClick={() => handleSearchSubmit(item)}
-                    className="flex items-center justify-between py-2.5 px-2 rounded-xl text-xs sm:text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Clock className="h-4 w-4 text-gray-400 shrink-0" />
-                      <span className="truncate">{item}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => handleRemoveHistory(e, item)}
-                      className="p-1 text-gray-300 hover:text-gray-600 transition-colors cursor-pointer"
-                      aria-label={`Remove ${item}`}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Recommend for you Section */}
-          <div className="pt-2">
-            <div className="flex items-center justify-between px-1 mb-3">
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">
-                Recommend for you
-              </h2>
-              <button
-                type="button"
-                onClick={handleRefreshRecommendations}
-                className="p-1.5 rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-all cursor-pointer"
-                title="สุ่มหัวข้อใหม่"
-              >
-                <RotateCw
-                  className={`h-4 w-4 ${isRefreshingRecs ? "animate-spin" : ""}`}
-                />
-              </button>
-            </div>
-
-            <div className="space-y-1">
-              {recommendations.map((rec) => (
-                <div
-                  key={rec.tag}
-                  onClick={() => handleSearchSubmit(rec.tag)}
-                  className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <Flame className="h-4 w-4 text-amber-500 shrink-0" />
-                    <span className="text-xs sm:text-sm font-semibold text-gray-800 group-hover:text-gray-950 truncate">
-                      {rec.tag}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400 font-mono shrink-0">
-                    {rec.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* ------------------ B. SEARCH RESULTS STATE (แบบตัวอย่าง พื้นหลังขาว) ------------------ */
+      {hasSearched && (
+        /* ------------------ SEARCH RESULTS STATE ------------------ */
         <div className="animate-in fade-in duration-150">
           {/* Header Row: ยอดนิยม v  |  โปรไฟล์ที่เกี่ยวข้อง > */}
           <div className="flex items-center justify-between px-3.5 sm:px-4 py-2">
