@@ -197,24 +197,30 @@ export default function PostCard({
         />
       )}
 
-      {/* 7. Modal แชร์โพสต์ */}
-      <SharePostModal
-        isOpen={isShareModalOpen}
-        onClose={() => setIsShareModalOpen(false)}
-        post={{ ...post, sharesCount }}
-      />
-
-      {/* 8. ขยายรูปภาพเต็มจอทันทีเมื่อคลิกที่รูป (พื้นหลังสีขาว ไม่ใช้สีดำ) */}
+      {/* 7. ขยายรูปภาพเต็มจอทันทีเมื่อคลิกที่รูป (พื้นหลังสีขาว พร้อมปุ่ม Action ด้านล่าง) */}
       {isLightboxOpen && (
         <PostImageLightbox
           images={post?.images}
           initialIndex={initialImageIndex}
           isOpen={isLightboxOpen}
           onClose={() => setIsLightboxOpen(false)}
+          isLiked={isLiked}
+          likesCount={likesCount}
+          commentsCount={commentsCount}
+          sharesCount={sharesCount}
+          bookmarked={bookmarked}
+          onLike={handleLike}
+          onComment={(idx) => {
+            setIsLightboxOpen(false);
+            handleOpenDetailModal(undefined, idx);
+          }}
+          onShare={() => setIsShareModalOpen(true)}
+          onToggleBookmark={() => toggleBookmark(post)}
+          onCopyLink={handleCopyLink}
         />
       )}
 
-      {/* 9. หน้าดูโพสต์และความคิดเห็นทั้งหมดแบบเต็มจอ */}
+      {/* 8. หน้าดูโพสต์และความคิดเห็นทั้งหมดแบบเต็มจอ */}
       {isDetailModalOpen && (
         <PostDetailModal
           post={post}
@@ -225,6 +231,13 @@ export default function PostCard({
           onDelete={onDelete ? () => onDelete(post.id) : undefined}
         />
       )}
+
+      {/* 9. Modal แชร์โพสต์ (วางไว้ล่างสุดเพื่อให้แสดงทับ Lightbox ได้) */}
+      <SharePostModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        post={{ ...post, sharesCount }}
+      />
     </article>
   );
 }
