@@ -131,11 +131,6 @@ export default function MobileBottomBar() {
                     : "text-gray-400 hover:text-gray-700"
                 }`}
               >
-                {/* Top Active Indicator Bar */}
-                {item.isActive && (
-                  <span className="absolute top-0 inset-x-3 sm:inset-x-5 h-0.5 bg-black rounded-full" />
-                )}
-
                 {/* Icon Container with Badge */}
                 <div className="relative flex items-center justify-center">
                   {item.isAvatar ? (
