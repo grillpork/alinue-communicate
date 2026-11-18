@@ -19,12 +19,24 @@ import { useMeQuery } from "../hooks/use-auth";
 
 export const PENDING_INVITE_STORAGE_KEY = "alinue_pending_invite_code";
 
+/**
+ * จัดรูปแบบโค้ดคำเชิญเป็น XXXX-XXXX-XXXX (สูงสุด 12 ตัวอักษร + ขีดคั่น 2 ตัว = 14 ตัวอักษร)
+ * รองรับการวางข้อความเชิญเต็มหรือ URL /join/XXXX-XXXX-XXXX แล้วดึงโค้ดอัตโนมัติ
+ */
+function formatInviteCodeInput(raw) {
+  const str = String(raw || "").toUpperCase();
+  const embeddedMatch = str.match(/[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}/);
+  const alnum = (embeddedMatch ? embeddedMatch[0] : str)
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 12);
+
+  const chunks = alnum.match(/.{1,4}/g);
+  return chunks ? chunks.join("-") : "";
+}
+
 function formatSpacedCode(raw) {
-  const clean = String(raw || "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "");
-  return clean.split("-").join(" - ");
+  const formatted = formatInviteCodeInput(raw);
+  return formatted.split("-").join(" - ");
 }
 
 /**
@@ -42,9 +54,7 @@ export default function RedeemInviteModal({
   const currentUser = meData?.user || null;
 
   const [codeInput, setCodeInput] = useState(
-    String(initialCode || "")
-      .trim()
-      .toUpperCase(),
+    formatInviteCodeInput(initialCode),
   );
   const [inviteInfo, setInviteInfo] = useState(null);
   const [isInspecting, setIsInspecting] = useState(false);
@@ -53,12 +63,11 @@ export default function RedeemInviteModal({
   const [redeemSuccess, setRedeemSuccess] = useState(false);
   const [inviterUsername, setInviterUsername] = useState("");
 
+  const isCompleteCode = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(codeInput);
+
   useEffect(() => {
     if (isOpen) {
-      const normalized = String(initialCode || "")
-        .trim()
-        .toUpperCase();
-      setCodeInput(normalized);
+      setCodeInput(formatInviteCodeInput(initialCode));
       setErrorMessage("");
       setRedeemSuccess(false);
       setInviteInfo(null);
@@ -67,8 +76,7 @@ export default function RedeemInviteModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    const clean = codeInput.trim().toUpperCase();
-    if (clean.length < 4) {
+    if (!isCompleteCode) {
       setInviteInfo(null);
       return;
     }
@@ -77,7 +85,7 @@ export default function RedeemInviteModal({
     const timer = setTimeout(async () => {
       try {
         setIsInspecting(true);
-        const res = await authService.inspectInviteCode(clean);
+        const res = await authService.inspectInviteCode(codeInput);
         if (isMounted) {
           setInviteInfo(res);
           if (res?.inviter?.username) {
@@ -89,13 +97,13 @@ export default function RedeemInviteModal({
       } finally {
         if (isMounted) setIsInspecting(false);
       }
-    }, 250);
+    }, 200);
 
     return () => {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [codeInput, isOpen]);
+  }, [codeInput, isCompleteCode, isOpen]);
 
   if (!isOpen) return null;
 
@@ -242,12 +250,23 @@ export default function RedeemInviteModal({
                 <input
                   type="text"
                   value={codeInput}
+                  maxLength={14}
+                  autoComplete="off"
+                  spellCheck={false}
                   onChange={(e) => {
-                    setCodeInput(e.target.value.toUpperCase());
+                    setCodeInput(formatInviteCodeInput(e.target.value));
                     setErrorMessage("");
                   }}
+                  onPaste={(e) => {
+                    const pasted = e.clipboardData?.getData("text");
+                    if (pasted) {
+                      e.preventDefault();
+                      setCodeInput(formatInviteCodeInput(pasted));
+                      setErrorMessage("");
+                    }
+                  }}
                   placeholder="XXXX-XXXX-XXXX"
-                  className="w-full bg-transparent text-center font-mono text-lg font-bold tracking-[0.12em] text-gray-900 uppercase placeholder:text-gray-300 focus:outline-none"
+                  className="w-full bg-transparent text-center font-mono text-lg font-bold tracking-[0.14em] text-gray-900 uppercase placeholder:text-gray-300 focus:outline-none"
                 />
               )}
             </div>
@@ -273,7 +292,7 @@ export default function RedeemInviteModal({
             <button
               type="submit"
               disabled={
-                !codeInput.trim() || isSubmitting || Boolean(isInvalidOrUsed)
+                !isCompleteCode || isSubmitting || Boolean(isInvalidOrUsed)
               }
               className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed"
             >
