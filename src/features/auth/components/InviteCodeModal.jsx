@@ -167,30 +167,46 @@ export default function InviteCodeModal({
           )}
         </div>
 
-        {/* Primary Action Button */}
+        {/* Primary Action Button (Black + Text Blur Slot Animation) */}
         <button
           type="button"
           disabled={!inviteCode || isUsed || isLoadingCode}
           onClick={handleCopyCode}
-          className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 px-4 text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed ${
+          className={`relative mt-4 flex h-11 w-full items-center justify-center overflow-hidden rounded-2xl px-4 text-sm font-semibold transition-all cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed ${
             isUsed
               ? "bg-gray-100 text-gray-400"
-              : copied
-                ? "bg-emerald-600 text-white"
-                : "bg-black hover:bg-gray-800 text-white"
+              : "bg-black hover:bg-gray-800 text-white"
           }`}
         >
           {isUsed ? (
             <span>โค้ดถูกใช้งานแล้ว</span>
-          ) : copied ? (
-            <>
-              <Check className="h-4 w-4" />
-              <span>คัดลอกโค้ดและลิงก์แล้ว</span>
-            </>
           ) : (
             <>
-              <Copy className="h-4 w-4" />
-              <span>คัดลอกโค้ด</span>
+              {/* Slot 1: Default state (ม้วนขึ้นพร้อม Blur ออกเมื่อคัดลอก) */}
+              <span
+                aria-hidden={copied}
+                className={`absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                  copied
+                    ? "-translate-y-6 opacity-0 blur-[4px] pointer-events-none"
+                    : "translate-y-0 opacity-100 blur-0"
+                }`}
+              >
+                <Copy className="h-4 w-4" />
+                <span>คัดลอกโค้ด</span>
+              </span>
+
+              {/* Slot 2: Copied state (ม้วนขึ้นมาจากด้านล่างพร้อมคลาย Blur เข้าโฟกัส) */}
+              <span
+                aria-hidden={!copied}
+                className={`absolute inset-0 flex items-center justify-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                  copied
+                    ? "translate-y-0 opacity-100 blur-0"
+                    : "translate-y-6 opacity-0 blur-[4px] pointer-events-none"
+                }`}
+              >
+                <Check className="h-4 w-4" />
+                <span>คัดลอกโค้ดและลิงก์แล้ว</span>
+              </span>
             </>
           )}
         </button>
