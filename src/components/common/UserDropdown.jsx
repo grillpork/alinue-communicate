@@ -12,7 +12,7 @@ import {
 import UserAvatar from "@/components/common/UserAvatar";
 import { usePostDisplayMode } from "@/hooks/usePostDisplayMode";
 
-export default function UserDropdown({ user, onLogout }) {
+export default function UserDropdown({ user, onLogout, align = "right" }) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [displayMode, setDisplayMode] = usePostDisplayMode();
@@ -54,7 +54,13 @@ export default function UserDropdown({ user, onLogout }) {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-60 origin-top-right rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div
+          className={`absolute mt-2 w-60 rounded-2xl bg-white p-1.5 shadow-xl border border-gray-100 z-50 animate-in fade-in zoom-in-95 duration-100 ${
+            align === "left"
+              ? "left-0 origin-top-left"
+              : "right-0 origin-top-right"
+          }`}
+        >
           {/* User Info Header */}
           <div className="border-b border-gray-100 px-3 py-2.5">
             <p className="text-xs font-semibold text-gray-900 truncate">
