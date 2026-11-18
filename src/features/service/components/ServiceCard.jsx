@@ -24,6 +24,8 @@ import {
 } from "../hooks/use-services";
 import { useMeQuery } from "@/features/auth";
 import { getServicePath } from "@/lib/slug";
+import { formatRelativeTime, formatFullDateTime } from "@/lib/date";
+import PostAuthorProfileTrigger from "@/features/post/components/PostAuthorProfileTrigger";
 import ServiceDetailModal from "./ServiceDetailModal";
 import EditServiceModal from "./EditServiceModal";
 
@@ -32,6 +34,7 @@ export default function ServiceCard({
   currentUserId,
   onDeleted,
   isOwner: isOwnerProp,
+  variant = "card",
 }) {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -199,6 +202,312 @@ export default function ServiceCard({
       });
     }
   };
+
+  const formattedPrice =
+    service.startPrice !== undefined && service.startPrice !== null
+      ? service.endPrice !== undefined &&
+        service.endPrice !== null &&
+        Number(service.endPrice) > Number(service.startPrice)
+        ? `฿${Number(service.startPrice).toLocaleString()} - ฿${Number(service.endPrice).toLocaleString()}`
+        : `฿${Number(service.startPrice).toLocaleString()}`
+      : service.priceText ||
+        (service.price ? `฿${Number(service.price).toLocaleString()}` : "");
+
+  const renderMenuDropdown = (positionClass = "bottom-full mb-1") =>
+    showMenu && (
+      <div
+        className={`absolute right-0 ${positionClass} w-44 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-20 animate-in fade-in zoom-in-95 duration-100`}
+      >
+        <button
+          type="button"
+          onClick={handleCopyLink}
+          className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-emerald-600" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+          <span>{copied ? "คัดลอกแล้ว" : "คัดลอกลิงก์"}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleShare}
+          className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          <span>แชร์บริการนี้</span>
+        </button>
+
+        {isOwner && (
+          <>
+            <div className="my-1 border-t border-gray-100" />
+
+            <button
+              type="button"
+              onClick={handleRenew}
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <RotateCw className="h-3.5 w-3.5" />
+              <span>ต่ออายุอีก 30 วัน</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleToggleStatus}
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <Power className="h-3.5 w-3.5" />
+              <span>{status === "paused" ? "เปิดรับงาน" : "พักรับงาน"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(false);
+                setIsEditOpen(true);
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              <span>แก้ไขประกาศ</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              <span>ลบโพสต์</span>
+            </button>
+          </>
+        )}
+      </div>
+    );
+
+  if (variant === "feed") {
+    const feedImages = images.length > 0 ? images : [coverUrl];
+
+    return (
+      <>
+        <article className="bg-white py-4 px-0 transition-colors">
+          {/* 1. Header: รูปผู้แต่ง, ชื่อ, เวลา, เมนูตัวเลือก (เหมือน PostHeader) */}
+          <div className="flex items-center justify-between px-3.5 sm:px-4">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <PostAuthorProfileTrigger author={author} />
+              {service.createdAt && (
+                <>
+                  <span className="text-gray-400 text-xs">•</span>
+                  <span
+                    className="text-gray-400 hover:text-gray-600 transition-colors text-xs cursor-default shrink-0"
+                    title={formatFullDateTime(service.createdAt)}
+                  >
+                    {formatRelativeTime(service.createdAt)}
+                  </span>
+                </>
+              )}
+            </div>
+
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu((prev) => !prev);
+                }}
+                className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+                title="ตัวเลือกเพิ่มเติม"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+              {renderMenuDropdown("top-full mt-1")}
+            </div>
+          </div>
+
+          {/* 2. Clickable Content & Full-Width Media */}
+          <div onClick={handleCardClick} className="cursor-pointer group">
+            {/* Title, Price, Description & Tags */}
+            <div className="px-3.5 sm:px-4 mt-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm sm:text-[15px] font-bold text-gray-900 leading-snug group-hover:text-black transition-colors">
+                  {service.title}
+                </h3>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isExpired && (
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                      หมดอายุแล้ว
+                    </span>
+                  )}
+                  {!isExpired && status === "paused" && (
+                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                      พักรับงาน
+                    </span>
+                  )}
+                  {formattedPrice && (
+                    <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-bold text-gray-900">
+                      {formattedPrice}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {service.description && (
+                <p className="mt-1 text-xs sm:text-sm text-gray-600 line-clamp-2 leading-relaxed">
+                  {service.description}
+                </p>
+              )}
+
+              {Array.isArray(service.tags) && service.tags.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {service.tags.slice(0, 4).map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="text-xs font-medium text-gray-400"
+                    >
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Full-Width Images Showcase */}
+            <div className="px-3.5 sm:px-4 mt-3">
+              {feedImages.length >= 3 ? (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {feedImages.slice(0, 3).map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className="relative h-[200px] sm:h-[260px] w-full overflow-hidden rounded-2xl border border-gray-100 bg-white"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imgUrl}
+                        alt={`${service.title} ${idx + 1}`}
+                        onError={(e) => {
+                          e.currentTarget.src = "/empty/no-image.png";
+                        }}
+                        className="h-full w-full object-cover"
+                      />
+                      {idx === 2 && feedImages.length > 3 && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white text-sm font-bold">
+                          +{feedImages.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : feedImages.length === 2 ? (
+                <div className="grid grid-cols-2 gap-1.5">
+                  {feedImages.map((imgUrl, idx) => (
+                    <div
+                      key={idx}
+                      className="relative h-[220px] sm:h-[280px] w-full overflow-hidden rounded-2xl border border-gray-100 bg-white"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imgUrl}
+                        alt={`${service.title} ${idx + 1}`}
+                        onError={(e) => {
+                          e.currentTarget.src = "/empty/no-image.png";
+                        }}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="relative w-full overflow-hidden rounded-2xl border border-gray-100 bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={feedImages[0]}
+                    alt={service.title}
+                    onError={(e) => {
+                      e.currentTarget.src = "/empty/no-image.png";
+                    }}
+                    className="w-full max-h-[420px] sm:max-h-[460px] object-cover"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 3. Footer Action Bar (สไตล์เดียวกับ PostActions) */}
+          <div className="px-3.5 sm:px-4 mt-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleToggleLike}
+                className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-rose-600 transition-colors cursor-pointer"
+                title="ถูกใจ"
+              >
+                <Heart
+                  className={`h-[18px] w-[18px] ${
+                    isLiked ? "fill-rose-500 text-rose-500" : "text-gray-500"
+                  }`}
+                />
+                <span
+                  className={`text-xs ${
+                    isLiked ? "text-rose-600 font-semibold" : "text-gray-500"
+                  }`}
+                >
+                  {likesCount}
+                </span>
+              </button>
+
+              <div
+                className="flex items-center gap-1.5 text-xs text-gray-500"
+                title="ยอดเข้าชม"
+              >
+                <Eye className="h-[18px] w-[18px] text-gray-500" />
+                <span>{viewsCount}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleShare}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
+                title="แชร์บริการนี้"
+              >
+                <Share2 className="h-[17px] w-[17px]" />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCardClick}
+              className="rounded-full bg-gray-100 hover:bg-gray-200/80 px-3 py-1 text-xs font-semibold text-gray-700 transition-colors cursor-pointer"
+            >
+              ดูรายละเอียด
+            </button>
+          </div>
+        </article>
+
+        {/* Service Detail Modal */}
+        {isDetailOpen && (
+          <ServiceDetailModal
+            isOpen={isDetailOpen}
+            onClose={handleCloseDetail}
+            service={service}
+            isOwner={isOwner}
+            onDeleted={onDeleted}
+          />
+        )}
+
+        {/* Edit Service Modal */}
+        {isEditOpen && (
+          <EditServiceModal
+            isOpen={isEditOpen}
+            onClose={() => setIsEditOpen(false)}
+            service={service}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>

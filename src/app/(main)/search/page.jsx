@@ -393,12 +393,12 @@ export default function SearchPage() {
 
           {/* 1. บริการแนะนำ (Recommended Services) */}
           {(exploreTab === "all" || exploreTab === "services") && (
-            <section className="px-3.5 sm:px-4 pb-6">
-              <div className="flex items-center justify-between mb-3">
+            <section className="pb-4">
+              <div className="flex items-center justify-between px-3.5 sm:px-4 mb-2">
                 <h2 className="text-sm sm:text-base font-bold text-gray-900 tracking-tight">
                   บริการแนะนำ
                 </h2>
-                {exploreTab === "all" && recommendedServices.length > 4 && (
+                {exploreTab === "all" && recommendedServices.length > 3 && (
                   <button
                     type="button"
                     onClick={() => setExploreTab("services")}
@@ -411,30 +411,35 @@ export default function SearchPage() {
               </div>
 
               {isLoadingRecServices ? (
-                <div className="grid grid-cols-2 gap-3">
-                  {[0, 1, 2, 3].map((idx) => (
+                <div className="divide-y divide-gray-100 border-t border-gray-100">
+                  {[0, 1].map((idx) => (
                     <div
                       key={idx}
-                      className="rounded-3xl border border-gray-100 bg-white p-1.5 animate-pulse"
+                      className="px-4 py-5 space-y-3 animate-pulse bg-white"
                     >
-                      <div className="aspect-4/3 w-full rounded-2xl bg-gray-100" />
-                      <div className="p-2 space-y-2">
-                        <div className="h-3.5 w-3/4 rounded-full bg-gray-100" />
-                        <div className="h-3 w-1/2 rounded-full bg-gray-100" />
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-gray-100" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-3 w-28 rounded-full bg-gray-100" />
+                          <div className="h-2.5 w-16 rounded-full bg-gray-100" />
+                        </div>
                       </div>
+                      <div className="h-3.5 w-2/3 rounded-full bg-gray-100" />
+                      <div className="h-44 w-full rounded-2xl bg-gray-100" />
                     </div>
                   ))}
                 </div>
               ) : recommendedServices.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
                   {(exploreTab === "all"
-                    ? recommendedServices.slice(0, 4)
+                    ? recommendedServices.slice(0, 3)
                     : recommendedServices
                   ).map((service) => (
                     <ServiceCard
                       key={service.id}
                       service={service}
                       currentUserId={currentUser?.id}
+                      variant="feed"
                     />
                   ))}
                 </div>
@@ -585,16 +590,17 @@ export default function SearchPage() {
 
               {/* 2. Matching Services */}
               {!showAllProfiles && matchedServices.length > 0 && (
-                <div className="px-3.5 sm:px-4 pt-1 pb-4">
-                  <p className="text-xs font-semibold text-gray-400 mb-2.5">
+                <div className="pt-1 pb-2">
+                  <p className="px-3.5 sm:px-4 text-xs font-semibold text-gray-400 mb-2">
                     บริการที่เกี่ยวข้อง
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="divide-y divide-gray-100 border-t border-gray-100">
                     {matchedServices.map((service) => (
                       <ServiceCard
                         key={service.id}
                         service={service}
                         currentUserId={currentUser?.id}
+                        variant="feed"
                       />
                     ))}
                   </div>
