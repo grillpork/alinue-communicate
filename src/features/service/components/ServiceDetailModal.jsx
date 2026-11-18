@@ -4,11 +4,11 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   X,
+  ArrowLeft,
+  ArrowRight,
   Heart,
   Eye,
   Share2,
-  Clock,
-  Coins,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -21,7 +21,6 @@ import {
   ExternalLink,
   MoreHorizontal,
   Globe,
-  Tag,
   ChevronDown,
   Flag,
 } from "lucide-react";
@@ -42,6 +41,9 @@ import useBodyScrollLock from "@/hooks/useBodyScrollLock";
 import useEmblaCarousel from "embla-carousel-react";
 import EditServiceModal from "./EditServiceModal";
 
+/**
+ * ServiceDetailModal - หน้าดูรายละเอียดบริการ/คอมมิชชันแบบเต็มจอ (Full-Screen Split Page เหมือน PostDetail)
+ */
 export default function ServiceDetailModal({
   isOpen,
   onClose,
@@ -51,9 +53,10 @@ export default function ServiceDetailModal({
 }) {
   useBodyScrollLock(isOpen);
   const [activeImageIdx, setActiveImageIdx] = useState(0);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: false,
-    duration: 25,
+    duration: 22,
   });
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -78,6 +81,7 @@ export default function ServiceDetailModal({
   useEffect(() => {
     setActiveImageIdx(0);
     setShowMenu(false);
+    setIsSidebarCollapsed(false);
     if (emblaApi) {
       emblaApi.scrollTo(0, true);
     }
@@ -99,6 +103,22 @@ export default function ServiceDetailModal({
       emblaApi.off("reInit", onSelect);
     };
   }, [emblaApi]);
+
+  // รองรับคีย์บอร์ด Escape และลูกศรซ้าย-ขวา
+  useEffect(() => {
+    if (!isOpen || isEditOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "ArrowLeft") {
+        emblaApi?.scrollPrev();
+      } else if (e.key === "ArrowRight") {
+        emblaApi?.scrollNext();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, isEditOpen, onClose, emblaApi]);
 
   // ปิดเมนูเมื่อคลิกนอกพื้นที่
   useEffect(() => {
@@ -169,11 +189,11 @@ export default function ServiceDetailModal({
       : Boolean(
           (currentUser?.id &&
             serviceAuthorId &&
-            Number(currentUser.id) === Number(serviceAuthorId)) ||
-          (currentUser?.username &&
-            serviceAuthorUsername &&
-            currentUser.username.toLowerCase() ===
-              serviceAuthorUsername.toLowerCase()),
+            String(currentUser.id) === String(serviceAuthorId)) ||
+            (currentUser?.username &&
+              serviceAuthorUsername &&
+              currentUser.username.toLowerCase() ===
+                serviceAuthorUsername.toLowerCase()),
         );
 
   const images =
@@ -183,9 +203,10 @@ export default function ServiceDetailModal({
         ? [service.coverUrl]
         : [];
 
+  const canScrollPrev = activeImageIdx > 0;
+  const canScrollNext = activeImageIdx < images.length - 1;
+
   const status = service.status || "active";
-  const isExpired = Boolean(service.isExpired);
-  const daysLeft = service.daysLeft ?? 0;
   const isLiked = Boolean(service.isLiked);
   const likesCount = service.likesCount || 0;
   const viewsCount = service.viewsCount ?? service.views_count ?? 0;
@@ -357,99 +378,157 @@ export default function ServiceDetailModal({
 
   return (
     <>
-      <div
-        onClick={onClose}
-        className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 bg-black/75 backdrop-blur-sm animate-in fade-in duration-200"
-      >
-        {/* Modal Container */}
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className="relative w-full h-full sm:h-[92vh] max-h-[900px] max-w-6xl overflow-y-auto md:overflow-hidden rounded-none sm:rounded-3xl bg-white shadow-2xl border border-gray-100 flex flex-col md:flex-row animate-in zoom-in-95 duration-150 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-        >
-          {/* Floating Close Button */}
+      {/* Full-Screen Split Page Container (เต็มจอ 100% เหมือน PostDetail) */}
+      <div className="fixed inset-0 z-50 w-screen h-screen bg-white text-gray-900 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden animate-in fade-in duration-150">
+        {/* ===================================================================
+            1. LEFT STAGE: Full-Screen Image Viewer
+        =================================================================== */}
+        <div className="relative shrink-0 lg:flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden min-h-[55vh] sm:min-h-[65vh] lg:h-full border-b lg:border-b-0 lg:border-r border-gray-100">
+          {/* ปุ่ม X มุมซ้ายบน: ย้อนกลับ */}
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-4 left-4 z-40 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
-            aria-label="Close modal"
+            className="absolute top-4 left-4 sm:top-5 sm:left-5 z-30 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-gray-100/90 text-gray-700 hover:bg-gray-200 hover:text-black transition-all active:scale-95 cursor-pointer"
+            aria-label="ย้อนกลับ"
+            title="ย้อนกลับ"
           >
-            <X className="h-4.5 w-4.5" />
+            <X className="h-5 w-5" />
+          </button>
+
+          {/* ปุ่มพับ/กางแถบรายละเอียดด้านขวา (Desktop เหมือน PostDetail) */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+            className="hidden lg:flex absolute top-5 right-5 z-30 h-11 w-11 items-center justify-center rounded-full bg-gray-100/90 text-gray-700 hover:bg-gray-200 hover:text-black transition-all active:scale-95 cursor-pointer"
+            aria-label={
+              isSidebarCollapsed ? "แสดงรายละเอียดบริการ" : "ซ่อนรายละเอียดบริการ"
+            }
+            title={
+              isSidebarCollapsed ? "แสดงรายละเอียดบริการ" : "ซ่อนรายละเอียดบริการ"
+            }
+          >
+            {isSidebarCollapsed ? (
+              <ChevronLeft className="h-5 w-5" />
+            ) : (
+              <ChevronRight className="h-5 w-5" />
+            )}
           </button>
 
           {/* Mobile-only Top Right: Options Dropdown */}
           <div
-            className="absolute top-4 right-4 z-40 md:hidden"
+            className="absolute top-4 right-4 z-30 lg:hidden"
             ref={mobileMenuRef}
           >
             <button
               type="button"
               onClick={() => setShowMenu((prev) => !prev)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-md border border-gray-200/80 backdrop-blur-md hover:bg-white hover:text-black transition-all active:scale-95 cursor-pointer"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100/90 text-gray-700 hover:bg-gray-200 hover:text-black transition-all active:scale-95 cursor-pointer"
               title="ตัวเลือกเพิ่มเติม"
             >
-              <MoreHorizontal className="h-4.5 w-4.5" />
+              <MoreHorizontal className="h-5 w-5" />
             </button>
 
             {showMenu && renderDropdownMenu()}
           </div>
 
-          {/* 1. LEFT SIDE: Image Viewer with Embla Carousel */}
-          <div className="relative shrink-0 md:flex-1 bg-white flex flex-col items-center justify-center select-none overflow-hidden h-[380px] sm:h-[480px] md:h-full md:min-h-full border-b md:border-b-0 md:border-r border-gray-100 group">
-            {images.length > 0 ? (
-              <>
-                {/* Embla Viewport */}
-                <div
-                  ref={emblaRef}
-                  className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
-                >
-                  <div className="flex h-full w-full">
-                    {images.map((img, idx) => (
-                      <div
-                        key={idx}
-                        className="relative min-w-0 flex-[0_0_100%] h-full flex items-center justify-center p-4 sm:p-6"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img}
-                          alt={`Sample ${idx + 1}`}
-                          draggable={false}
-                          className="max-h-full max-w-full object-contain pointer-events-auto rounded-xl shadow-xs"
-                        />
-                      </div>
-                    ))}
-                  </div>
+          {images.length > 0 ? (
+            <>
+              {/* Embla Viewport: แสดงรูปเต็มความสูงหน้าจอ */}
+              <div
+                ref={emblaRef}
+                className="h-full w-full overflow-hidden cursor-grab active:cursor-grabbing"
+              >
+                <div className="flex h-full w-full">
+                  {images.map((img, idx) => (
+                    <div
+                      key={idx}
+                      className="relative min-w-0 flex-[0_0_100%] h-full flex items-center justify-center px-2 sm:px-14 py-4 sm:py-6"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Sample ${idx + 1}`}
+                        draggable={false}
+                        className="max-h-[75vh] lg:max-h-screen w-auto max-w-full object-contain pointer-events-auto select-none rounded-xl"
+                      />
+                    </div>
+                  ))}
                 </div>
-
-                {/* Counter Pill (ลบ Dots และลูกศร Arrow ออกตามคำขอ) */}
-                {images.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center rounded-full bg-black/60 px-3 py-1 backdrop-blur-md">
-                    <span className="text-[11px] font-semibold text-white/90">
-                      {activeImageIdx + 1} / {images.length}
-                    </span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-6 text-gray-400">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/empty/no-image.png"
-                  alt="No image"
-                  className="max-h-[60vh] max-w-full rounded-xl object-contain opacity-90"
-                />
               </div>
-            )}
-          </div>
 
-          {/* 2. RIGHT SIDE: Service Details & Actions Panel */}
-          <div className="w-full md:w-[420px] lg:w-[460px] shrink-0 flex flex-col bg-white border-t md:border-t-0 md:border-l border-gray-100 md:overflow-hidden">
+              {/* ปุ่มลูกศรซ้าย (Prev Image) */}
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  disabled={!canScrollPrev}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    emblaApi?.scrollPrev();
+                  }}
+                  className={`absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-gray-100/90 text-gray-800 transition-all cursor-pointer ${
+                    canScrollPrev
+                      ? "hover:bg-gray-200 active:scale-95 opacity-100"
+                      : "opacity-35 cursor-default"
+                  }`}
+                  aria-label="รูปก่อนหน้า"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+              )}
+
+              {/* ปุ่มลูกศรขวา (Next Image) */}
+              {images.length > 1 && (
+                <button
+                  type="button"
+                  disabled={!canScrollNext}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    emblaApi?.scrollNext();
+                  }}
+                  className={`absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-full bg-gray-100/90 text-gray-800 transition-all cursor-pointer ${
+                    canScrollNext
+                      ? "hover:bg-gray-200 active:scale-95 opacity-100"
+                      : "opacity-35 cursor-default"
+                  }`}
+                  aria-label="รูปถัดไป"
+                >
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              )}
+
+              {/* Counter Pill */}
+              {images.length > 1 && (
+                <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center rounded-full bg-gray-100/90 border border-gray-200/70 px-3.5 py-1 backdrop-blur-md">
+                  <span className="text-[11px] font-semibold text-gray-700">
+                    {activeImageIdx + 1} / {images.length}
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-6 text-gray-400">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/empty/no-image.png"
+                alt="No image"
+                className="max-h-[60vh] max-w-full rounded-xl object-contain opacity-90"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* ===================================================================
+            2. RIGHT SIDEBAR: Service Details & Actions Panel
+        =================================================================== */}
+        {!isSidebarCollapsed && (
+          <div className="w-full lg:w-[420px] xl:w-[460px] h-full shrink-0 flex flex-col bg-white overflow-hidden">
             {/* Top Bar with Dropdown Options (Desktop only) */}
-            <div className="hidden md:flex items-center justify-end px-5 py-2.5 border-b border-gray-100/70 sticky top-0 bg-white/95 backdrop-blur-md z-10">
+            <div className="hidden lg:flex items-center justify-end px-5 py-3 border-b border-gray-100 sticky top-0 bg-white/95 backdrop-blur-md z-10">
               <div className="relative" ref={desktopMenuRef}>
                 <button
                   type="button"
                   onClick={() => setShowMenu((prev) => !prev)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors cursor-pointer"
                   title="ตัวเลือกเพิ่มเติม"
                 >
                   <MoreHorizontal className="h-4.5 w-4.5" />
@@ -459,8 +538,8 @@ export default function ServiceDetailModal({
               </div>
             </div>
 
-            {/* Scrollable Content Body (Hidden Scrollbar) */}
-            <div className="flex-1 md:overflow-y-auto p-5 sm:p-6 space-y-5 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            {/* Scrollable Content Body */}
+            <div className="flex-1 lg:overflow-y-auto p-5 sm:p-6 space-y-5 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {/* Thumbnails strip (If multiple images) */}
               {images.length > 1 && (
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
@@ -531,7 +610,7 @@ export default function ServiceDetailModal({
                     </Link>
                   </div>
 
-                  {/* Middle: Prices (2-column grid or single price) */}
+                  {/* Middle: Prices */}
                   {(() => {
                     const hasStartPrice =
                       service.startPrice !== undefined &&
@@ -599,11 +678,10 @@ export default function ServiceDetailModal({
                     );
                   })()}
 
-                  {/* Bottom: Links (Social Links / Contact Channels with Collapse/Expand) */}
+                  {/* Bottom: Contact Links */}
                   {effectiveLinksList.length > 0 && (
                     <div className="pt-2.5 border-t border-gray-200/60">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        {/* Toggle Collapse / Expand Button */}
                         <button
                           type="button"
                           onClick={(e) => {
@@ -626,7 +704,6 @@ export default function ServiceDetailModal({
                           />
                         </button>
 
-                        {/* Collapsed state (isContactsExpanded === false): แสดงแค่ Icons เรียงกัน */}
                         {!isContactsExpanded && (
                           <div className="flex items-center gap-1.5 flex-wrap animate-in fade-in duration-150">
                             {effectiveLinksList.map(({ platform, val }) => {
@@ -652,7 +729,6 @@ export default function ServiceDetailModal({
                         )}
                       </div>
 
-                      {/* Expanded state (isContactsExpanded === true): ขยายออกมาเป็น Icon + Name social + Value */}
                       {isContactsExpanded && (
                         <div className="mt-2.5 flex items-center gap-2 flex-wrap animate-in fade-in duration-200">
                           {effectiveLinksList.map(({ platform, val }) => {
@@ -688,7 +764,6 @@ export default function ServiceDetailModal({
                   )}
                 </div>
 
-                {/* Title Header */}
                 {/* Tags */}
                 {Array.isArray(service.tags) && service.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-0.5">
@@ -697,12 +772,12 @@ export default function ServiceDetailModal({
                         key={idx}
                         className="rounded-md flex items-center gap-1 bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
                       >
-                        {/* <Tag className="w-3 h-3"/> */}
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
+
                 <h1 className="text-base sm:text-xl font-bold text-gray-900 leading-snug">
                   {service.title}
                 </h1>
@@ -722,7 +797,7 @@ export default function ServiceDetailModal({
             </div>
 
             {/* Bottom Actions: Like, Views & Share */}
-            <div className="p-4 sm:p-5 bg-white/55 backdrop-blur-md flex items-center justify-between gap-2">
+            <div className="p-4 sm:p-5 border-t border-gray-100 bg-white/95 backdrop-blur-md flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -758,7 +833,7 @@ export default function ServiceDetailModal({
               </button>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Edit Service Modal */}
