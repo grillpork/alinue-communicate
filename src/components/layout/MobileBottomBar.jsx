@@ -90,8 +90,6 @@ export default function MobileBottomBar() {
           ? "/profile"
           : "/sign-in",
       icon: User,
-      isAvatar: Boolean(user?.avatarUrl || user?.avatar),
-      avatarUrl: user?.avatarUrl || user?.avatar,
       isActive: isProfileActive,
     },
   ];
@@ -99,7 +97,7 @@ export default function MobileBottomBar() {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100 lg:hidden safe-area-bottom">
-        <div className="flex items-center justify-around h-15 sm:h-16 px-1">
+        <div className="flex items-center justify-around h-14 sm:h-15 px-1">
           {items.map((item) => {
             if (item.isCreateButton) {
               return (
@@ -114,7 +112,7 @@ export default function MobileBottomBar() {
                     title="สร้างโพสต์ใหม่"
                     className="flex h-10 w-12 items-center justify-center rounded-2xl bg-gray-100/90 text-gray-900 hover:bg-gray-200/80 active:scale-90 transition-all cursor-pointer"
                   >
-                    <Plus className="h-5 w-5 stroke-[2.3]" />
+                    <Plus className="h-6 w-6 stroke-[2.2]" />
                   </button>
                 </div>
               );
@@ -125,7 +123,9 @@ export default function MobileBottomBar() {
               <Link
                 key={item.id}
                 href={item.href}
-                className={`relative flex-1 flex flex-col items-center justify-center h-full transition-colors group cursor-pointer ${
+                aria-label={item.label}
+                title={item.label}
+                className={`relative flex-1 flex items-center justify-center h-full transition-colors group cursor-pointer ${
                   item.isActive
                     ? "text-black"
                     : "text-gray-400 hover:text-gray-700"
@@ -133,26 +133,11 @@ export default function MobileBottomBar() {
               >
                 {/* Icon Container with Badge */}
                 <div className="relative flex items-center justify-center">
-                  {item.isAvatar ? (
-                    <div
-                      className={`h-6 w-6 rounded-full overflow-hidden ring-1 transition-all ${
-                        item.isActive ? "ring-black" : "ring-gray-200"
-                      }`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={item.avatarUrl}
-                        alt="Profile"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ) : (
-                    <Icon
-                      className={`h-5 w-5 transition-transform group-active:scale-90 ${
-                        item.isActive ? "stroke-[2.2]" : "stroke-[1.8]"
-                      }`}
-                    />
-                  )}
+                  <Icon
+                    className={`h-6 w-6 transition-transform group-active:scale-90 ${
+                      item.isActive ? "stroke-[2.2]" : "stroke-[1.8]"
+                    }`}
+                  />
 
                   {/* Unread Notification Badge */}
                   {item.badge && (
@@ -161,17 +146,6 @@ export default function MobileBottomBar() {
                     </span>
                   )}
                 </div>
-
-                {/* Label */}
-                <span
-                  className={`text-[10px] mt-1 transition-colors leading-none tracking-tight ${
-                    item.isActive
-                      ? "font-bold text-black"
-                      : "font-medium text-gray-500"
-                  }`}
-                >
-                  {item.label}
-                </span>
               </Link>
             );
           })}
