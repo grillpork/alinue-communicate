@@ -311,7 +311,7 @@ export default function SettingsPage() {
   // Loading auth state
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-[#F7F7F8] flex flex-col items-center justify-center py-32 text-gray-400">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center py-32 text-gray-400">
         <Loader2 className="h-7 w-7 animate-spin text-gray-500 mb-2" />
         <p className="text-xs">กำลังโหลดการตั้งค่า...</p>
       </div>
@@ -321,8 +321,8 @@ export default function SettingsPage() {
   // Not logged in
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#F7F7F8] flex items-center justify-center px-4">
-        <div className="w-full max-w-sm rounded-[28px] bg-white p-8 text-center shadow-xs border border-gray-100">
+      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+        <div className="w-full max-w-sm rounded-[28px] bg-white p-8 text-center shadow-xs border border-gray-200/80">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-gray-50 text-gray-400 mb-4">
             <Shield className="h-8 w-8" />
           </div>
@@ -348,14 +348,14 @@ export default function SettingsPage() {
     !query || keywords.some((k) => k.toLowerCase().includes(query));
 
   return (
-    <div className="min-h-screen bg-[#F6F6F8] sm:rounded-3xl sm:my-3 pb-24">
+    <div className="min-h-screen bg-white pb-24">
       <div className="w-full max-w-xl mx-auto px-4 pt-5">
         {/* ================= TOP BAR (← | Title | Search) ================= */}
         <div className="flex items-center justify-between mb-5">
           <button
             type="button"
             onClick={handleBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-200/70 hover:bg-gray-200 text-gray-800 transition-all active:scale-95 cursor-pointer"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200/80 text-gray-800 transition-all active:scale-95 cursor-pointer"
             aria-label="ย้อนกลับ"
           >
             <ArrowLeft className="h-[18px] w-[18px]" />
@@ -375,7 +375,7 @@ export default function SettingsPage() {
               className={`flex h-10 w-10 items-center justify-center rounded-full transition-all active:scale-95 cursor-pointer ${
                 showSearch
                   ? "bg-black text-white"
-                  : "bg-gray-200/70 hover:bg-gray-200 text-gray-800"
+                  : "bg-gray-100 hover:bg-gray-200/80 text-gray-800"
               }`}
               aria-label="ค้นหาการตั้งค่า"
             >
@@ -432,7 +432,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={() => setActiveView("profile")}
-                className="flex w-full items-center justify-between gap-3 rounded-[22px] bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 hover:bg-gray-50/60 active:scale-[0.995] transition-all cursor-pointer text-left"
+                className="flex w-full items-center justify-between gap-3 rounded-[22px] bg-white px-4 py-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 hover:bg-gray-50/60 active:scale-[0.995] transition-all cursor-pointer text-left"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
                   <div className="h-12 w-12 shrink-0 rounded-full bg-gray-100 overflow-hidden ring-2 ring-gray-100 flex items-center justify-center">
@@ -490,7 +490,7 @@ export default function SettingsPage() {
             )}
 
             {/* 3. Group Card 1: Account, Notifications, Security & Grid Mode Quick Toggle */}
-            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 divide-y divide-gray-100 overflow-hidden">
+            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 divide-y divide-gray-100 overflow-hidden">
               {matchesSearch("settings", "profile", "โปรไฟล์", "บัญชี") && (
                 <SettingRow
                   icon={User}
@@ -532,7 +532,7 @@ export default function SettingsPage() {
             </div>
 
             {/* 4. Group Card 2: Preferences, Privacy, Help */}
-            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 divide-y divide-gray-100 overflow-hidden">
+            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 divide-y divide-gray-100 overflow-hidden">
               {matchesSearch("preferences", "appearance", "ปรับแต่ง", "แสดงผล") && (
                 <SettingRow
                   icon={SlidersHorizontal}
@@ -558,7 +558,7 @@ export default function SettingsPage() {
             </div>
 
             {/* 5. Group Card 3: Feedback, Language, Sign Out */}
-            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 divide-y divide-gray-100 overflow-hidden">
+            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 divide-y divide-gray-100 overflow-hidden">
               {matchesSearch("feedback", "ข้อเสนอแนะ") && (
                 <SettingRow
                   icon={MessageSquare}
@@ -605,7 +605,7 @@ export default function SettingsPage() {
             onSubmit={handleSaveProfile}
             className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-150"
           >
-            <div className="rounded-[24px] bg-white overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90">
+            <div className="rounded-[24px] bg-white overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80">
               {/* Banner Area */}
               <div className="relative h-32 sm:h-36 w-full bg-gray-100 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -817,7 +817,7 @@ export default function SettingsPage() {
         ================================================================ */}
         {activeView === "notifications" && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-150">
-            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 divide-y divide-gray-100 overflow-hidden">
+            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 divide-y divide-gray-100 overflow-hidden">
               {[
                 {
                   key: "likes",
@@ -874,7 +874,7 @@ export default function SettingsPage() {
         {activeView === "appearance" && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-150">
             {/* Post Display Mode Card */}
-            <div className="rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90">
+            <div className="rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80">
               <p className="text-xs font-semibold text-gray-500 mb-3 px-0.5">
                 รูปแบบการแสดงผลรูปภาพในโพสต์ (Post Display)
               </p>
@@ -922,7 +922,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Language Card */}
-            <div className="rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90">
+            <div className="rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80">
               <p className="text-xs font-semibold text-gray-500 mb-3 px-0.5">
                 ภาษาที่แสดงผล (Language)
               </p>
@@ -959,7 +959,7 @@ export default function SettingsPage() {
         ================================================================ */}
         {activeView === "security" && (
           <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-150">
-            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 divide-y divide-gray-100 overflow-hidden text-sm">
+            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 divide-y divide-gray-100 overflow-hidden text-sm">
               <div className="flex items-center justify-between px-4 py-3.5">
                 <span className="text-gray-500 text-xs">รหัสผู้ใช้งาน (User ID)</span>
                 <span className="font-mono text-xs font-semibold text-gray-900">
@@ -981,7 +981,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 overflow-hidden">
+            <div className="rounded-[22px] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 overflow-hidden">
               <SettingRow
                 icon={LogOut}
                 label={signOutMutation.isPending ? "กำลังออกจากระบบ..." : "ออกจากระบบ (Sign Out)"}
@@ -1005,7 +1005,7 @@ export default function SettingsPage() {
             VIEW 5: PRIVACY POLICY & HELP
         ================================================================ */}
         {activeView === "privacy" && (
-          <div className="rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 space-y-3 text-xs sm:text-sm text-gray-600 leading-relaxed animate-in fade-in slide-in-from-right-2 duration-150">
+          <div className="rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 space-y-3 text-xs sm:text-sm text-gray-600 leading-relaxed animate-in fade-in slide-in-from-right-2 duration-150">
             <h3 className="text-sm font-bold text-gray-900">
               นโยบายความเป็นส่วนตัวของ Alinue
             </h3>
@@ -1019,7 +1019,7 @@ export default function SettingsPage() {
         )}
 
         {activeView === "help" && (
-          <div className="rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-100/90 space-y-3 text-xs sm:text-sm text-gray-600 leading-relaxed animate-in fade-in slide-in-from-right-2 duration-150">
+          <div className="rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)] border border-gray-200/80 space-y-3 text-xs sm:text-sm text-gray-600 leading-relaxed animate-in fade-in slide-in-from-right-2 duration-150">
             <h3 className="text-sm font-bold text-gray-900">
               ศูนย์ช่วยเหลือ (Help & Support)
             </h3>
