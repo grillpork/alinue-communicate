@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   Heart,
+  Eye,
   Check,
   Play,
   Images,
@@ -99,8 +100,9 @@ export default function ShowcaseCard({
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isModalOpen]);
-  const isLiked = Boolean(showcase.is_liked);
-  const likesCount = showcase.likes_count || 0;
+  const isLiked = Boolean(showcase.is_liked || showcase.isLiked);
+  const likesCount = showcase.likes_count ?? showcase.likesCount ?? 0;
+  const viewsCount = showcase.views_count ?? showcase.viewsCount ?? 0;
 
   // ปิดเมนูเมื่อคลิกนอกพื้นที่
   useEffect(() => {
@@ -326,6 +328,12 @@ export default function ShowcaseCard({
               )}
             </div>
           )}
+        </div>
+
+        {/* Bottom-Left: Views Count Badge with Eye icon */}
+        <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1 rounded-full bg-black/45 backdrop-blur-md px-2 py-0.5 text-[10px] sm:text-[11px] font-medium text-white shadow-xs pointer-events-none select-none z-10">
+          <Eye className="h-3 w-3 stroke-[2]" />
+          <span>{Number(viewsCount || 0).toLocaleString()}</span>
         </div>
 
         {/* Bottom-Right: Floating Heart / Like Button */}

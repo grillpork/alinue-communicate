@@ -45,7 +45,7 @@ export function ShowcaseTab({
       )}
 
       {showcases.length > 0 ? (
-        <div className="columns-2 sm:columns-2 md:columns-3 lg:columns-4 gap-3.5 [column-fill:_balance]">
+        <div className="columns-2 sm:columns-3 gap-3.5 [column-fill:_balance]">
           {showcases.map((sc) => (
             <div key={sc.id} className="break-inside-avoid mb-4">
               <ShowcaseCard
