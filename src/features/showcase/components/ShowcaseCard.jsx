@@ -386,31 +386,14 @@ export default function ShowcaseCard({
             <span className="text-[11px] font-medium text-gray-800 truncate">
               {author.name || author.username}
             </span>
-            <span className="text-[10px] text-gray-400 truncate hidden sm:inline">
-              @{author.username}
-            </span>
           </Link>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {likesCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400">
-                <Heart className="h-2.5 w-2.5 fill-current text-gray-400" />
-                {likesCount}
-              </span>
-            )}
-
-            {isOwner && (
-              <button
-                type="button"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-                className="text-gray-300 hover:text-rose-500 transition-colors cursor-pointer"
-                title="Delete Showcase"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            )}
-          </div>
+          {likesCount > 0 && (
+            <div className="flex items-center gap-1 shrink-0 text-[10px] font-medium text-gray-400">
+              <Heart className="h-2.5 w-2.5 fill-current text-gray-400" />
+              <span>{likesCount}</span>
+            </div>
+          )}
         </div>
       </div>
 
